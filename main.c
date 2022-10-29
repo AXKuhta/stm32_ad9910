@@ -33,7 +33,7 @@
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 /* UART handler declaration */
-UART_HandleTypeDef UartHandle;
+UART_HandleTypeDef usart3;
 
 /* Private function prototypes -----------------------------------------------*/
 static void MPU_Config(void);
@@ -42,10 +42,6 @@ static void Error_Handler(void);
 static void CPU_CACHE_Enable(void);
 
 /* Private functions ---------------------------------------------------------*/
-int _write(int handle, char* data, int size) {
-  HAL_UART_Transmit(&UartHandle, (uint8_t*)data, size, 0xFFFF);
-  return size;
-}
 
 /**
   * @brief  Main program
@@ -84,16 +80,16 @@ int main(void)
       - Parity      = ODD parity
       - BaudRate    = 9600 baud
       - Hardware flow control disabled (RTS and CTS signals) */
-  UartHandle.Instance        = USARTx;
+  usart3.Instance        = USARTx;
 
-  UartHandle.Init.BaudRate   = 9600;
-  UartHandle.Init.WordLength = UART_WORDLENGTH_8B;
-  UartHandle.Init.StopBits   = UART_STOPBITS_1;
-  UartHandle.Init.Parity     = UART_PARITY_NONE;
-  UartHandle.Init.HwFlowCtl  = UART_HWCONTROL_NONE;
-  UartHandle.Init.Mode       = UART_MODE_TX_RX;
-  UartHandle.Init.OverSampling = UART_OVERSAMPLING_16;
-  if (HAL_UART_Init(&UartHandle) != HAL_OK)
+  usart3.Init.BaudRate   = 9600;
+  usart3.Init.WordLength = UART_WORDLENGTH_8B;
+  usart3.Init.StopBits   = UART_STOPBITS_1;
+  usart3.Init.Parity     = UART_PARITY_NONE;
+  usart3.Init.HwFlowCtl  = UART_HWCONTROL_NONE;
+  usart3.Init.Mode       = UART_MODE_TX_RX;
+  usart3.Init.OverSampling = UART_OVERSAMPLING_16;
+  if (HAL_UART_Init(&usart3) != HAL_OK)
   {
     /* Initialization Error */
     Error_Handler();

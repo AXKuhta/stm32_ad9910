@@ -51,8 +51,8 @@ firmware.elf: $(OBJS)
 	@echo " [CC]" $<
 	@$(CC) $(FLAGS) -flto -o $@ $<
 
-# Except main.c without LTO
-main.o: main.c
+# Except syscalls without LTO
+syscalls.o: syscalls.c
 	@echo " [CC]" $<
 	@$(CC) $(FLAGS) -o $@ $<
 
