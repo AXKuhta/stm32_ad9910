@@ -1,3 +1,5 @@
+#include <stdio.h>
+
 #include "stm32f7xx_hal.h"
 #include "uart.h"
 
@@ -104,6 +106,33 @@ void SystemClock_Config(void)
 	}
 }
 
+void print_startup_info() {
+	printf("\f\r");
+	printf("System startup\n");
+
+	uint32_t tmp = RCC->CFGR & RCC_CFGR_SWS;
+	char* clocksource = "UNKNOWN";
+	
+	switch (tmp) {
+		case 0x00:
+			clocksource = "HSI";
+			break;
+		case 0x04:
+			clocksource = "HSE";
+			break;
+		case 0x08:
+			clocksource = "PLL";
+			break;
+		default:
+			break;
+	}
+
+	uint32_t sysclockfreq = HAL_RCC_GetSysClockFreq();
+
+	printf("System clock source: %s\n", clocksource);
+	printf("System clock: %ld MHz\n", sysclockfreq / 1000 / 1000);
+}
+
 void system_init() {
 	/* Configure the MPU attributes */
 	MPU_Config();
@@ -127,4 +156,6 @@ void system_init() {
 	SystemClock_Config();
 
 	usart3_init();
+
+	print_startup_info();
 }

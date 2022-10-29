@@ -48,8 +48,6 @@ int main(void)
 {
 	system_init();
 
-	printf("** Newlib-nano printf() works! ** \r\n");
-
 	/* Infinite loop */
 	while (1)
 	{
