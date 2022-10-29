@@ -1,0 +1,14 @@
+name: Make test
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Download dependencies
+    run: |
+      bash download_libraries.sh
+    - name: Run make
+    run: |
+      make -j4
