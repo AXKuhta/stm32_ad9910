@@ -18,8 +18,7 @@
 	*/
 
 /* Includes ------------------------------------------------------------------*/
-#include "main.h"
-
+#include <stdio.h>
 #include <assert.h>
 #include "init.h"
 
@@ -36,7 +35,7 @@
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 /* UART handler declaration */
-UART_HandleTypeDef usart3;
+
 
 /* Private functions ---------------------------------------------------------*/
 
@@ -47,27 +46,7 @@ UART_HandleTypeDef usart3;
 	*/
 int main(void)
 {
-	/*##-1- Configure the UART peripheral ######################################*/
-	/* Put the USART peripheral in the Asynchronous mode (UART Mode) */
-	/* UART configured as follows:
-			- Word Length = 8 Bits (7 data bit + 1 parity bit) : 
-										BE CAREFUL : Program 7 data bits + 1 parity bit in PC HyperTerminal
-			- Stop Bit    = One Stop bit
-			- Parity      = ODD parity
-			- BaudRate    = 9600 baud
-			- Hardware flow control disabled (RTS and CTS signals) */
-	usart3.Instance        = USARTx;
-
-	usart3.Init.BaudRate   = 9600;
-	usart3.Init.WordLength = UART_WORDLENGTH_8B;
-	usart3.Init.StopBits   = UART_STOPBITS_1;
-	usart3.Init.Parity     = UART_PARITY_NONE;
-	usart3.Init.HwFlowCtl  = UART_HWCONTROL_NONE;
-	usart3.Init.Mode       = UART_MODE_TX_RX;
-	usart3.Init.OverSampling = UART_OVERSAMPLING_16;
-	if (HAL_UART_Init(&usart3) != HAL_OK)
-	{
-	}
+	system_init();
 
 	printf("** Newlib-nano printf() works! ** \r\n");
 

@@ -1,4 +1,5 @@
 #include "stm32f7xx_hal.h"
+#include "uart.h"
 
 /**
 	* @brief  Configure the MPU attributes
@@ -124,4 +125,6 @@ void system_init() {
 
 	/* Configure the system clock to 216 MHz */
 	SystemClock_Config();
+
+	usart3_init();
 }
