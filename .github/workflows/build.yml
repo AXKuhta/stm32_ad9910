@@ -6,6 +6,9 @@ jobs:
     steps:
     - name: Download repo
       uses: actions/checkout@v3
+    - name: Install dependencies
+      run: |
+        sudo apt install -y arm-none-eabi-gcc
     - name: Download dependencies
       run: |
         bash download_libraries.sh
