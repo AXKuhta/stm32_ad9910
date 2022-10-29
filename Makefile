@@ -1,0 +1,69 @@
+# https://yuukidach.github.io/p/makefile-for-projects-with-subdirectories/
+
+################################################################################
+# SOURCE FILES
+################################################################################
+LDSCRIPT_SUBDIR = STM32CubeF7/Projects/STM32F746ZG-Nucleo/Templates/SW4STM32/STM32F746ZG_Nucleo_ITCM-FLASH
+LDSCRIPT = $(LDSCRIPT_SUBDIR)/STM32F746ZGTx_FLASH.ld
+
+CMSIS_SUBDIR = STM32CubeF7/Drivers/CMSIS
+STARTUP_OBJ = $(CMSIS_SUBDIR)/Device/ST/STM32F7xx/Source/Templates/gcc/startup_stm32f746xx.o
+
+HAL_SUBDIR = STM32CubeF7/Drivers/STM32F7xx_HAL_Driver
+HAL_HEADER = $(wildcard $(HAL_SUBDIR)/Inc/*.h)
+HAL_SOURCE = $(wildcard $(HAL_SUBDIR)/Src/*.c)
+HAL_OBJS = $(HAL_SOURCE:c=o)
+
+APP_SOURCE = $(wildcard *.c)
+APP_OBJS = $(APP_SOURCE:c=o)
+
+OBJS = $(STARTUP_OBJ) $(HAL_OBJS) $(APP_OBJS)
+################################################################################
+
+
+################################################################################
+# COMPILER FLAGS
+################################################################################
+DEFINES = -D"USE_HAL_DRIVER" -D"STM32F746xx" -D"USE_STM32F7XX_NUCLEO_144"
+INCLUDE = -I"include/" -I"$(CMSIS_SUBDIR)/Core/Include" -I"$(CMSIS_SUBDIR)/Device/ST/STM32F7xx/Include" -I"$(HAL_SUBDIR)/Inc"
+
+# https://github.com/MayaPosch/Nodate/blob/master/arch/stm32/Makefile
+MCU_FLAGS := -mcpu=cortex-m7 -mfpu=fpv4-sp-d16 -mfloat-abi=hard
+
+CC	 = arm-none-eabi-gcc
+FLAGS	 = $(MCU_FLAGS) $(DEFINES) $(INCLUDE) -g -c -O2 -Wall -Wextra
+LFLAGS	 = $(MCU_FLAGS) -T $(LDSCRIPT) -Wl,--print-memory-usage -Wl,--gc-sections -Wl,-Map=firmware.map,--cref --specs=nosys.specs --specs=nano.specs
+################################################################################
+
+
+################################################################################
+# RULES
+################################################################################
+all: firmware.elf
+	@echo "Done"
+
+firmware.elf: $(OBJS)
+	@echo " [LD] firmware.elf"
+	@$(CC) -g $(OBJS) -o firmware.elf $(LFLAGS)
+
+# All .c files
+%.o: %.c
+	@echo " [CC]" $<
+	@$(CC) $(FLAGS) -flto -o $@ $<
+
+# Except main.c without LTO
+main.o: main.c
+	@echo " [CC]" $<
+	@$(CC) $(FLAGS) -o $@ $<
+
+# Startup
+%.o: %.s
+	@echo " [AS]" $<
+	@$(CC) $(FLAGS) -o $@ $<
+
+flash: firmware.elf
+	openocd -f board/st_nucleo_f7.cfg -c "reset_config connect_assert_srst" -c "program firmware.elf verify reset exit"
+
+clean:
+	@rm -f $(OBJS) firmware.elf firmware.map
+################################################################################
