@@ -20,6 +20,8 @@
 /* Includes ------------------------------------------------------------------*/
 #include <stdio.h>
 #include <assert.h>
+
+#include "stm32f7xx_hal.h"
 #include "init.h"
 
 /** @addtogroup STM32F7xx_HAL_Examples
@@ -49,7 +51,7 @@ int main(void)
 	system_init();
 
 	/* Infinite loop */
-	while (1)
-	{
+	while (1) {
+		HAL_PWR_EnterSLEEPMode(PWR_MAINREGULATOR_ON, PWR_SLEEPENTRY_WFI);
 	}
 }
