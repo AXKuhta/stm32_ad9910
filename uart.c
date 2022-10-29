@@ -25,7 +25,7 @@ void usart3_init() {
 	UART_HandleTypeDef usart3_defaults = {
 		.Instance = USART3,
 		.Init = {
-			.BaudRate 		= 9600,
+			.BaudRate 		= 115200,
 			.WordLength 	= UART_WORDLENGTH_8B,
 			.StopBits 		= UART_STOPBITS_1,
 			.Parity 		= UART_PARITY_NONE,
