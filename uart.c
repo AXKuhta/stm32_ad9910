@@ -40,9 +40,16 @@ void usart3_init() {
 	if (HAL_UART_Init(&usart3) != HAL_OK) {
 		while (1) {};
 	}
+
+	HAL_NVIC_SetPriority(USART3_IRQn, 1, 0);
+	HAL_NVIC_EnableIRQ(USART3_IRQn);
+	
+	__HAL_UART_ENABLE_IT(&usart3, UART_IT_RXNE);
 }
 
 void usart3_deinit() {
+	HAL_NVIC_DisableIRQ(USART3_IRQn);
+
 	__HAL_RCC_USART3_FORCE_RESET();
 	__HAL_RCC_USART3_RELEASE_RESET();
 

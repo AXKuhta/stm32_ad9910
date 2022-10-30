@@ -23,6 +23,7 @@
 
 #include "stm32f7xx_hal.h"
 #include "init.h"
+#include "isr.h"
 
 /** @addtogroup STM32F7xx_HAL_Examples
 	* @{
@@ -53,5 +54,6 @@ int main(void)
 	/* Infinite loop */
 	while (1) {
 		HAL_PWR_EnterSLEEPMode(PWR_MAINREGULATOR_ON, PWR_SLEEPENTRY_WFI);
+		isr_recorder_sync();
 	}
 }
