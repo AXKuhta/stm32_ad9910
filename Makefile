@@ -7,7 +7,8 @@ LDSCRIPT_SUBDIR = STM32CubeF7/Projects/STM32F746ZG-Nucleo/Templates/SW4STM32/STM
 LDSCRIPT = $(LDSCRIPT_SUBDIR)/STM32F746ZGTx_FLASH.ld
 
 CMSIS_SUBDIR = STM32CubeF7/Drivers/CMSIS
-STARTUP_OBJ = $(CMSIS_SUBDIR)/Device/ST/STM32F7xx/Source/Templates/gcc/startup_stm32f746xx.o
+CMSIS_DEVICE_SUBDIR = $(CMSIS_SUBDIR)/Device/ST/STM32F7xx
+STARTUP_OBJ = $(CMSIS_DEVICE_SUBDIR)/Source/Templates/gcc/startup_stm32f746xx.o
 
 HAL_SUBDIR = STM32CubeF7/Drivers/STM32F7xx_HAL_Driver
 HAL_HEADER = $(wildcard $(HAL_SUBDIR)/Inc/*.h)
@@ -25,7 +26,7 @@ OBJS = $(STARTUP_OBJ) $(HAL_OBJS) $(APP_OBJS)
 # COMPILER FLAGS
 ################################################################################
 DEFINES = -D"USE_HAL_DRIVER" -D"STM32F746xx" -D"USE_STM32F7XX_NUCLEO_144"
-INCLUDE = -I"include/" -I"$(CMSIS_SUBDIR)/Core/Include" -I"$(CMSIS_SUBDIR)/Device/ST/STM32F7xx/Include" -I"$(HAL_SUBDIR)/Inc"
+INCLUDE = -I"include/" -I"$(CMSIS_SUBDIR)/Core/Include" -I"$(CMSIS_DEVICE_SUBDIR)/Include" -I"$(HAL_SUBDIR)/Inc"
 
 # https://github.com/MayaPosch/Nodate/blob/master/arch/stm32/Makefile
 MCU_FLAGS := -mcpu=cortex-m7 -mfpu=fpv4-sp-d16 -mfloat-abi=hard
