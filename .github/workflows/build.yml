@@ -9,14 +9,7 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt install -y gcc-arm-none-eabi
-    - name: Cache STM32F7 support code
-      id: cache-stm32f7-support-code
-      uses: actions/cache@v3
-      with:
-        path: STM32CubeF7
-        key: x
-    - if: ${{ steps.cache-stm32f7-support-code.outputs.cache-hit != 'true' }}
-      name: Download STM32F7 support code
+    - name: Download STM32F7 support code
       run: |
         bash download_libraries.sh
     - name: Run make
