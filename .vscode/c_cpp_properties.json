@@ -1,0 +1,21 @@
+{
+    "configurations": [
+        {
+            "name": "stm32",
+            "includePath": [
+                "${workspaceFolder}/**"
+            ],
+            "defines": [
+                "USE_HAL_DRIVER",
+                "STM32F746xx",
+                "USE_STM32F7XX_NUCLEO_144"
+            ],
+            "cStandard": "c17",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "windows-gcc-arm",
+            "compilerPath": "C:/msys64/mingw64/bin/arm-none-eabi-gcc.exe",
+            "compilerArgs": []
+        }
+    ],
+    "version": 4
+}
