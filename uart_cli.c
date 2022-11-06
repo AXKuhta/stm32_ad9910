@@ -1,7 +1,9 @@
 #include <stdio.h>
 #include <assert.h>
+#include <string.h>
 
 #include "stm32f7xx_hal.h"
+#include "tasks.h"
 
 // =============================================================================
 // INPUT HANDLING
@@ -18,6 +20,10 @@ void uart_cli_init() {
 	assert(HAL_UARTEx_ReceiveToIdle_IT(&usart3, input_buffer, INPUT_BUFFER_SIZE - 1) == HAL_OK);
 
 	printf("UART now running RTI\n");
+}
+
+void dump_input_buffer() {
+	printf("Input buffer: %s\n", input_buffer);
 }
 
 // Echo keypresses
@@ -49,12 +55,13 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size) {
 		memset(input_buffer, 0, INPUT_BUFFER_SIZE);
 	}
 
-	HAL_UARTEx_ReceiveToIdle_IT(&usart3, offset_buffer, space_remains);
+	HAL_UARTEx_ReceiveToIdle_IT(huart, offset_buffer, space_remains);
+	add_task(dump_input_buffer);
 }
 
 // Restart RX continuously
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
-	HAL_UARTEx_ReceiveToIdle_IT(&usart3, input_buffer, INPUT_BUFFER_SIZE - 1);
+	HAL_UARTEx_ReceiveToIdle_IT(huart, input_buffer, INPUT_BUFFER_SIZE - 1);
 }
 
 // =============================================================================
