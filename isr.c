@@ -105,8 +105,6 @@ void PendSV_Handler(void) {
 
 void SysTick_Handler(void) {
 	HAL_IncTick();
-
-	RECORD_INTERRUPT();
 }
 
 // =============================================================================
@@ -114,16 +112,9 @@ void SysTick_Handler(void) {
 // =============================================================================
 
 extern UART_HandleTypeDef usart3;
-extern DMA_HandleTypeDef dma_usart3_rx;
 
 void USART3_IRQHandler() {
 	HAL_UART_IRQHandler(&usart3);
 	
-	RECORD_INTERRUPT();
-}
-
-void DMA1_Stream1_IRQHandler() {
-	HAL_DMA_IRQHandler(&dma_usart3_rx);
-
 	RECORD_INTERRUPT();
 }

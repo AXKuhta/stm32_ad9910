@@ -2,7 +2,6 @@
 
 #include "stm32f7xx_hal.h"
 #include "uart.h"
-#include "dma.h"
 
 /**
 	* @brief  Configure the MPU attributes
@@ -159,5 +158,5 @@ void system_init() {
 	usart3_init();
 
 	print_startup_info();
-	usart3_rx_dma_init();
+	uart_cli_init();
 }

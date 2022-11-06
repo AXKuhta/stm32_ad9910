@@ -41,7 +41,7 @@
 
 
 /* Private functions ---------------------------------------------------------*/
-extern uint8_t data[16];
+extern uint8_t input_buffer[128];
 /**
 	* @brief  Main program
 	* @param  None
@@ -55,9 +55,6 @@ int main(void)
 	while (1) {
 		HAL_PWR_EnterSLEEPMode(PWR_MAINREGULATOR_ON, PWR_SLEEPENTRY_WFI);
 		isr_recorder_sync();
-		print_it();
-
-		data[15] = 0;
-		printf("%s\n", data);
+		printf("Input buffer: %s\n", input_buffer);
 	}
 }
