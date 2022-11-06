@@ -4,6 +4,15 @@
 
 #include "stm32f7xx_hal.h"
 #include "tasks.h"
+#include "isr.h"
+#include "syscalls.h"
+
+// =============================================================================
+// CLI COMMANDS
+// =============================================================================
+void run(const char* cmd) {
+	if (strcmp(cmd, "isr") == 0) return print_it();
+}
 
 // =============================================================================
 // INPUT HANDLING
@@ -13,24 +22,43 @@ extern UART_HandleTypeDef usart3;
 #define INPUT_BUFFER_SIZE 128
 uint8_t input_buffer[INPUT_BUFFER_SIZE] = {0};
 
+void restart_rx() {
+	memset(input_buffer, 0, INPUT_BUFFER_SIZE);
+	_write(0, "\r> ", 3);
+	assert(HAL_UARTEx_ReceiveToIdle_IT(&usart3, input_buffer, INPUT_BUFFER_SIZE - 1) == HAL_OK);
+}
+
 void uart_cli_init() {
 	printf("Entering CLI\n");
-
-	//assert(HAL_UART_Receive_IT(&usart3, input_buffer, INPUT_BUFFER_SIZE) == HAL_OK);
-	assert(HAL_UARTEx_ReceiveToIdle_IT(&usart3, input_buffer, INPUT_BUFFER_SIZE - 1) == HAL_OK);
-
-	printf("UART now running RTI\n");
+	restart_rx();
 }
 
-void dump_input_buffer() {
-	printf("Input buffer: %s\n", input_buffer);
+void parse() {
+	for (int i = 0; i < INPUT_BUFFER_SIZE; i++) {
+		uint8_t c = input_buffer[i];
+
+		if (c == '\r' || c == '\n') {
+			input_buffer[i] = 0;
+		}
+	}
+
+	run( (const char*)input_buffer);
+
+	restart_rx();
 }
 
-// Echo keypresses
+void input_overrun_error() {
+	printf("\nInput overrun error\n");
+	while (1) {};
+}
+
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size) {
 	uint8_t* offset_buffer = huart->pRxBuffPtr;
 	uint16_t space_remains = huart->RxXferCount;
 	uint8_t* last = offset_buffer - 1;
+
+	// Echo keypresses
+	_write(0, (char*)offset_buffer - Size, Size);
 
 	// Different terminals may send different backspace codes
 	// Handle both types
@@ -43,6 +71,8 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size) {
 
 			offset_buffer--;
 			space_remains++;
+		} else {
+			return restart_rx();
 		}
 
 		offset_buffer--;
@@ -50,20 +80,19 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size) {
 	}
 
 	if (space_remains == 0) {
-		offset_buffer = input_buffer;
-		space_remains = INPUT_BUFFER_SIZE - 1;
-		memset(input_buffer, 0, INPUT_BUFFER_SIZE);
+		return add_task(input_overrun_error);
 	}
 
-	HAL_UARTEx_ReceiveToIdle_IT(huart, offset_buffer, space_remains);
-	add_task(dump_input_buffer);
+	// Ensure that memory will remain untouched while parsing
+	if (*last == '\n' || *last == '\r') {
+		_write(0, "\n", 1);
+		add_task(parse);
+	} else {
+		HAL_UARTEx_ReceiveToIdle_IT(huart, offset_buffer, space_remains);
+	}	
 }
 
 // Restart RX continuously
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 	HAL_UARTEx_ReceiveToIdle_IT(huart, input_buffer, INPUT_BUFFER_SIZE - 1);
 }
-
-// =============================================================================
-// CLI COMMANDS
-// =============================================================================

@@ -19,7 +19,6 @@ const char* isr_log[REC_SLOTS] = {0};
 int isr_log_next = 0;
 
 void print_it() {
-	printf("\r\f");
 	printf("%10s %s\n", "COUNT", "INTERRUPT");
 
 	for (int i = 0; i < LIST_SIZE; i++) {
