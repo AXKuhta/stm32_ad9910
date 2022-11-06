@@ -6,12 +6,14 @@
 #include "tasks.h"
 #include "isr.h"
 #include "syscalls.h"
+#include "performance.h"
 
 // =============================================================================
 // CLI COMMANDS
 // =============================================================================
 void run(const char* cmd) {
 	if (strcmp(cmd, "isr") == 0) return print_it();
+	if (strcmp(cmd, "perf") == 0) return print_perf();
 
 	printf("Unknown command: [%s]\n", cmd);
 }
@@ -61,6 +63,10 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size) {
 
 	// Echo keypresses
 	_write(0, (char*)offset_buffer - Size, Size);
+
+	// Performance
+	extern uint32_t perf_usart3_bytes_rx;
+	perf_usart3_bytes_rx += Size;
 
 	// Different terminals may send different backspace codes
 	// Handle both types
