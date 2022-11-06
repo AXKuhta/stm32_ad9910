@@ -51,7 +51,10 @@ void record_it(const char* title) {
 }
 
 void isr_recorder_sync() {
-	assert(isr_log_next < REC_SLOTS);
+	if (isr_log_next > REC_SLOTS) {
+		printf("Interrupt recorder overrun: %d interrupts received.\n", isr_log_next);
+		while (1) {};
+	}
 
 	for (int i = 0; i < isr_log_next; i++) {
 		record_it(isr_log[i]);

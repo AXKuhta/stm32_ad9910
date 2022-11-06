@@ -41,8 +41,8 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size) {
 		if (last >= input_buffer) {
 			*last = 0;
 
-			 offset_buffer--;
-			 space_remains++;
+			offset_buffer--;
+			space_remains++;
 		}
 
 		offset_buffer--;
