@@ -3,6 +3,7 @@
 #include "stm32f7xx_hal.h"
 #include "uart.h"
 #include "timer.h"
+#include "ad9910.h"
 
 /**
 	* @brief  Configure the MPU attributes
@@ -162,5 +163,16 @@ void system_init() {
 
 	spi1_init();
 	radar_emulator_start();
+	timer_pulse(3*1000*1000, 1*1000*1000);
+	timer2_init();
+	ad_init();
+
+	ad_set_profile_freq(0, 15*1000*1000);
+	ad_set_profile_freq(1, 15*1000*1000);
+
+	ad_enable_amplitude_scaler();
+	ad_set_profile_amplitude(0, 0);
+	ad_set_profile_amplitude(1, 0x3FFF);
+
 	uart_cli_init();
 }

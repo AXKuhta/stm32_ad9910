@@ -7,6 +7,7 @@
 #include "isr.h"
 #include "syscalls.h"
 #include "performance.h"
+#include "ad9910.h"
 
 // =============================================================================
 // CLI COMMANDS
@@ -14,6 +15,8 @@
 void run(const char* cmd) {
 	if (strcmp(cmd, "isr") == 0) return print_it();
 	if (strcmp(cmd, "perf") == 0) return print_perf();
+	if (strcmp(cmd, "verify") == 0) return ad_readback_all();
+	if (strcmp(cmd, "write") == 0) return ad_write_all();
 
 	printf("Unknown command: [%s]\n", cmd);
 }
