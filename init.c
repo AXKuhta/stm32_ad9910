@@ -159,6 +159,8 @@ void system_init() {
 	usart3_init();
 
 	print_startup_info();
+
+	spi1_init();
 	radar_emulator_start();
 	uart_cli_init();
 }
