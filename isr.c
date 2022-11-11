@@ -2,6 +2,7 @@
 #include <assert.h>
 
 #include "stm32f7xx_hal.h"
+#include "timer.h"
 
 // =============================================================================
 // INTERRUPT PROFILER
@@ -118,5 +119,26 @@ extern UART_HandleTypeDef usart3;
 void USART3_IRQHandler() {
 	HAL_UART_IRQHandler(&usart3);
 	
+	RECORD_INTERRUPT();
+}
+
+extern TIM_HandleTypeDef timer2;
+extern pulse_t default_pulse;
+
+void TIM2_IRQHandler() {
+	HAL_TIM_IRQHandler(&timer2);
+
+	// Можно перезаписывать регистры на лету
+	// Если "длина" меньше 250, то перестаёт работать
+	// Прерывание приходит уже после того, как таймер преодолел вторую точку
+	//static int t = 1;
+	//if (t) {
+	//	timer2.Instance->CCR4 = default_pulse.t2;
+	//	t = 0;
+	//} else {
+	//	timer2.Instance->CCR4 = default_pulse.t1;
+	//	t = 1;
+	//}
+		
 	RECORD_INTERRUPT();
 }

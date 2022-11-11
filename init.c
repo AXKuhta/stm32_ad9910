@@ -2,6 +2,7 @@
 
 #include "stm32f7xx_hal.h"
 #include "uart.h"
+#include "timer.h"
 
 /**
 	* @brief  Configure the MPU attributes
@@ -158,5 +159,6 @@ void system_init() {
 	usart3_init();
 
 	print_startup_info();
+	radar_emulator_start();
 	uart_cli_init();
 }
