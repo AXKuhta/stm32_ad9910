@@ -17,6 +17,7 @@ void run(const char* cmd) {
 	if (strcmp(cmd, "perf") == 0) return print_perf();
 	if (strcmp(cmd, "verify") == 0) return ad_readback_all();
 	if (strcmp(cmd, "write") == 0) return ad_write_all();
+	if (strcmp(cmd, "test_tone") == 0) return ad_test_tone();
 
 	printf("Unknown command: [%s]\n", cmd);
 }

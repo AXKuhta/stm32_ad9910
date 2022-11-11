@@ -403,6 +403,13 @@ void ad_set_ramp_rate(uint16_t down_rate, uint16_t up_rate) {
 	r0D[3] = view_u[0];
 }
 
+void ad_test_tone() {
+    ad_set_profile_freq(0, 15*1000*1000);
+    ad_set_profile_amplitude(0, 0x3FFF);
+    ad_write_all();
+    timer2_stop();
+}
+
 //
 // Чтение/запись оперативной памяти AD9910
 //
