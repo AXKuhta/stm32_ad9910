@@ -2,6 +2,8 @@
 
 #include "stm32f7xx_hal.h"
 #include "uart.h"
+#include "uart_cli.h"
+#include "spi.h"
 #include "timer.h"
 #include "ad9910.h"
 
