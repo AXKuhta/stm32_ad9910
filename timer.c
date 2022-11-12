@@ -2,6 +2,7 @@
 
 #include "stm32f7xx_hal.h"
 #include "timer.h"
+#include "units.h"
 
 TIM_HandleTypeDef timer1;
 TIM_HandleTypeDef timer2;
@@ -32,23 +33,9 @@ void timer2_gpio_init() {
 	HAL_GPIO_Init(GPIOB, &CH4);
 }
 
-void timer1_init(uint32_t length_ns, uint16_t rate_hz) {
+void timer1_init(uint32_t prescaler, uint32_t period, uint32_t pulse) {
 	__HAL_RCC_TIM1_CLK_ENABLE();
 	timer1_gpio_init();
-
-	// Для получения импульсов продолжительностью 12 мкс с частотой 25 Гц используя режим PWM:
-	// Prescaler = 132
-	// Period = 64962
-	// Pulse = 20
-	// =======================================================================================
-	const double timer_freq = 216*1000*1000;
-	uint32_t clocks_per_second = 65535 * rate_hz;
-	uint32_t prescaler = (timer_freq)/((double)clocks_per_second) + 0.5;
-
-	// Значение предделителя сдвинуто на 1, т.е. 1 уже приведёт к делению на 2
-	// Здесь нужно учесть это
-	uint32_t period = (timer_freq)/((double)prescaler + 1)/((double)rate_hz) + 0.5;
-	// =======================================================================================
 
 	TIM_HandleTypeDef timer1_defaults = {
 		.Instance = TIM1,
@@ -67,7 +54,7 @@ void timer1_init(uint32_t length_ns, uint16_t rate_hz) {
 	// PWM2 = Начинает на низком уровне
 	TIM_OC_InitTypeDef oc_config = {
 		.OCMode = TIM_OCMODE_PWM1,
-		.Pulse = 20,
+		.Pulse = pulse,
 		.OCPolarity = TIM_OCPOLARITY_HIGH,
 		.OCFastMode = TIM_OCFAST_DISABLE
 	};
@@ -76,8 +63,6 @@ void timer1_init(uint32_t length_ns, uint16_t rate_hz) {
 	HAL_TIM_PWM_ConfigChannel(&timer1, &oc_config, TIM_CHANNEL_1);
 	
 	HAL_TIM_PWM_Start(&timer1, TIM_CHANNEL_1);
-
-	printf("Radar emulator enabled: pulses at %d Hz\n", rate_hz);
 }
 
 // TIM_TS_TI1FP1
@@ -132,8 +117,42 @@ void timer2_restart() {
 	timer2_init();
 }
 
+//
+// Данная функция настроит TIM1 для имитации внешнего управляющего сигнала от радара (12 мкс, 25 Гц)
+// Вычисление параметров таймера выглядит следующим образом:
+//
+// timer_freq = 216 MHz
+// timer_bits = 16
+// target_hz = 25 Hz
+// target_t = 12 us
+//
+// desired_freq = 2^timer_bits * target_hz
+// prescaler = round(timer_freq / desired_freq)
+// scaled_freq = timer_freq / (prescaler + 1)
+// period = round(scaled_freq / target_hz)
+// pulse = round(scaled_freq * target_t)
+//
+// actual_hz = scaled_freq / period = 25.00015625097657 Hz
+// actual_t = pulse / scaled_freq = 11.699074074074074 us
+//
+// prescaler = 132
+// period = 64962
+// pulse = 19
+//
 void radar_emulator_start() {
-	timer1_init(12*1000, 25);
+	uint32_t target_hz = 25;
+	double target_t = 12.0 / 1000.0 / 1000.0;
+
+	uint32_t timer_freq = 216*1000*1000;
+	uint32_t desired_freq = 65536 * target_hz;
+	uint32_t prescaler = timer_freq / (double)desired_freq + 0.5;
+	double scaled_freq = timer_freq / (prescaler + 1);
+	uint32_t period = scaled_freq / (double)target_hz + 0.5;
+	uint32_t pulse = scaled_freq * target_t + 0.5;
+
+	timer1_init(prescaler, period, pulse);
+
+	printf("Radar emulator enabled: %ld %s pulses at %ld Hz\n", time_unit_int(target_t), time_unit_str(target_t), target_hz);
 }
 
 pulse_t default_pulse = {50, 300};
