@@ -13,7 +13,16 @@
 // =============================================================================
 // CLI COMMANDS
 // =============================================================================
-void run(const char* cmd) {
+void run(const char* str) {
+	char cmd[128] = {0};
+
+	int rc = sscanf(str, "%127s", cmd);
+
+	if (rc == 0) {
+		printf("Invalid str\n");
+		return;
+	}
+
 	if (strcmp(cmd, "isr") == 0) return print_it();
 	if (strcmp(cmd, "perf") == 0) return print_perf();
 	if (strcmp(cmd, "verify") == 0) return ad_readback_all();
@@ -43,16 +52,22 @@ void uart_cli_init() {
 	restart_rx();
 }
 
-void parse() {
-	for (int i = 0; i < INPUT_BUFFER_SIZE; i++) {
-		uint8_t c = input_buffer[i];
-
-		if (c == '\r' || c == '\n') {
-			input_buffer[i] = 0;
-		}
+const char* get_next_str(const char* buf) {
+	while (*buf) {
+		if (*buf == '\n' || *buf == '\r') return buf + 1;
+		buf++;
 	}
 
-	run( (const char*)input_buffer);
+	return NULL;
+}
+
+void parse() {
+	const char* buf = input_buffer;
+
+	do {
+		run(buf);
+		buf = get_next_str(buf);
+	} while (*buf != 0);
 
 	restart_rx();
 }
