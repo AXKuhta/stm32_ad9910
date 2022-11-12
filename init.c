@@ -6,6 +6,7 @@
 #include "spi.h"
 #include "timer.h"
 #include "ad9910.h"
+#include "sequencer.h"
 
 /**
 	* @brief  Configure the MPU attributes
@@ -163,18 +164,11 @@ void system_init() {
 
 	print_startup_info();
 
-	spi1_init();
 	radar_emulator_start();
-	timer_pulse(3*1000*1000, 1*1000*1000);
-	timer2_init();
+	spi1_init();
 	ad_init();
 
-	ad_set_profile_freq(0, 15*1000*1000);
-	ad_set_profile_freq(1, 15*1000*1000);
-
-	ad_enable_amplitude_scaler();
-	ad_set_profile_amplitude(0, 0);
-	ad_set_profile_amplitude(1, 0x3FFF);
+	enter_rfkill_mode();
 
 	uart_cli_init();
 }

@@ -8,6 +8,7 @@
 #include "syscalls.h"
 #include "performance.h"
 #include "ad9910.h"
+#include "sequencer.h"
 
 // =============================================================================
 // CLI COMMANDS
@@ -17,7 +18,8 @@ void run(const char* cmd) {
 	if (strcmp(cmd, "perf") == 0) return print_perf();
 	if (strcmp(cmd, "verify") == 0) return ad_readback_all();
 	if (strcmp(cmd, "write") == 0) return ad_write_all();
-	if (strcmp(cmd, "test_tone") == 0) return ad_test_tone();
+	if (strcmp(cmd, "rfkill") == 0) return enter_rfkill_mode();
+	if (strcmp(cmd, "test_tone") == 0) return enter_test_tone_mode(15*1000*1000);
 
 	printf("Unknown command: [%s]\n", cmd);
 }

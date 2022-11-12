@@ -175,7 +175,7 @@ static uint8_t* regmap[23] = {
 static uint32_t ad_system_clock = 0;
 
 void ad_init() {
-    ad_init_gpio();
+	ad_init_gpio();
 
 	// PLL
 	r02[0] = 0x0D; // VCO + XTAL out enable/disable
@@ -185,7 +185,7 @@ void ad_init() {
 
 	//r02[2] = 0xC0; // Divider disable + PLL disable
 	
-    ad_system_clock = 1000*1000*1000;
+	ad_system_clock = 1000*1000*1000;
 
 	r00[3] = 0x02; // ???
 	
@@ -401,13 +401,6 @@ void ad_set_ramp_rate(uint16_t down_rate, uint16_t up_rate) {
 
 	r0D[2] = view_u[1];
 	r0D[3] = view_u[0];
-}
-
-void ad_test_tone() {
-    ad_set_profile_freq(0, 15*1000*1000);
-    ad_set_profile_amplitude(0, 0x3FFF);
-    ad_write_all();
-    timer2_stop();
 }
 
 //

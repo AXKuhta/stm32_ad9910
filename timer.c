@@ -160,14 +160,16 @@ void radar_emulator_start() {
 	free(tstr);
 }
 
-pulse_t default_pulse = {50, 300};
+pulse_t timer_pulse(uint32_t delay_ns, uint32_t length_ns) {
+	pulse_t pulse;
 
-void timer_pulse(uint32_t delay_ns, uint32_t length_ns) {
 	if (delay_ns + length_ns > 40*1000*1000) {
 		printf("Specified pulse doesn't fit into 25 Hz");
 		return;
 	}
 	
-	default_pulse.t1 = (uint32_t)((double)delay_ns / NANOSEC_108MHZ);
-	default_pulse.t2 = (uint32_t)((double)length_ns / NANOSEC_108MHZ) + default_pulse.t1;
+	pulse.t1 = (uint32_t)((double)delay_ns / NANOSEC_108MHZ);
+	pulse.t2 = (uint32_t)((double)length_ns / NANOSEC_108MHZ) + pulse.t1;
+
+	return pulse;
 }

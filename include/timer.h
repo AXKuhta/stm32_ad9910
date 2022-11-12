@@ -13,3 +13,8 @@ typedef struct pulse_t {
 } pulse_t;
 
 void radar_emulator_start();
+
+void timer2_init();
+void timer2_stop();
+void timer2_restart();
+pulse_t timer_pulse(uint32_t delay_ns, uint32_t length_ns);
