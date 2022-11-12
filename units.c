@@ -2,6 +2,24 @@
 
 #include <stdint.h>
 #include <stdio.h>
+#include <string.h>
+
+uint32_t parse_freq(double freq, const char* unit) {
+	double multiplier;
+
+	if (strcasecmp(unit, "mhz") == 0) {
+		multiplier = 1000*1000;
+	} else if (strcasecmp(unit, "khz") == 0) {
+		multiplier = 1000;
+	} else if (strcasecmp(unit, "hz") == 0) {
+		multiplier = 1;
+	} else {
+		printf("Invalid frequency unit: %s\n", unit);
+		return 0;
+	}
+
+	return freq * multiplier;
+}
 
 char* time_unit(double time) {
 	const char* unit;
@@ -25,3 +43,26 @@ char* time_unit(double time) {
 
 	return ret;
 }
+
+char* freq_unit(double freq) {
+	const char* unit;
+	char* ret = NULL;
+
+	if (freq > 1000*1000*1000) {
+		freq = freq/1000/1000/1000;
+		unit = "GHz";
+	} else if (freq > 1000*1000) {
+		freq = freq/1000/1000;
+		unit = "MHz";
+	} else if (freq > 1000) {
+		freq = freq/1000;
+		unit = "KHz";
+	} else {
+		unit = "Hz";
+	}
+
+	asprintf(&ret, "%.3lf %s", freq, unit);
+
+	return ret;
+}
+

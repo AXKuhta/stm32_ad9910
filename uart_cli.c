@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
+#include <stdlib.h>
 
 #include "stm32f7xx_hal.h"
 #include "tasks.h"
@@ -8,15 +9,44 @@
 #include "syscalls.h"
 #include "performance.h"
 #include "ad9910.h"
+#include "units.h"
 #include "sequencer.h"
 
 // =============================================================================
 // CLI COMMANDS
 // =============================================================================
-void run(const char* str) {
-	char cmd[128] = {0};
+void test_tone_cmd(const char* str) {
+	char cmd[32] = {0};
+	char unit[4] = {0};
+	double freq;
 
-	int rc = sscanf(str, "%127s", cmd);
+	int rc = sscanf(str, "%31s %lf %3s", cmd, &freq, unit);
+
+	if (rc != 3) {
+		printf("Invalid arguments\n");
+		printf("Usage: test_tone freq unit\n");
+		printf("Example: test_tone 150 MHz\n");
+		return;
+	}
+
+	uint32_t freq_hz = parse_freq(freq, unit);
+
+	if (freq_hz == 0) {
+		return;
+	}
+
+	char* verif_freq = freq_unit(freq_hz);
+
+	printf("Test tone at %s\n", verif_freq);
+	enter_test_tone_mode(freq_hz);
+
+	free(verif_freq);
+}
+
+void run(const char* str) {
+	char cmd[32] = {0};
+
+	int rc = sscanf(str, "%31s", cmd);
 
 	if (rc == 0) {
 		printf("Invalid str\n");
@@ -28,7 +58,7 @@ void run(const char* str) {
 	if (strcmp(cmd, "verify") == 0) return ad_readback_all();
 	if (strcmp(cmd, "write") == 0) return ad_write_all();
 	if (strcmp(cmd, "rfkill") == 0) return enter_rfkill_mode();
-	if (strcmp(cmd, "test_tone") == 0) return enter_test_tone_mode(15*1000*1000);
+	if (strcmp(cmd, "test_tone") == 0) return test_tone_cmd(str);
 
 	printf("Unknown command: [%s]\n", cmd);
 }
