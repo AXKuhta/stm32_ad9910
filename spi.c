@@ -42,14 +42,21 @@ void spi1_init() {
 	HAL_SPI_Init(&spi1);
 }
 
+extern uint32_t perf_spi1_bytes_rx;
+extern uint32_t perf_spi1_bytes_tx;
+
 void spi_send(uint8_t* buffer, uint16_t size) {
 	HAL_StatusTypeDef status = HAL_SPI_Transmit(&spi1, buffer, size, 1000);
 
 	assert(status == HAL_OK);
+
+	perf_spi1_bytes_tx += size;
 }
 
 void spi_recv(uint8_t* buffer, uint16_t size) {
 	HAL_StatusTypeDef status = HAL_SPI_Receive(&spi1, buffer, size, 1000);
 	
 	assert(status == HAL_OK);
+
+	perf_spi1_bytes_rx += size;
 }
