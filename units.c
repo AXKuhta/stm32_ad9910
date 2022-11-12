@@ -1,17 +1,27 @@
+#define _GNU_SOURCE // Нужно для появления прототипа asprintf()
+
 #include <stdint.h>
+#include <stdio.h>
 
-const char* time_unit_str(double time) {
-	if (time < 1.0/1000.0/1000.0) return "ns";
-	if (time < 1.0/1000.0) return "us";
-	if (time < 1.0) return "ms";
+char* time_unit(double time) {
+	const char* unit;
+	char* ret = NULL;
+	int intv;
 
-	return "s";
-}
+	if (time < 1.0/1000.0/1000.0) {
+		intv = time*1000*1000*1000;
+		unit = "ns";
+	} else if (time < 1.0/1000.0) {
+		intv = time*1000*1000;
+		unit = "us";
+	} else if (time < 1.0) {
+		intv = time*1000;
+		unit = "ms";
+	} else {
+		unit = "s";
+	}
 
-uint32_t time_unit_int(double time) {
-	if (time < 1.0/1000.0/1000.0) return time*1000.0*1000.0*1000.0;
-	if (time < 1.0/1000.0) return time*1000.0*1000.0;
-	if (time < 1.0) return time*1000.0;
+	asprintf(&ret, "%d %s", intv, unit);
 
-	return time;
+	return ret;
 }

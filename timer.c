@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "stm32f7xx_hal.h"
 #include "timer.h"
@@ -152,7 +153,11 @@ void radar_emulator_start() {
 
 	timer1_init(prescaler, period, pulse);
 
-	printf("Radar emulator enabled: %ld %s pulses at %ld Hz\n", time_unit_int(target_t), time_unit_str(target_t), target_hz);
+	char* tstr = time_unit(target_t);
+
+	printf("Radar emulator enabled: %s pulses at %ld Hz\n", tstr, target_hz);
+
+	free(tstr);
 }
 
 pulse_t default_pulse = {50, 300};
