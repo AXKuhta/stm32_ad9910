@@ -1,7 +1,6 @@
-#include <stdio.h>
+#include <assert.h>
 
 #include "stm32f7xx_hal.h"
-#include "vt100.h"
 
 void spi1_gpio_init() {
 	GPIO_InitTypeDef SCK = { .Mode = GPIO_MODE_AF_PP, .Pull = GPIO_NOPULL, .Speed = GPIO_SPEED_HIGH, .Pin = GPIO_PIN_5, .Alternate = GPIO_AF5_SPI1 };
@@ -45,17 +44,12 @@ void spi1_init() {
 
 void spi_send(uint8_t* buffer, uint16_t size) {
 	HAL_StatusTypeDef status = HAL_SPI_Transmit(&spi1, buffer, size, 1000);
-	
-	if (status != HAL_OK)
-		printf(COLOR_RED "SPI send error\n" COLOR_RESET);
+
+	assert(status == HAL_OK);
 }
 
 void spi_recv(uint8_t* buffer, uint16_t size) {
 	HAL_StatusTypeDef status = HAL_SPI_Receive(&spi1, buffer, size, 1000);
 	
-	if (status == HAL_TIMEOUT) {
-		printf("SPI recv timeout\n");
-	} else if (status != HAL_OK) {
-		printf(COLOR_RED "SPI recv error\n" COLOR_RESET);
-	}
+	assert(status == HAL_OK);
 }
