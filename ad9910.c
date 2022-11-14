@@ -56,9 +56,7 @@ void ad_pulse_io_update(void) {
 void ad_write(uint8_t reg_addr, uint8_t* buffer, uint16_t size) {
 	uint8_t instruction = reg_addr & 0x1F;
 	
-	ad_pulse_io_reset();
 	ad_select();
-	
 	spi_send(&instruction, 1);
 
 	for (uint16_t i = 0; i < size; i++) {
@@ -74,10 +72,8 @@ void ad_readback(uint8_t reg_addr, uint8_t* buffer, uint16_t size) {
 	uint8_t instruction = 0x80 | (reg_addr & 0x1F);
 	uint8_t read[8] = {0};
 	
-	ad_pulse_io_reset();
 	ad_select();
 	spi_send(&instruction, 1);
-
 	
 	for (int i = 0; i < size; i++) {
 		spi_recv(&read[i], 1);
@@ -182,6 +178,8 @@ void ad_enable_amplitude_scaler() {
 // Прочитать и сверить содержимое всех регистров с ожидаемыми значениями
 void ad_readback_all() {
 	printf("Full readback\n");
+
+	ad_pulse_io_reset();
 	
 	ad_readback(0x00, r00, 4);
 	ad_readback(0x01, r01, 4);
@@ -217,6 +215,8 @@ void ad_readback_all() {
 void ad_write_all() {
 	printf("Full write\n");
 	
+	ad_pulse_io_reset();
+
 	ad_write(0x00, r00, 4);
 	ad_write(0x01, r01, 4);
 	ad_write(0x02, r02, 4);
