@@ -8,9 +8,9 @@
 // PD15 IO_RESET
 // PF12 IO_UPDATE
 void ad_init_gpio() {
-	GPIO_InitTypeDef CS = { .Mode = GPIO_MODE_OUTPUT_PP, .Pull = GPIO_NOPULL, .Speed = GPIO_SPEED_LOW, .Pin = GPIO_PIN_14 };
-	GPIO_InitTypeDef IO_RESET = { .Mode = GPIO_MODE_OUTPUT_PP, .Pull = GPIO_NOPULL, .Speed = GPIO_SPEED_LOW, .Pin = GPIO_PIN_15 };
-	GPIO_InitTypeDef IO_UPDATE = { .Mode = GPIO_MODE_OUTPUT_PP, .Pull = GPIO_NOPULL, .Speed = GPIO_SPEED_LOW, .Pin = GPIO_PIN_12 };
+	GPIO_InitTypeDef CS = { .Mode = GPIO_MODE_OUTPUT_PP, .Pull = GPIO_NOPULL, .Speed = GPIO_SPEED_FREQ_VERY_HIGH, .Pin = GPIO_PIN_14 };
+	GPIO_InitTypeDef IO_RESET = { .Mode = GPIO_MODE_OUTPUT_PP, .Pull = GPIO_NOPULL, .Speed = GPIO_SPEED_FREQ_VERY_HIGH, .Pin = GPIO_PIN_15 };
+	GPIO_InitTypeDef IO_UPDATE = { .Mode = GPIO_MODE_OUTPUT_PP, .Pull = GPIO_NOPULL, .Speed = GPIO_SPEED_FREQ_VERY_HIGH, .Pin = GPIO_PIN_12 };
 	
 	__HAL_RCC_GPIOD_CLK_ENABLE();
 	__HAL_RCC_GPIOF_CLK_ENABLE();
@@ -60,10 +60,9 @@ void ad_write(uint8_t reg_addr, uint8_t* buffer, uint16_t size) {
 	ad_select();
 	
 	spi_send(&instruction, 1);
-	my_delay(500);
+
 	for (uint16_t i = 0; i < size; i++) {
 		spi_send(&buffer[i], 1);
-		my_delay(500);
 	}
 	ad_deselect();
 }
@@ -78,11 +77,10 @@ void ad_readback(uint8_t reg_addr, uint8_t* buffer, uint16_t size) {
 	ad_pulse_io_reset();
 	ad_select();
 	spi_send(&instruction, 1);
-	my_delay(500);
+
 	
 	for (int i = 0; i < size; i++) {
 		spi_recv(&read[i], 1);
-		my_delay(500);
 	}
 	ad_deselect();
 	
@@ -171,7 +169,6 @@ void ad_init() {
 	ad_write(0x01, r01, 4);
 	ad_write(0x02, r02, 4);
 	
-	my_delay(1024);
 	ad_pulse_io_update();
 }
 
@@ -386,15 +383,12 @@ void ad_set_ramp_rate(uint16_t down_rate, uint16_t up_rate) {
 // 	uint8_t read[4] = {0};
 	
 // 	ad_select();
-// 	my_delay(500);
 	
 // 	for (int j = 0; j < size; j++) {
 // 		spi_send(&instruction, 1);
-// 		my_delay(500);
 		
 // 		for (int i = 0; i < 4; i++) {
 // 			spi_recv(&read[i], 1);
-// 			my_delay(500);
 // 		}
 // 		ad_deselect();
 		
