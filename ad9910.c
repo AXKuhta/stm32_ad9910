@@ -26,37 +26,10 @@ void ad_init_gpio() {
 
 void ad_select() {
 	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_RESET);
-	
-	for (uint16_t i = 0; i < 1024; i++) {
-		__NOP(); __NOP(); __NOP(); __NOP();
-	}
 }
 
 void ad_deselect() {
-	for (uint16_t i = 0; i < 1024; i++) {
-		__NOP(); __NOP(); __NOP(); __NOP();
-	}
-	
 	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_SET);
-}
-
-void ad_pulse_io_reset(void) {
-	// IO_RESET
-	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_SET);
-	
-	// Подождать ~20 мкс
-	//for (uint16_t i = 0; i < 1024; i++) {
-	//	__NOP(); __NOP(); __NOP(); __NOP();
-	//}
-	HAL_Delay(1);
-	
-	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_RESET);
-	
-	// Подождать ещё
-	//for (uint16_t i = 0; i < 1024; i++) {
-	//	__NOP(); __NOP(); __NOP(); __NOP();
-	//}
-	HAL_Delay(1);
 }
 
 void my_delay(uint32_t delay) {
@@ -64,19 +37,19 @@ void my_delay(uint32_t delay) {
 		__NOP(); __NOP(); __NOP(); __NOP();
 	}
 }
-	
+
+// Хоть какая-то задержка должна присутствовать
+// Без неё импульса вообще не возникнет
+void ad_pulse_io_reset(void) {
+	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_SET);
+	HAL_Delay(1);
+	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_RESET);
+	HAL_Delay(1);
+}	
 
 void ad_pulse_io_update(void) {
-	// IO_UPDATE в единичку
 	HAL_GPIO_WritePin(GPIOF, GPIO_PIN_12, GPIO_PIN_SET);
-/*	
-	// Подождать ~20 мкс
-	for (uint16_t i = 0; i < 1024; i++) {
-		__NOP(); __NOP(); __NOP(); __NOP();
-	}
-*/
-	HAL_Delay(2);
-	// IO_UPDATE в ноль
+	HAL_Delay(1);
 	HAL_GPIO_WritePin(GPIOF, GPIO_PIN_12, GPIO_PIN_RESET);
 }
 
