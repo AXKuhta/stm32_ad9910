@@ -16,6 +16,18 @@ void spi1_gpio_init() {
 
 SPI_HandleTypeDef spi1;
 
+// Вычисление скорости SPI:
+// spi_clock = 108 MHz
+// prescaler = 16
+//
+// bits_per_second = 1s * spi_clock / prescaler
+// mbit = bits_per_second / 1000 / 1000
+//
+// mbit = 6.75
+//
+// Для AD9910 максимальная скорость SPI составляет 70 Мбит
+// STM32 не может выдать больше 54 Мбит?
+//
 void spi1_init() {
 	__HAL_RCC_SPI1_CLK_ENABLE();
 	spi1_gpio_init();
@@ -28,7 +40,7 @@ void spi1_init() {
             .DataSize = SPI_DATASIZE_8BIT,
             .NSS = SPI_NSS_SOFT,
             .NSSPMode = SPI_NSS_PULSE_DISABLE,
-            .BaudRatePrescaler = SPI_BAUDRATEPRESCALER_256,
+            .BaudRatePrescaler = SPI_BAUDRATEPRESCALER_16,
             .FirstBit = SPI_FIRSTBIT_MSB,
             .TIMode = SPI_TIMODE_DISABLE,
             .CLKPolarity = SPI_POLARITY_LOW,
