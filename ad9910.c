@@ -176,6 +176,8 @@ void ad_enable_amplitude_scaler() {
 }
 
 // Прочитать и сверить содержимое всех регистров с ожидаемыми значениями
+// Не трогать недокументированные регистры 0x05 и 0x06
+// Не пытаться сверять оперативную память
 void ad_readback_all() {
 	printf("Full readback\n");
 
@@ -205,16 +207,15 @@ void ad_readback_all() {
 	ad_readback(0x14, r14, 8);
 	ad_readback(0x15, r15, 8);
 	
-	// Не пытаться сверять оперативную память
 	//ad_readback(0x16, r16, 4);
 
 	printf("Full readback complete\n");
 }
 
 // Записать все регистры
-void ad_write_all() {
-	printf("Full write\n");
-	
+// Не трогать недокументированные регистры 0x05 и 0x06
+// Не трогать пытаться записывать в оперативную память
+void ad_write_all() {	
 	ad_pulse_io_reset();
 
 	ad_write(0x00, r00, 4);
@@ -242,8 +243,6 @@ void ad_write_all() {
 	ad_write(0x15, r15, 8);
 	
 	//ad_write(0x16, r16, 4);
-	
-	printf("Full write complete\n");
 }
 
 // Тест с переключением SYNC_CLK
