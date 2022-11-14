@@ -34,6 +34,23 @@ void timer2_gpio_init() {
 	HAL_GPIO_Init(GPIOB, &CH4);
 }
 
+void timer2_gpio_deinit() {
+	HAL_GPIO_DeInit(GPIOA, GPIO_PIN_0);
+	HAL_GPIO_DeInit(GPIOB, GPIO_PIN_10);
+	HAL_GPIO_DeInit(GPIOB, GPIO_PIN_11);
+
+	GPIO_InitTypeDef CH1 = { .Mode = GPIO_MODE_OUTPUT_PP, .Pull = GPIO_PULLDOWN, .Speed = GPIO_SPEED_FREQ_VERY_HIGH, .Pin = GPIO_PIN_0 };
+	GPIO_InitTypeDef CH3 = { .Mode = GPIO_MODE_OUTPUT_PP, .Pull = GPIO_PULLDOWN, .Speed = GPIO_SPEED_FREQ_VERY_HIGH, .Pin = GPIO_PIN_10 };
+	GPIO_InitTypeDef CH4 = { .Mode = GPIO_MODE_OUTPUT_PP, .Pull = GPIO_PULLDOWN, .Speed = GPIO_SPEED_FREQ_VERY_HIGH, .Pin = GPIO_PIN_11 };
+	
+	__HAL_RCC_GPIOA_CLK_ENABLE();
+	__HAL_RCC_GPIOB_CLK_ENABLE();
+	
+	HAL_GPIO_Init(GPIOA, &CH1);
+	HAL_GPIO_Init(GPIOB, &CH3);
+	HAL_GPIO_Init(GPIOB, &CH4);
+}
+
 void timer1_init(uint32_t prescaler, uint32_t period, uint32_t pulse) {
 	__HAL_RCC_TIM1_CLK_ENABLE();
 	timer1_gpio_init();
@@ -111,6 +128,7 @@ void timer2_init() {
 
 void timer2_stop() {	
 	__HAL_RCC_TIM2_FORCE_RESET();
+	timer2_gpio_deinit();
 }
 
 void timer2_restart() {
