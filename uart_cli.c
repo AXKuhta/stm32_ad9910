@@ -43,6 +43,27 @@ void test_tone_cmd(const char* str) {
 	free(verif_freq);
 }
 
+void basic_pulse_cmd(const char* str) {
+	char cmd[32] = {0};
+	char t0_unit[4] = {0};
+	char t1_unit[4] = {0};
+	char f_unit[4] = {0};
+	double t0;
+	double t1;
+	double freq;
+
+	int rc = sscanf(str, "%31s %lf %3s %lf %3s %lf %3s", cmd, &t0, t0_unit, &t1, t1_unit, &freq, f_unit);
+
+	if (rc != 7) {
+		printf("Invalid arguments\n");
+		printf("Usage: basic_pulse delay unit duration unit freq unit\n");
+		printf("Example: basic_pulse 100 us 250 us 150 MHz\n");
+		return;
+	}
+
+	enter_basic_pulse_mode(100*1000, 200*1000, 150*1000*1000);
+}
+
 void run(const char* str) {
 	char cmd[32] = {0};
 
@@ -59,6 +80,7 @@ void run(const char* str) {
 	if (strcmp(cmd, "write") == 0) return ad_write_all();
 	if (strcmp(cmd, "rfkill") == 0) return enter_rfkill_mode();
 	if (strcmp(cmd, "test_tone") == 0) return test_tone_cmd(str);
+	if (strcmp(cmd, "basic_pulse") == 0) return basic_pulse_cmd(str);
 
 	printf("Unknown command: [%s]\n", cmd);
 }

@@ -123,33 +123,29 @@ void USART3_IRQHandler() {
 }
 
 extern TIM_HandleTypeDef timer2;
-extern pulse_t* pulse_sequence;
-extern int pulse_idx;
-extern int pulse_max;
-extern int pulse_t1_pass;
+extern pulse_t* timer_pulse_sequence;
 
 void TIM2_IRQHandler() {
 	HAL_TIM_IRQHandler(&timer2);
 
+	static int pulse_t1_pass;
+	static int idx;
+
 	// Можно перезаписывать регистры на лету
 	// Если "длина" меньше 250, то перестаёт работать
 	// Прерывание приходит уже после того, как таймер преодолел вторую точку
-	pulse_t pulse = pulse_sequence[pulse_idx];
+	pulse_t pulse = timer_pulse_sequence[idx];
 
 	if (pulse_t1_pass == 0) {
-		timer2.Instance->CCR2 = pulse.t1;
-		timer2.Instance->CCR3 = pulse.t1;
-		timer2.Instance->CCR4 = pulse.t1;
+		timer2.Instance->CCR4 = pulse.t2;
 		pulse_t1_pass = 1;
 	} else {
-		timer2.Instance->CCR2 = pulse.t2;
-		timer2.Instance->CCR3 = pulse.t2;
-		timer2.Instance->CCR4 = pulse.t2;
+		timer2.Instance->CCR4 = pulse.t1;
 		pulse_t1_pass = 0;
-		pulse_idx++;
+		idx++;
 
-		if (pulse_idx == pulse_max) {
-			pulse_idx = 0;
+		if (timer_pulse_sequence[idx].t1 == 0 && timer_pulse_sequence[idx].t2 == 0) {
+			idx = 0;
 		}
 	}
 		

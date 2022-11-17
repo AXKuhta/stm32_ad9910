@@ -22,19 +22,23 @@ void enter_test_tone_mode(uint32_t freq_hz) {
 	set_profile(0);
 }
 
-pulse_t* pulse_sequence;
-int pulse_idx;
-int pulse_max;
-int pulse_t1_pass;
+pulse_t* timer_pulse_sequence = NULL;
+pulse_t null_pulse = {0};
 
-void enter_basic_pulse_mode() {
-	pulse_sequence = malloc(1 * sizeof(pulse_t));
+void enter_basic_pulse_mode(uint32_t t0_ns, uint32_t t1_ns, uint32_t freq_hz) {
+	enter_rfkill_mode();
 
-	pulse_sequence[0] = timer_pulse(250*1000, 500*1000);
+	ad_set_profile_freq(0, freq_hz);
+	ad_set_profile_amplitude(0, 0x3FFF);
+	ad_write_all();
 
-	pulse_idx = 0;
-	pulse_max = 1;
-	pulse_t1_pass = 1;
+	if (timer_pulse_sequence != NULL)
+		free(timer_pulse_sequence);
+
+	timer_pulse_sequence = malloc(sizeof(pulse_t) * 2);
+
+	timer_pulse_sequence[0] = timer_pulse(t0_ns, t1_ns);
+	timer_pulse_sequence[1] = null_pulse;
 
 	timer2_restart();
 }
