@@ -40,6 +40,9 @@ static void init_control_gpio() {
 	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_RESET);
 }
 
+// Установить профиль
+// Примечание: перенос значений в активные регистры произойдёт, если на любой из ножек будет rising edge
+// Выполнение set_profile(0) после set_profile(7) __не вызовет__ обновления регистров
 void set_profile(uint8_t profile_id) {
 	assert(profile_id < 8);
 
