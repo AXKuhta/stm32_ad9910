@@ -8,8 +8,7 @@
 void enter_rfkill_mode() {
 	timer2_stop();
 
-	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_11, GPIO_PIN_SET);
+	set_profile(7);
 }
 
 // Подавать непрерывный сигнал
@@ -20,8 +19,7 @@ void enter_test_tone_mode(uint32_t freq_hz) {
 	ad_set_profile_amplitude(0, 0x3FFF);
 	ad_write_all();
 
-	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_11, GPIO_PIN_RESET);
+	set_profile(0);
 }
 
 pulse_t* pulse_sequence;

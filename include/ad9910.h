@@ -1,4 +1,6 @@
+#include <stdint.h>
 
+void set_profile(uint8_t profile_id);
 void ad_init(void);
 void ad_readback_all(void);
 void ad_write_all(void);
