@@ -24,17 +24,15 @@ static void init_profile_gpio() {
 	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_11, GPIO_PIN_RESET);
 }
 
-// PD14 Chip Select
-// PD15 IO_RESET
-// PF12 IO_UPDATE
+// PG9 IO_RESET
 static void init_control_gpio() {
-	GPIO_InitTypeDef IO_RESET = { .Mode = GPIO_MODE_OUTPUT_PP, .Pull = GPIO_NOPULL, .Speed = GPIO_SPEED_FREQ_VERY_HIGH, .Pin = GPIO_PIN_15 };
+	GPIO_InitTypeDef IO_RESET = { .Mode = GPIO_MODE_OUTPUT_PP, .Pull = GPIO_NOPULL, .Speed = GPIO_SPEED_FREQ_VERY_HIGH, .Pin = GPIO_PIN_9 };
 	
-	__HAL_RCC_GPIOD_CLK_ENABLE();
+	__HAL_RCC_GPIOG_CLK_ENABLE();
 	
-	HAL_GPIO_Init(GPIOD, &IO_RESET);
+	HAL_GPIO_Init(GPIOG, &IO_RESET);
 	
-	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(GPIOG, GPIO_PIN_9, GPIO_PIN_RESET);
 }
 
 // Установить профиль
@@ -48,14 +46,6 @@ void set_profile(uint8_t profile_id) {
 	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_11, profile_id & 0b100 ? GPIO_PIN_SET : GPIO_PIN_RESET);
 }
 
-void ad_select() {
-	//HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_RESET);
-}
-
-void ad_deselect() {
-	//HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_SET);
-}
-
 void my_delay(uint32_t delay) {
 	for (uint32_t i=0; i<delay; i++) {
 		__NOP(); __NOP(); __NOP(); __NOP();
@@ -65,9 +55,9 @@ void my_delay(uint32_t delay) {
 // Хоть какая-то задержка должна присутствовать
 // Без неё импульса вообще не возникнет
 void ad_pulse_io_reset(void) {
-	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(GPIOG, GPIO_PIN_9, GPIO_PIN_SET);
 	HAL_Delay(1);
-	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(GPIOG, GPIO_PIN_9, GPIO_PIN_RESET);
 	HAL_Delay(1);
 }	
 
@@ -80,13 +70,11 @@ void ad_pulse_io_update(void) {
 void ad_write(uint8_t reg_addr, uint8_t* buffer, uint16_t size) {
 	uint8_t instruction = reg_addr & 0x1F;
 	
-	ad_select();
 	spi_send(&instruction, 1);
 
 	for (uint16_t i = 0; i < size; i++) {
 		spi_send(&buffer[i], 1);
 	}
-	ad_deselect();
 }
 
 //
@@ -96,13 +84,11 @@ void ad_readback(uint8_t reg_addr, uint8_t* buffer, uint16_t size) {
 	uint8_t instruction = 0x80 | (reg_addr & 0x1F);
 	uint8_t read[8] = {0};
 	
-	ad_select();
 	spi_send(&instruction, 1);
 	
 	for (int i = 0; i < size; i++) {
 		spi_recv(&read[i], 1);
 	}
-	ad_deselect();
 	
 	printf("ad9910.c: register 0x%02X: ", reg_addr);
 	
@@ -410,15 +396,12 @@ void ad_set_ramp_rate(uint16_t down_rate, uint16_t up_rate) {
 // 	uint8_t instruction = 0x80 | 0x16;
 // 	uint8_t read[4] = {0};
 	
-// 	ad_select();
-	
 // 	for (int j = 0; j < size; j++) {
 // 		spi_send(&instruction, 1);
 		
 // 		for (int i = 0; i < 4; i++) {
 // 			spi_recv(&read[i], 1);
 // 		}
-// 		ad_deselect();
 		
 // 		print("ad9910.c: ram: ");
 		
