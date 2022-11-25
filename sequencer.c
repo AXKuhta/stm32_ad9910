@@ -32,6 +32,8 @@ void enter_test_tone_mode(uint32_t freq_hz) {
 pulse_t* timer_pulse_sequence = NULL;
 pulse_t null_pulse = {0};
 
+extern TIM_HandleTypeDef timer2;
+
 void enter_basic_pulse_mode(uint32_t t0_ns, uint32_t t1_ns, uint32_t freq_hz) {
 	enter_rfkill_mode();
 
@@ -48,4 +50,7 @@ void enter_basic_pulse_mode(uint32_t t0_ns, uint32_t t1_ns, uint32_t freq_hz) {
 	timer_pulse_sequence[1] = null_pulse;
 
 	timer2_restart();
+
+	timer2.Instance->CCR3 = timer_pulse_sequence[0].t1;
+	timer2.Instance->CCR4 = timer_pulse_sequence[0].t2;
 }

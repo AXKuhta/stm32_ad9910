@@ -137,13 +137,9 @@ void TIM2_IRQHandler() {
 	pulse_t pulse = timer_pulse_sequence[idx];
 
 	if (pulse_t1_pass == 0) {
-		timer2.Instance->CCR3 = pulse.t2;
-		timer2.Instance->CCR4 = pulse.t2;
 		set_profile(1);
 		pulse_t1_pass = 1;
 	} else {
-		timer2.Instance->CCR3 = pulse.t1;
-		timer2.Instance->CCR4 = pulse.t1;
 		set_profile(0);
 		pulse_t1_pass = 0;
 		idx++;
