@@ -51,27 +51,27 @@ void io_update_software_controlled() {
 	HAL_GPIO_Init(GPIOB, &CH3);
 }
 
-// Передать OSK под управление таймера
-void osk_timer_controlled() {
-	HAL_GPIO_DeInit(GPIOB, GPIO_PIN_11);
+// // Передать OSK под управление таймера
+// void osk_timer_controlled() {
+// 	HAL_GPIO_DeInit(GPIOB, GPIO_PIN_11);
 
-	GPIO_InitTypeDef CH4 = { .Mode = GPIO_MODE_AF_PP, .Pull = GPIO_PULLDOWN, .Speed = GPIO_SPEED_FREQ_VERY_HIGH, .Pin = GPIO_PIN_11, .Alternate = GPIO_AF1_TIM2 };
+// 	GPIO_InitTypeDef CH4 = { .Mode = GPIO_MODE_AF_PP, .Pull = GPIO_PULLDOWN, .Speed = GPIO_SPEED_FREQ_VERY_HIGH, .Pin = GPIO_PIN_11, .Alternate = GPIO_AF1_TIM2 };
 
-	__HAL_RCC_GPIOB_CLK_ENABLE();
+// 	__HAL_RCC_GPIOB_CLK_ENABLE();
 
-	HAL_GPIO_Init(GPIOB, &CH4);
-}
+// 	HAL_GPIO_Init(GPIOB, &CH4);
+// }
 
-// Забрать OSK в программный режим
-void osk_software_controlled() {
-	HAL_GPIO_DeInit(GPIOB, GPIO_PIN_11);
+// // Забрать OSK в программный режим
+// void osk_software_controlled() {
+// 	HAL_GPIO_DeInit(GPIOB, GPIO_PIN_11);
 
-	GPIO_InitTypeDef CH3 = { .Mode = GPIO_MODE_OUTPUT_PP, .Pull = GPIO_PULLDOWN, .Speed = GPIO_SPEED_FREQ_VERY_HIGH, .Pin = GPIO_PIN_11 };
+// 	GPIO_InitTypeDef CH3 = { .Mode = GPIO_MODE_OUTPUT_PP, .Pull = GPIO_PULLDOWN, .Speed = GPIO_SPEED_FREQ_VERY_HIGH, .Pin = GPIO_PIN_11 };
 
-	__HAL_RCC_GPIOB_CLK_ENABLE();
+// 	__HAL_RCC_GPIOB_CLK_ENABLE();
 
-	HAL_GPIO_Init(GPIOB, &CH3);
-}
+// 	HAL_GPIO_Init(GPIOB, &CH3);
+// }
 
 
 void timer1_init(uint32_t prescaler, uint32_t period, uint32_t pulse) {

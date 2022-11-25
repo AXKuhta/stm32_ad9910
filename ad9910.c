@@ -173,7 +173,6 @@ void ad_init() {
 	init_control_gpio();
 	set_profile(7);
 	io_update_software_controlled();
-	osk_software_controlled();
 
 	// SDIO Input Only
 	r00[3] = 0x02;
@@ -192,19 +191,11 @@ void ad_init() {
 	r01[3] = 0b10000000; // Matched latency
 	r00[1] = 0b00000001; // Sine output
 
-	r00[1] |= 0b10000000; // Manual OSK external control
-	r00[2] |= 0b00000010; // OSK enable
-
-	// Максимальная амплитуда для OSK
-	r09[2] = 0xFF;
-	r09[3] = 0xFC;
-
 
 	// Записать измененные регистры
 	ad_write(0x00, r00, 4);
 	ad_write(0x01, r01, 4);
 	ad_write(0x02, r02, 4);
-	ad_write(0x09, r09, 4);
 	
 	ad_pulse_io_update();
 }
