@@ -340,9 +340,16 @@ void ad_enable_ramp() {
 	r00[2] |=  0b01000000; // Автосброс таймера (На нижний лимит)
 }
 
-// Установка начального и конечного значения
-// Значения можно получить при помощи ad_calc_ftw()
-void ad_set_ramp_limits(uint32_t lower, uint32_t upper) {
+// Выключить Digital Ramp Generator
+void ad_disable_ramp() {
+	r01[1] &= ~0b00111110; // Занулить все связанные с DRG биты
+}
+
+// Установка начальной и конечной частоты
+void ad_set_ramp_limits(uint32_t lower_hz, uint32_t upper_hz) {
+	uint32_t lower = ad_calc_ftw(lower_hz);
+	uint32_t upper = ad_calc_ftw(upper_hz);
+
 	uint8_t* view_u = (uint8_t*)&upper;
 	uint8_t* view_l = (uint8_t*)&lower;
 
@@ -358,7 +365,7 @@ void ad_set_ramp_limits(uint32_t lower, uint32_t upper) {
 }
 
 // Установка шага
-// Тоже подойдут значения от ad_calc_ftw()
+// Подойдут значения от ad_calc_ftw(), либо 1 1 для максимальной плавности
 void ad_set_ramp_step(uint32_t decrement, uint32_t increment) {
 	uint8_t* view_d = (uint8_t*)&decrement;
 	uint8_t* view_i = (uint8_t*)&increment;
@@ -375,7 +382,7 @@ void ad_set_ramp_step(uint32_t decrement, uint32_t increment) {
 }
 
 // Установка задержки между шагами
-// Формула: 1s / SYSCLK/4
+// Формула для вычисления разрешения: 1s / SYSCLK/4
 void ad_set_ramp_rate(uint16_t down_rate, uint16_t up_rate) {
 	uint8_t* view_d = (uint8_t*)&down_rate;
 	uint8_t* view_u = (uint8_t*)&up_rate;
