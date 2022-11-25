@@ -71,8 +71,8 @@ void basic_pulse_cmd(const char* str) {
 	}
 
 	char* verif_freq = freq_unit(freq_hz);
-	char* verif_t1 = time_unit(t1_ns);
-	char* verif_t2 = time_unit(t2_ns);
+	char* verif_t1 = time_unit(t1_ns / 1000.0 / 1000.0 / 1000.0);
+	char* verif_t2 = time_unit(t2_ns / 1000.0 / 1000.0 / 1000.0);
 
 	printf("Basic pulse at %s, offset %s, duration %s\n", verif_freq, verif_t1, verif_t2);
 
