@@ -38,21 +38,22 @@ void test_tone_cmd(const char* str) {
 	char* verif_freq = freq_unit(freq_hz);
 
 	printf("Test tone at %s\n", verif_freq);
-	enter_test_tone_mode(freq_hz);
 
 	free(verif_freq);
+
+	enter_test_tone_mode(freq_hz);
 }
 
 void basic_pulse_cmd(const char* str) {
 	char cmd[32] = {0};
-	char t0_unit[4] = {0};
 	char t1_unit[4] = {0};
+	char t2_unit[4] = {0};
 	char f_unit[4] = {0};
-	double t0;
 	double t1;
+	double t2;
 	double freq;
 
-	int rc = sscanf(str, "%31s %lf %3s %lf %3s %lf %3s", cmd, &t0, t0_unit, &t1, t1_unit, &freq, f_unit);
+	int rc = sscanf(str, "%31s %lf %3s %lf %3s %lf %3s", cmd, &t1, t1_unit, &t2, t2_unit, &freq, f_unit);
 
 	if (rc != 7) {
 		printf("Invalid arguments\n");
@@ -61,7 +62,25 @@ void basic_pulse_cmd(const char* str) {
 		return;
 	}
 
-	enter_basic_pulse_mode(100*1000, 200*1000, 150*1000*1000);
+	uint32_t freq_hz = parse_freq(freq, f_unit);
+	uint32_t t1_ns = parse_time(t1, t1_unit);
+	uint32_t t2_ns = parse_time(t2, t2_unit);
+
+	if (freq_hz == 0) {
+		return;
+	}
+
+	char* verif_freq = freq_unit(freq_hz);
+	char* verif_t1 = time_unit(t1_ns);
+	char* verif_t2 = time_unit(t2_ns);
+
+	printf("Basic pulse at %s, offset %s, duration %s\n", verif_freq, verif_t1, verif_t2);
+
+	free(verif_freq);
+	free(verif_t1);
+	free(verif_t2);
+
+	enter_basic_pulse_mode(t1_ns, t2_ns, freq_hz);
 }
 
 void run(const char* str) {

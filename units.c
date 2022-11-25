@@ -21,6 +21,25 @@ uint32_t parse_freq(double freq, const char* unit) {
 	return freq * multiplier;
 }
 
+uint32_t parse_time(double time, const char* unit) {
+	double multiplier;
+
+	if (strcasecmp(unit, "s") == 0) {
+		multiplier = 1000*1000*1000;
+	} else if (strcasecmp(unit, "ms") == 0) {
+		multiplier = 1000*1000;
+	} else if (strcasecmp(unit, "us") == 0) {
+		multiplier = 1000;
+	} else if (strcasecmp(unit, "ns") == 0) {
+		multiplier = 1;
+	} else {
+		printf("Invalid time unit: %s\n", unit);
+		return 0;
+	}
+
+	return time * multiplier;
+}
+
 char* time_unit(double time) {
 	const char* unit;
 	char* ret = NULL;
