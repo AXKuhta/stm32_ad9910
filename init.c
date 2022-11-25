@@ -165,7 +165,7 @@ void system_init() {
 	print_startup_info();
 
 	radar_emulator_start();
-	spi1_init();
+	spi4_init();
 	ad_init();
 
 	enter_rfkill_mode();

@@ -28,15 +28,12 @@ static void init_profile_gpio() {
 // PD15 IO_RESET
 // PF12 IO_UPDATE
 static void init_control_gpio() {
-	GPIO_InitTypeDef CS = { .Mode = GPIO_MODE_OUTPUT_PP, .Pull = GPIO_NOPULL, .Speed = GPIO_SPEED_FREQ_VERY_HIGH, .Pin = GPIO_PIN_14 };
 	GPIO_InitTypeDef IO_RESET = { .Mode = GPIO_MODE_OUTPUT_PP, .Pull = GPIO_NOPULL, .Speed = GPIO_SPEED_FREQ_VERY_HIGH, .Pin = GPIO_PIN_15 };
 	
 	__HAL_RCC_GPIOD_CLK_ENABLE();
 	
-	HAL_GPIO_Init(GPIOD, &CS);
 	HAL_GPIO_Init(GPIOD, &IO_RESET);
 	
-	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_SET);
 	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_RESET);
 }
 
@@ -52,11 +49,11 @@ void set_profile(uint8_t profile_id) {
 }
 
 void ad_select() {
-	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_RESET);
+	//HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_RESET);
 }
 
 void ad_deselect() {
-	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_SET);
+	//HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_SET);
 }
 
 void my_delay(uint32_t delay) {
