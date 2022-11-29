@@ -4,6 +4,7 @@
 #include "pulse.h"
 #include "timer.h"
 #include "ad9910.h"
+#include "vec.h"
 
 // Прекратить подачу сигналов
 void enter_rfkill_mode() {
