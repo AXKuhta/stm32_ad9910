@@ -79,3 +79,12 @@ void enter_basic_sweep_mode(uint32_t t0_ns, uint32_t t1_ns, uint32_t f1_hz, uint
 	timer2.Instance->CCR3 = timer_pulse_sequence[0].t1;
 	timer2.Instance->CCR4 = timer_pulse_sequence[0].t2;
 }
+
+
+void sequencer_reset() {
+
+}
+
+void sequencer_show() {
+	
+}

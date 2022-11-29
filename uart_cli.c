@@ -127,6 +127,62 @@ void basic_sweep_cmd(const char* str) {
 	enter_basic_sweep_mode(t1_ns, t2_ns, f1_hz, f2_hz);
 }
 
+void sequencer_add_pulse_cmd(const char* str) {
+	char seq[4] = {0};
+	char cmd[32] = {0};
+	char t1_unit[4] = {0};
+	char t2_unit[4] = {0};
+	char f_unit[4] = {0};
+	double t1;
+	double t2;
+	double freq;
+
+	int rc = sscanf(str, "%3s %31s %lf %3s %lf %3s %lf %3s", seq, cmd, &t1, t1_unit, &t2, t2_unit, &freq, f_unit);
+
+	if (rc != 8) {
+		printf("Invalid arguments\n");
+		printf("Usage: seq pulse delay unit duration unit freq unit\n");
+		printf("Example: seq pulse 100 us 250 us 150 MHz\n");
+		return;
+	}
+
+	uint32_t freq_hz = parse_freq(freq, f_unit);
+	uint32_t t1_ns = parse_time(t1, t1_unit);
+	uint32_t t2_ns = parse_time(t2, t2_unit);
+
+	if (freq_hz == 0) {
+		return;
+	}
+
+	char* verif_freq = freq_unit(freq_hz);
+	char* verif_t1 = time_unit(t1_ns / 1000.0 / 1000.0 / 1000.0);
+	char* verif_t2 = time_unit(t2_ns / 1000.0 / 1000.0 / 1000.0);
+
+	printf("Sequence basic pulse at %s, offset %s, duration %s\n", verif_freq, verif_t1, verif_t2);
+
+	free(verif_freq);
+	free(verif_t1);
+	free(verif_t2);
+}
+
+void sequencer_cmd(const char* str) {
+	char seq[4] = {0};
+	char cmd[32] = {0};
+
+	int rc = sscanf(str, "%3s %31s", seq, cmd);
+
+	if (rc != 2) {
+		printf("Invalid arguments\n");
+		printf("Usage: seq reset\n");
+		printf("Usage: seq show\n");
+		printf("Usage: seq pulse delay unit duration unit freq unit\n");
+	}
+
+	if (strcmp(cmd, "reset") == 0) return sequencer_reset();
+	if (strcmp(cmd, "show") == 0) return sequencer_show();
+	if (strcmp(cmd, "pulse") == 0) return sequencer_add_pulse_cmd(str);
+}
+
 void run(const char* str) {
 	char cmd[32] = {0};
 
@@ -138,9 +194,10 @@ void run(const char* str) {
 	}
 
 	if (strcmp(cmd, "isr") == 0) return print_it();
+	if (strcmp(cmd, "seq") == 0) return sequencer_cmd(str);
 	if (strcmp(cmd, "perf") == 0) return print_perf();
-	if (strcmp(cmd, "verify") == 0) return ad_readback_all();
 	if (strcmp(cmd, "write") == 0) return ad_write_all();
+	if (strcmp(cmd, "verify") == 0) return ad_readback_all();
 	if (strcmp(cmd, "rfkill") == 0) return enter_rfkill_mode();
 	if (strcmp(cmd, "test_tone") == 0) return test_tone_cmd(str);
 	if (strcmp(cmd, "basic_pulse") == 0) return basic_pulse_cmd(str);
