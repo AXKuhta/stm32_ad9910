@@ -86,5 +86,13 @@ void sequencer_reset() {
 }
 
 void sequencer_show() {
+
+}
+
+void sequencer_run() {
+
+}
+
+void sequencer_stop() {
 	
 }

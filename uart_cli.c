@@ -176,11 +176,15 @@ void sequencer_cmd(const char* str) {
 		printf("Usage: seq reset\n");
 		printf("Usage: seq show\n");
 		printf("Usage: seq pulse delay unit duration unit freq unit\n");
+		printf("Usage: seq run\n");
+		printf("Usage: seq stop\n");
 	}
 
 	if (strcmp(cmd, "reset") == 0) return sequencer_reset();
 	if (strcmp(cmd, "show") == 0) return sequencer_show();
 	if (strcmp(cmd, "pulse") == 0) return sequencer_add_pulse_cmd(str);
+	if (strcmp(cmd, "run") == 0) return sequencer_run();
+	if (strcmp(cmd, "stop") == 0) return sequencer_stop();
 }
 
 void run(const char* str) {
