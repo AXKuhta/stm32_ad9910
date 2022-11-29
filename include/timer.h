@@ -5,16 +5,12 @@
 #define NANOSEC_54MHZ 18.51851851851852
 #define NANOSEC_108MHZ 9.25925925925926
 
-// Для контроля отступа и продолжительности импульсов
+
 // 2^32 ns = 4.294967296 s
-typedef struct pulse_t {
-	uint32_t t1;
-	uint32_t t2;
-} pulse_t;
 
 void radar_emulator_start();
 
 void timer2_init();
 void timer2_stop();
 void timer2_restart();
-pulse_t timer_pulse(uint32_t delay_ns, uint32_t length_ns);
+void pulse_set_timing(pulse_t* pulse, uint32_t delay_ns, uint32_t length_ns);

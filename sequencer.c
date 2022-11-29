@@ -1,6 +1,7 @@
 #include <stdlib.h>
 
 #include "stm32f7xx_hal.h"
+#include "pulse.h"
 #include "timer.h"
 #include "ad9910.h"
 
@@ -31,7 +32,6 @@ void enter_test_tone_mode(uint32_t freq_hz) {
 }
 
 pulse_t* timer_pulse_sequence = NULL;
-pulse_t null_pulse = {0};
 
 extern TIM_HandleTypeDef timer2;
 
@@ -47,11 +47,12 @@ void enter_basic_pulse_mode(uint32_t t0_ns, uint32_t t1_ns, uint32_t freq_hz) {
 
 	timer_pulse_sequence = malloc(sizeof(pulse_t) * 2);
 
-	timer_pulse_sequence[0] = timer_pulse(t0_ns, t1_ns);
-	timer_pulse_sequence[1] = null_pulse;
+	pulse_set_timing(timer_pulse_sequence + 0, t0_ns, t1_ns);
+	pulse_set_timing(timer_pulse_sequence + 1, 0, 0);
 
 	timer2_restart();
 
+	// Можно перезаписывать регистры на лету
 	timer2.Instance->CCR3 = timer_pulse_sequence[0].t1;
 	timer2.Instance->CCR4 = timer_pulse_sequence[0].t2;
 }
@@ -71,8 +72,8 @@ void enter_basic_sweep_mode(uint32_t t0_ns, uint32_t t1_ns, uint32_t f1_hz, uint
 
 	timer_pulse_sequence = malloc(sizeof(pulse_t) * 2);
 
-	timer_pulse_sequence[0] = timer_pulse(t0_ns, t1_ns);
-	timer_pulse_sequence[1] = null_pulse;
+	pulse_set_timing(timer_pulse_sequence + 0, t0_ns, t1_ns);
+	pulse_set_timing(timer_pulse_sequence + 1, 0, 0);
 
 	timer2_restart();
 
@@ -94,5 +95,5 @@ void sequencer_run() {
 }
 
 void sequencer_stop() {
-	
+
 }
