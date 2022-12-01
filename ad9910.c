@@ -46,6 +46,15 @@ void set_profile(uint8_t profile_id) {
 	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_11, profile_id & 0b100 ? GPIO_PIN_SET : GPIO_PIN_RESET);
 }
 
+// Установить направление хода Digital Ramp генератора
+// 1 = отсчитывать вверх
+// 0 = отсчитывать вниз
+// Вероятно, будет использоваться только режим отсчёта вверх
+void set_ramp_direction(uint8_t direction) {
+	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, direction ? GPIO_PIN_SET : GPIO_PIN_RESET);
+}
+
+
 void my_delay(uint32_t delay) {
 	for (uint32_t i=0; i<delay; i++) {
 		__NOP(); __NOP(); __NOP(); __NOP();
@@ -62,9 +71,9 @@ void ad_pulse_io_reset(void) {
 }	
 
 void ad_pulse_io_update(void) {
-	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_11, GPIO_PIN_SET);
 	HAL_Delay(1);
-	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_11, GPIO_PIN_RESET);
 }
 
 void ad_write(uint8_t reg_addr, uint8_t* buffer, uint16_t size) {
@@ -154,8 +163,10 @@ static uint32_t ad_system_clock = 0;
 void ad_init() {
 	init_profile_gpio();
 	init_control_gpio();
-	set_profile(7);
+	set_profile(0);
 	io_update_software_controlled();
+	drctl_software_controlled();
+	set_ramp_direction(1);
 
 	// SDIO Input Only
 	r00[3] = 0x02;

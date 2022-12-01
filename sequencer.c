@@ -8,14 +8,13 @@
 
 // Прекратить подачу сигналов
 void enter_rfkill_mode() {
-	io_update_software_controlled();
 	timer2_stop();
 
 	ad_set_profile_freq(0, 0);
 	ad_set_profile_amplitude(0, 0);
 	ad_disable_ramp();
 	ad_write_all();
-	//ad_pulse_io_update();
+	ad_pulse_io_update();
 
 	set_profile(0);
 }
@@ -63,7 +62,7 @@ void enter_basic_sweep_mode(uint32_t t0_ns, uint32_t t1_ns, uint32_t f1_hz, uint
 
 	ad_enable_ramp();
 	ad_set_ramp_limits(f1_hz, f2_hz);
-	ad_set_ramp_step(1, 1);
+	ad_set_ramp_step( ad_calc_ftw(40) , ad_calc_ftw(40) );
 	ad_set_ramp_rate(1, 1);
 	ad_write_all();
 	ad_pulse_io_update();
