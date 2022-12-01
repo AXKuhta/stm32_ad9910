@@ -10,6 +10,7 @@
 #include "performance.h"
 #include "ad9910.h"
 #include "units.h"
+#include "timer.h"
 #include "pulse.h"
 #include "sequencer.h"
 
@@ -161,9 +162,9 @@ void sequencer_add_pulse_cmd(const char* str) {
 
 	printf("Sequence basic pulse at %s, offset %s, duration %s\n", verif_freq, verif_t1, verif_t2);
 
-	pulse_t pulse = {0};
+	pulse_t pulse;
 
-	pulse_set_timing(&pulse, t1_ns, t2_ns);
+	pulse.timing = timer_points(t1_ns, t2_ns);
 
 	sequencer_add(pulse);
 

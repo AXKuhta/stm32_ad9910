@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <string.h>
+#include "timer.h"
 #include "pulse.h"
 #include "vec.h"
 
@@ -33,7 +34,7 @@ void double_capacity(vec_t* vec) {
 	assert(vec->elements != NULL);
 }
 
-void push(vec_t* vec, vec_elem_t value) {
+void vec_push(vec_t* vec, vec_elem_t value) {
 	if (vec->size == vec->capacity)
 		double_capacity(vec);
 

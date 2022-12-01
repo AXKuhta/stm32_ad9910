@@ -12,5 +12,5 @@ vec_t* init_vec();
 void free_vec(vec_t* vec);
 void clear_vec(vec_t* vec);
 void double_capacity(vec_t* vec);
-void push(vec_t* vec, vec_elem_t value);
+void vec_push(vec_t* vec, vec_elem_t value);
 void for_every_entry(vec_t* vec, void fn(vec_elem_t*));

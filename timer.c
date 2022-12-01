@@ -2,7 +2,6 @@
 #include <stdlib.h>
 
 #include "stm32f7xx_hal.h"
-#include "pulse.h"
 #include "timer.h"
 #include "units.h"
 
@@ -203,12 +202,16 @@ void radar_emulator_start() {
 	free(tstr);
 }
 
-void pulse_set_timing(pulse_t* pulse, uint32_t offset_ns, uint32_t duration_ns) {
+timing_t timer_points(uint32_t offset_ns, uint32_t duration_ns) {
 	if (offset_ns + duration_ns > 40*1000*1000) {
 		printf("Specified pulse doesn't fit into 25 Hz");
 		while (1) {};
 	}
 	
-	pulse->t1 = (uint32_t)((double)offset_ns / NANOSEC_108MHZ);
-	pulse->t2 = (uint32_t)((double)duration_ns / NANOSEC_108MHZ) + pulse->t1;
+	timing_t timing;
+
+	timing.t1 = (uint32_t)((double)offset_ns / NANOSEC_108MHZ);
+	timing.t2 = (uint32_t)((double)duration_ns / NANOSEC_108MHZ) + timing.t1;
+
+	return timing;
 }

@@ -1,8 +1,8 @@
 #include <stdlib.h>
 
 #include "stm32f7xx_hal.h"
-#include "pulse.h"
 #include "timer.h"
+#include "pulse.h"
 #include "ad9910.h"
 #include "vec.h"
 
@@ -47,14 +47,19 @@ void enter_basic_pulse_mode(uint32_t t0_ns, uint32_t t1_ns, uint32_t freq_hz) {
 
 	timer_pulse_sequence = malloc(sizeof(pulse_t) * 2);
 
-	pulse_set_timing(timer_pulse_sequence + 0, t0_ns, t1_ns);
-	pulse_set_timing(timer_pulse_sequence + 1, 0, 0);
+	pulse_t null_pulse = {0};
+	pulse_t pulse;
+
+	pulse.timing = timer_points(t0_ns, t1_ns);
+
+	timer_pulse_sequence[0] = pulse;
+	timer_pulse_sequence[1] = null_pulse;
 
 	timer2_restart();
 
 	// Можно перезаписывать регистры на лету
-	timer2.Instance->CCR3 = timer_pulse_sequence[0].t1;
-	timer2.Instance->CCR4 = timer_pulse_sequence[0].t2;
+	timer2.Instance->CCR3 = timer_pulse_sequence[0].timing.t1;
+	timer2.Instance->CCR4 = timer_pulse_sequence[0].timing.t2;
 }
 
 void enter_basic_sweep_mode(uint32_t t0_ns, uint32_t t1_ns, uint32_t f1_hz, uint32_t f2_hz) {
@@ -78,20 +83,25 @@ void enter_basic_sweep_mode(uint32_t t0_ns, uint32_t t1_ns, uint32_t f1_hz, uint
 
 	timer_pulse_sequence = malloc(sizeof(pulse_t) * 2);
 
-	pulse_set_timing(timer_pulse_sequence + 0, t0_ns, t1_ns);
-	pulse_set_timing(timer_pulse_sequence + 1, 0, 0);
+	pulse_t null_pulse = {0};
+	pulse_t pulse;
+
+	pulse.timing = timer_points(t0_ns, t1_ns);
+
+	timer_pulse_sequence[0] = pulse;
+	timer_pulse_sequence[1] = null_pulse;
 
 	timer2_restart();
 
-	timer2.Instance->CCR3 = timer_pulse_sequence[0].t1;
-	timer2.Instance->CCR4 = timer_pulse_sequence[0].t2;
+	timer2.Instance->CCR3 = timer_pulse_sequence[0].timing.t1;
+	timer2.Instance->CCR4 = timer_pulse_sequence[0].timing.t2;
 }
 
 
 static void debug_print_pulse(pulse_t* pulse) {
 	printf(" === pulse_t ===\n");
-	printf(" t1: %d\n", pulse->t1);
-	printf(" t2: %d\n", pulse->t2);
+	printf(" t1: %d\n", pulse->timing.t1);
+	printf(" t2: %d\n", pulse->timing.t2);
 	printf(" ===============\n");
 }
 
@@ -110,7 +120,7 @@ void sequencer_show() {
 }
 
 void sequencer_add(pulse_t pulse) {
-	push(sequence, pulse);
+	vec_push(sequence, pulse);
 }
 
 void sequencer_run() {
