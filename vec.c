@@ -23,6 +23,7 @@ void free_vec(vec_t* vec) {
 
 void clear_vec(vec_t* vec) {
 	memset(vec->elements, 0, vec->size * sizeof(vec_elem_t));
+	vec->size = 0;
 }
 
 void double_capacity(vec_t* vec) {
