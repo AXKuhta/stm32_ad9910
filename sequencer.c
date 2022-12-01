@@ -62,8 +62,11 @@ void enter_basic_sweep_mode(uint32_t t0_ns, uint32_t t1_ns, uint32_t f1_hz, uint
 
 	set_ramp_direction(0);
 	ad_enable_ramp();
+
+	uint32_t step_ftw = ad_calc_ramp_step_ftw(f1_hz, f2_hz, t1_ns);
+
 	ad_set_ramp_limits(f1_hz, f2_hz);
-	ad_set_ramp_step( ad_calc_ftw(40) , ad_calc_ftw(40) );
+	ad_set_ramp_step(0, step_ftw);
 	ad_set_ramp_rate(1, 1);
 	ad_set_profile_amplitude(1, 0x3FFF);
 	ad_write_all();

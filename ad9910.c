@@ -290,9 +290,43 @@ void ad_toggle_sync_clk() {
 	ad_pulse_io_update();
 }
 
-// Частоты, которые превышают SYSCLK/2, становятся зеркальными
+// Вычислить значение FTW для указанной частоты
+// Если частота превышает SYSCLK/2, то на выходе получится противоположная частота, т.е. f_настоящая = SYSCLK - f_указанная
 uint32_t ad_calc_ftw(uint32_t freq_hz) {
 	double ratio = (double)freq_hz / (double)ad_system_clock;
+	uint32_t ftw = (uint32_t)(4294967296.0 * ratio + 0.5);
+	
+	return ftw;
+}
+
+// Вычислить размер шага, необходимый, чтобы пройти с частоты f1 до f2 за указанное время
+// Используется минимальная возможная задержка между шагами
+//
+// Вычисления имеют следующий вид:
+//
+// sysclk = 1 GHz
+// fstep = sysclk / 2^31
+// tstep = 1s / 1s / (sysclk / 4)
+//
+// f1 = 10 MHz
+// f2 = 20 MHz
+// f_delta = f2 - f1
+// t_delta = 1 ms
+//
+// desired_fstep = f_delta / (t_delta / tstep)
+//
+uint32_t ad_calc_ramp_step_ftw(uint32_t f1_hz, uint32_t f2_hz, uint32_t time_ns) {
+	double fstep_hz = ad_system_clock / 2147483648.0;
+	double tstep_ns = 1*1000*1000*1000 / (ad_system_clock / 4);
+
+	double f_delta = (double)f2_hz - (double)f1_hz;
+
+	if (f_delta < 0.0)
+		f_delta = -f_delta;
+
+	double req_fstep = f_delta / ((double)time_ns / tstep_ns);
+	double ratio = req_fstep / (double)ad_system_clock;
+	
 	uint32_t ftw = (uint32_t)(4294967296.0 * ratio + 0.5);
 	
 	return ftw;
@@ -401,6 +435,8 @@ void ad_set_ramp_step(uint32_t decrement, uint32_t increment) {
 
 // Установка задержки между шагами
 // Формула для вычисления разрешения: 1s / SYSCLK/4
+// Если выставить 0 0, то задержка между шагами будет нулевой и счётчик... никуда не пойдёт
+// Для получения максимально быстрого шага нужно выставить значения 1 1
 void ad_set_ramp_rate(uint16_t down_rate, uint16_t up_rate) {
 	uint8_t* view_d = (uint8_t*)&down_rate;
 	uint8_t* view_u = (uint8_t*)&up_rate;
