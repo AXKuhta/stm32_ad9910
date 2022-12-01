@@ -60,12 +60,15 @@ void enter_basic_pulse_mode(uint32_t t0_ns, uint32_t t1_ns, uint32_t freq_hz) {
 void enter_basic_sweep_mode(uint32_t t0_ns, uint32_t t1_ns, uint32_t f1_hz, uint32_t f2_hz) {
 	enter_rfkill_mode();
 
+	set_ramp_direction(0);
 	ad_enable_ramp();
 	ad_set_ramp_limits(f1_hz, f2_hz);
 	ad_set_ramp_step( ad_calc_ftw(40) , ad_calc_ftw(40) );
 	ad_set_ramp_rate(1, 1);
+	ad_set_profile_amplitude(1, 0x3FFF);
 	ad_write_all();
 	ad_pulse_io_update();
+	set_ramp_direction(1);
 
 	if (timer_pulse_sequence != NULL)
 		free(timer_pulse_sequence);
