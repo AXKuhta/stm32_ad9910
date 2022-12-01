@@ -2,7 +2,6 @@
 #include <assert.h>
 
 #include "stm32f7xx_hal.h"
-#include "timer.h"
 
 // =============================================================================
 // INTERRUPT PROFILER

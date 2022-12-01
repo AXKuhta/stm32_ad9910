@@ -4,6 +4,7 @@
 #include "uart.h"
 #include "uart_cli.h"
 #include "spi.h"
+#include "pulse.h"
 #include "timer.h"
 #include "ad9910.h"
 #include "sequencer.h"
