@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <stdio.h>
 
 #include "stm32f7xx_hal.h"
 #include "timer.h"
@@ -125,8 +126,23 @@ void sequencer_add(pulse_t pulse) {
 
 void sequencer_run() {
 	enter_rfkill_mode();
+
+	if (timer_pulse_sequence != NULL)
+		free(timer_pulse_sequence);
+
+	timer_pulse_sequence = sequence->elements;
+
+	timer2_restart();
+
+	// Можно перезаписывать регистры на лету
+	timer2.Instance->CCR3 = timer_pulse_sequence[0].timing.t1;
+	timer2.Instance->CCR4 = timer_pulse_sequence[0].timing.t2;
 }
 
 void sequencer_stop() {
 	enter_rfkill_mode();
+}
+
+void pulse_complete_callback() {
+	// Здесь также будет код для перезаписи регистров на лету
 }
