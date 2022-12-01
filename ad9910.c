@@ -290,15 +290,10 @@ void ad_toggle_sync_clk() {
 	ad_pulse_io_update();
 }
 
+// Частоты, которые превышают SYSCLK/2, становятся зеркальными
 uint32_t ad_calc_ftw(uint32_t freq_hz) {
 	double ratio = (double)freq_hz / (double)ad_system_clock;
 	uint32_t ftw = (uint32_t)(4294967296.0 * ratio + 0.5);
-	
-	// Нельзя выдавать частоты выше половины ad_system_clock
-	if (ftw > 2147483647) {
-		ftw = 2147483647;
-		printf("Frequency too high\n");
-	}
 	
 	return ftw;
 }
@@ -358,9 +353,20 @@ void ad_disable_ramp() {
 }
 
 // Установка начальной и конечной частоты
-void ad_set_ramp_limits(uint32_t lower_hz, uint32_t upper_hz) {
-	uint32_t lower = ad_calc_ftw(lower_hz);
-	uint32_t upper = ad_calc_ftw(upper_hz);
+void ad_set_ramp_limits(uint32_t f1_hz, uint32_t f2_hz) {
+	uint32_t lower;
+	uint32_t upper;
+
+	// Если конечная частота выше начальной частоты, то всё нормально
+	// Если же конечная частота НИЖЕ начальной частоты, то нужно использовать "зеркальные" значения частоты
+	// В даташите это называется "aliased image"
+	if (f2_hz > f1_hz) {
+		lower = ad_calc_ftw(f1_hz);
+		upper = ad_calc_ftw(f2_hz);
+	} else {
+		lower = ad_calc_ftw(1000*1000*1000 - f1_hz);
+		upper = ad_calc_ftw(1000*1000*1000 - f2_hz);
+	}
 
 	uint8_t* view_u = (uint8_t*)&upper;
 	uint8_t* view_l = (uint8_t*)&lower;
