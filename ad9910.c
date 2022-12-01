@@ -167,6 +167,7 @@ void ad_init() {
 	io_update_software_controlled();
 	drctl_software_controlled();
 	set_ramp_direction(1);
+	ad_enable_amplitude_scaler();
 
 	// SDIO Input Only
 	r00[3] = 0x02;
@@ -198,7 +199,7 @@ void ad_init() {
 // По умолчанию выключен в целях энергосбережения
 // Необходимо для ad_set_profile_amplitude()
 void ad_enable_amplitude_scaler() {
-	r01[0] = 0x01;
+	r01[0] |= 0b0000001;
 }
 
 // Прочитать и сверить содержимое всех регистров с ожидаемыми значениями
