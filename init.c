@@ -171,5 +171,6 @@ void system_init() {
 
 	enter_rfkill_mode();
 
+	sequencer_init();
 	uart_cli_init();
 }

@@ -88,18 +88,35 @@ void enter_basic_sweep_mode(uint32_t t0_ns, uint32_t t1_ns, uint32_t f1_hz, uint
 }
 
 
-void sequencer_reset() {
+static void debug_print_pulse(pulse_t* pulse) {
+	printf(" === pulse_t ===\n");
+	printf(" t1: %d\n", pulse->t1);
+	printf(" t2: %d\n", pulse->t2);
+	printf(" ===============\n");
+}
 
+vec_t* sequence;
+
+void sequencer_init() {
+	sequence = init_vec();
+}
+
+void sequencer_reset() {
+	clear_vec(sequence);
 }
 
 void sequencer_show() {
+	for_every_entry(sequence, debug_print_pulse);
+}
 
+void sequencer_add(pulse_t pulse) {
+	push(sequence, pulse);
 }
 
 void sequencer_run() {
-
+	enter_rfkill_mode();
 }
 
 void sequencer_stop() {
-
+	enter_rfkill_mode();
 }
