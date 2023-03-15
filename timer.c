@@ -51,15 +51,18 @@ void io_update_software_controlled() {
 	HAL_GPIO_Init(GPIOB, &CH3);
 }
 
+//
+// DR_CTL
+//
+
 // Передать DR_CTL под управление таймера
 void drctl_timer_controlled() {
 	HAL_GPIO_DeInit(GPIOB, GPIO_PIN_11);
 
-	GPIO_InitTypeDef CH4 = { .Mode = GPIO_MODE_AF_PP, .Pull = GPIO_PULLDOWN, .Speed = GPIO_SPEED_FREQ_VERY_HIGH, .Pin = GPIO_PIN_11, .Alternate = GPIO_AF1_TIM2 };
-
+	GPIO_InitTypeDef TIM2_CH4 = { .Mode = GPIO_MODE_AF_PP, .Pull = GPIO_PULLDOWN, .Speed = GPIO_SPEED_FREQ_VERY_HIGH, .Pin = GPIO_PIN_11, .Alternate = GPIO_AF1_TIM2 };
 	__HAL_RCC_GPIOB_CLK_ENABLE();
 
-	HAL_GPIO_Init(GPIOB, &CH4);
+	HAL_GPIO_Init(GPIOB, &TIM2_CH4);
 }
 
 // Забрать DR_CTL в программный режим
@@ -72,9 +75,18 @@ void drctl_software_controlled() {
 	HAL_GPIO_Init(GPIOB, &DR_CTL);
 }
 
+//
+// DR_HOLD
+//
+
 // Передать DR_HOLD под управление таймера
 void drhold_timer_controlled() {
-	// TODO
+	HAL_GPIO_DeInit(GPIOB, GPIO_PIN_10);
+
+	GPIO_InitTypeDef TIM2_CH3 = { .Mode = GPIO_MODE_AF_PP, .Pull = GPIO_PULLDOWN, .Speed = GPIO_SPEED_FREQ_VERY_HIGH, .Pin = GPIO_PIN_10, .Alternate = GPIO_AF1_TIM2 };
+	__HAL_RCC_GPIOB_CLK_ENABLE();
+
+	HAL_GPIO_Init(GPIOB, &TIM2_CH3);
 }
 
 // Забрать DR_HOLD в программный режим
