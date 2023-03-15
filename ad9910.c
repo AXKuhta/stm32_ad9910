@@ -51,7 +51,7 @@ void set_profile(uint8_t profile_id) {
 // 0 = отсчитывать вниз
 // Вероятно, будет использоваться только режим отсчёта вверх
 void set_ramp_direction(uint8_t direction) {
-	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, direction ? GPIO_PIN_SET : GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_11, direction ? GPIO_PIN_SET : GPIO_PIN_RESET);
 }
 
 
@@ -71,9 +71,9 @@ void ad_pulse_io_reset(void) {
 }	
 
 void ad_pulse_io_update(void) {
-	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_11, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET);
 	HAL_Delay(1);
-	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_11, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_RESET);
 }
 
 void ad_write(uint8_t reg_addr, uint8_t* buffer, uint16_t size) {
