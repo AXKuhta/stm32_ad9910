@@ -26,12 +26,16 @@ static void init_profile_gpio() {
 
 // PG9 IO_RESET
 static void init_control_gpio() {
+	GPIO_InitTypeDef IO_UPDATE = { .Mode = GPIO_MODE_OUTPUT_PP, .Pull = GPIO_NOPULL, .Speed = GPIO_SPEED_FREQ_VERY_HIGH, .Pin = GPIO_PIN_0 };
 	GPIO_InitTypeDef IO_RESET = { .Mode = GPIO_MODE_OUTPUT_PP, .Pull = GPIO_NOPULL, .Speed = GPIO_SPEED_FREQ_VERY_HIGH, .Pin = GPIO_PIN_9 };
-	
+
+	__HAL_RCC_GPIOB_CLK_ENABLE();
 	__HAL_RCC_GPIOG_CLK_ENABLE();
-	
+
+	HAL_GPIO_Init(GPIOB, &IO_UPDATE);
 	HAL_GPIO_Init(GPIOG, &IO_RESET);
 	
+	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(GPIOG, GPIO_PIN_9, GPIO_PIN_RESET);
 }
 
@@ -164,7 +168,6 @@ void ad_init() {
 	init_profile_gpio();
 	init_control_gpio();
 	set_profile(0);
-	io_update_software_controlled();
 	ad_enable_amplitude_scaler();
 
 	// Ramp Generator
