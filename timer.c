@@ -66,12 +66,26 @@ void drctl_timer_controlled() {
 void drctl_software_controlled() {
 	HAL_GPIO_DeInit(GPIOB, GPIO_PIN_11);
 
-	GPIO_InitTypeDef CH3 = { .Mode = GPIO_MODE_OUTPUT_PP, .Pull = GPIO_PULLDOWN, .Speed = GPIO_SPEED_FREQ_VERY_HIGH, .Pin = GPIO_PIN_11 };
+	GPIO_InitTypeDef DR_CTL = { .Mode = GPIO_MODE_OUTPUT_PP, .Pull = GPIO_PULLDOWN, .Speed = GPIO_SPEED_FREQ_VERY_HIGH, .Pin = GPIO_PIN_11 };
 	__HAL_RCC_GPIOB_CLK_ENABLE();
 
-	HAL_GPIO_Init(GPIOB, &CH3);
+	HAL_GPIO_Init(GPIOB, &DR_CTL);
 }
 
+// Передать DR_HOLD под управление таймера
+void drhold_timer_controlled() {
+	// TODO
+}
+
+// Забрать DR_HOLD в программный режим
+void drhold_software_controlled() {
+	HAL_GPIO_DeInit(GPIOB, GPIO_PIN_10);
+
+	GPIO_InitTypeDef DR_HOLD = { .Mode = GPIO_MODE_OUTPUT_PP, .Pull = GPIO_PULLDOWN, .Speed = GPIO_SPEED_FREQ_VERY_HIGH, .Pin = GPIO_PIN_10 };
+	__HAL_RCC_GPIOB_CLK_ENABLE();
+
+	HAL_GPIO_Init(GPIOB, &DR_HOLD);
+}
 
 void timer1_init(uint32_t prescaler, uint32_t period, uint32_t pulse) {
 	__HAL_RCC_TIM1_CLK_ENABLE();

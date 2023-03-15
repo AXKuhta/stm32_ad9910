@@ -165,9 +165,12 @@ void ad_init() {
 	init_control_gpio();
 	set_profile(0);
 	io_update_software_controlled();
-	drctl_software_controlled();
-	set_ramp_direction(1);
 	ad_enable_amplitude_scaler();
+
+	// Ramp Generator
+	drctl_software_controlled();
+	drhold_software_controlled();
+	set_ramp_direction(1);
 
 	// SDIO Input Only
 	r00[3] = 0x02;
