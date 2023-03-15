@@ -9,19 +9,19 @@
 // PD12 P_1
 // PD13 P_0
 static void init_profile_gpio() {
-	GPIO_InitTypeDef P_0 = { .Mode = GPIO_MODE_OUTPUT_PP, .Pull = GPIO_NOPULL, .Speed = GPIO_SPEED_FREQ_VERY_HIGH, .Pin = GPIO_PIN_13 };
+	GPIO_InitTypeDef P_0 = { .Mode = GPIO_MODE_OUTPUT_PP, .Pull = GPIO_NOPULL, .Speed = GPIO_SPEED_FREQ_VERY_HIGH, .Pin = GPIO_PIN_2 };
 	GPIO_InitTypeDef P_1 = { .Mode = GPIO_MODE_OUTPUT_PP, .Pull = GPIO_NOPULL, .Speed = GPIO_SPEED_FREQ_VERY_HIGH, .Pin = GPIO_PIN_12 };
 	GPIO_InitTypeDef P_2 = { .Mode = GPIO_MODE_OUTPUT_PP, .Pull = GPIO_NOPULL, .Speed = GPIO_SPEED_FREQ_VERY_HIGH, .Pin = GPIO_PIN_11 };
 	
 	__HAL_RCC_GPIOD_CLK_ENABLE();
 	
-	HAL_GPIO_Init(GPIOD, &P_0);
+	HAL_GPIO_Init(GPIOE, &P_0);
 	HAL_GPIO_Init(GPIOD, &P_1);
 	HAL_GPIO_Init(GPIOD, &P_2);
 	
-	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_11, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(GPIOE, GPIO_PIN_2, GPIO_PIN_RESET);
 }
 
 // PG9 IO_RESET
@@ -41,9 +41,9 @@ static void init_control_gpio() {
 void set_profile(uint8_t profile_id) {
 	assert(profile_id < 8);
 
-	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, profile_id & 0b001 ? GPIO_PIN_SET : GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, profile_id & 0b010 ? GPIO_PIN_SET : GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_11, profile_id & 0b100 ? GPIO_PIN_SET : GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, profile_id & 0b100 ? GPIO_PIN_SET : GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_11, profile_id & 0b010 ? GPIO_PIN_SET : GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(GPIOE, GPIO_PIN_2,  profile_id & 0b001 ? GPIO_PIN_SET : GPIO_PIN_RESET);
 }
 
 // Установить направление хода Digital Ramp генератора
