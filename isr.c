@@ -2,6 +2,8 @@
 #include <assert.h>
 
 #include "stm32f7xx_hal.h"
+#include "ad9910.h"
+#include "tasks.h"
 
 // =============================================================================
 // INTERRUPT PROFILER
@@ -128,7 +130,6 @@ void TIM2_IRQHandler() {
 	HAL_TIM_IRQHandler(&timer2);
 
 	static int pulse_t1_pass;
-	static int idx;
 
 	if (pulse_t1_pass == 0) {
 		set_profile(1);

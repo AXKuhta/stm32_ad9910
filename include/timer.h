@@ -13,6 +13,11 @@ typedef struct timing_t {
 
 void radar_emulator_start();
 
+void drctl_timer_controlled();
+void drctl_software_controlled();
+void drhold_timer_controlled();
+void drhold_software_controlled();
+
 void timer2_init();
 void timer2_stop();
 void timer2_restart();

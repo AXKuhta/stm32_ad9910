@@ -101,8 +101,8 @@ void enter_basic_sweep_mode(uint32_t t0_ns, uint32_t t1_ns, uint32_t f1_hz, uint
 
 static void debug_print_pulse(pulse_t* pulse) {
 	printf(" === pulse_t ===\n");
-	printf(" t1: %d\n", pulse->timing.t1);
-	printf(" t2: %d\n", pulse->timing.t2);
+	printf(" t1: %lu\n", pulse->timing.t1);
+	printf(" t2: %lu\n", pulse->timing.t2);
 	printf(" ===============\n");
 }
 

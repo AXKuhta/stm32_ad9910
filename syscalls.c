@@ -9,5 +9,7 @@ int _write(int handle, char* data, int size) {
 	extern uint32_t perf_usart3_bytes_tx;
 	perf_usart3_bytes_tx += size;
 
+	(void)handle;
+
 	return size;
 }

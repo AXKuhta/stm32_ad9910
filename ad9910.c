@@ -2,6 +2,7 @@
 #include <assert.h>
 
 #include "stm32f7xx_hal.h"
+#include "timer.h"
 #include "vt100.h"
 #include "spi.h"
 
@@ -289,7 +290,7 @@ uint32_t ad_calc_ftw(uint32_t freq_hz) {
 // desired_fstep = f_delta / (t_delta / tstep)
 //
 uint32_t ad_calc_ramp_step_ftw(uint32_t f1_hz, uint32_t f2_hz, uint32_t time_ns) {
-	double fstep_hz = ad_system_clock / 2147483648.0;
+	//double fstep_hz = ad_system_clock / 2147483648.0;
 	double tstep_ns = 1*1000*1000*1000 / (ad_system_clock / 4);
 
 	double f_delta = (double)f2_hz - (double)f1_hz;

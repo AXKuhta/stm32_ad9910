@@ -247,7 +247,7 @@ const char* get_next_str(const char* buf) {
 }
 
 void parse() {
-	const char* buf = input_buffer;
+	const char* buf = (const char*)input_buffer;
 
 	do {
 		run(buf);
