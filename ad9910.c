@@ -5,6 +5,62 @@
 #include "vt100.h"
 #include "spi.h"
 
+// Текущая тактовая частота AD9910
+// Используется при вычислении FTW
+static uint32_t ad_system_clock = 0;
+
+// Регистры AD9910
+// Состояние после сброса
+static uint8_t r00[4] = {0x00, 0x00, 0x00, 0x00}; // CFR1
+static uint8_t r01[4] = {0x00, 0x40, 0x08, 0x20}; // CFR2
+static uint8_t r02[4] = {0x1F, 0x3F, 0x40, 0x00}; // CFR3
+static uint8_t r03[4] = {0x00, 0x00, 0x7F, 0x7F}; // Aux DAC control
+static uint8_t r04[4] = {0xFF, 0xFF, 0xFF, 0xFF}; // I/O Update Rate
+static uint8_t r05[6] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // ???
+static uint8_t r06[6] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // ???
+static uint8_t r07[4] = {0x00, 0x00, 0x00, 0x00}; // FTW
+static uint8_t r08[2] = {0x00, 0x00}; // POW
+static uint8_t r09[4] = {0x00, 0x00, 0x00, 0x00}; // ASF
+static uint8_t r0A[4] = {0x00, 0x00, 0x00, 0x00}; // Multichip Sync
+static uint8_t r0B[8] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // Digital Ramp Limit
+static uint8_t r0C[8] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // Digital Ramp Step
+static uint8_t r0D[4] = {0x00, 0x00, 0x00, 0x00}; // Digital Ramp Rate
+static uint8_t r0E[8] = {0x08, 0xB5, 0x00, 0x00, 0x0C, 0xCC, 0xCC, 0xCD}; // Profile 0
+static uint8_t r0F[8] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // Profile 1
+static uint8_t r10[8] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // Profile 2
+static uint8_t r11[8] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // Profile 3
+static uint8_t r12[8] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // Profile 4
+static uint8_t r13[8] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // Profile 5
+static uint8_t r14[8] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // Profile 6
+static uint8_t r15[8] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // Profile 7
+static uint8_t r16[4] = {0x00, 0x00, 0x00, 0x00}; // RAM
+
+static uint8_t* regmap[23] = {
+	r00,
+	r01,
+	r02,
+	r03,
+	r04,
+	r05,
+	r06,
+	r07,
+	r08,
+	r09,
+	r0A,
+	r0B,
+	r0C,
+	r0D,
+	r0E,
+	r0F,
+	r10,
+	r11,
+	r12,
+	r13,
+	r14,
+	r15,
+	r16
+};
+
 // PD11 P_2
 // PD12 P_1
 // PD13 P_0
@@ -110,95 +166,6 @@ void ad_readback(uint8_t reg_addr, uint8_t* buffer, uint16_t size) {
 	}
 	
 	printf(COLOR_RESET "\n");
-}
-
-static uint8_t r00[4] = {0x00, 0x00, 0x00, 0x00}; // CFR1
-static uint8_t r01[4] = {0x00, 0x40, 0x08, 0x20}; // CFR2
-static uint8_t r02[4] = {0x1F, 0x3F, 0x40, 0x00}; // CFR3
-static uint8_t r03[4] = {0x00, 0x00, 0x7F, 0x7F}; // Aux DAC control
-static uint8_t r04[4] = {0xFF, 0xFF, 0xFF, 0xFF}; // I/O Update Rate
-static uint8_t r05[6] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // ???
-static uint8_t r06[6] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // ???
-static uint8_t r07[4] = {0x00, 0x00, 0x00, 0x00}; // FTW
-static uint8_t r08[2] = {0x00, 0x00}; // POW
-static uint8_t r09[4] = {0x00, 0x00, 0x00, 0x00}; // ASF
-static uint8_t r0A[4] = {0x00, 0x00, 0x00, 0x00}; // Multichip Sync
-static uint8_t r0B[8] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // Digital Ramp Limit
-static uint8_t r0C[8] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // Digital Ramp Step
-static uint8_t r0D[4] = {0x00, 0x00, 0x00, 0x00}; // Digital Ramp Rate
-static uint8_t r0E[8] = {0x08, 0xB5, 0x00, 0x00, 0x0C, 0xCC, 0xCC, 0xCD}; // Profile 0
-static uint8_t r0F[8] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // Profile 1
-static uint8_t r10[8] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // Profile 2
-static uint8_t r11[8] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // Profile 3
-static uint8_t r12[8] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // Profile 4
-static uint8_t r13[8] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // Profile 5
-static uint8_t r14[8] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // Profile 6
-static uint8_t r15[8] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // Profile 7
-static uint8_t r16[4] = {0x00, 0x00, 0x00, 0x00}; // RAM
-
-static uint8_t* regmap[23] = {
-	r00,
-	r01,
-	r02,
-	r03,
-	r04,
-	r05,
-	r06,
-	r07,
-	r08,
-	r09,
-	r0A,
-	r0B,
-	r0C,
-	r0D,
-	r0E,
-	r0F,
-	r10,
-	r11,
-	r12,
-	r13,
-	r14,
-	r15,
-	r16
-};
-
-static uint32_t ad_system_clock = 0;
-
-void ad_init() {
-	init_profile_gpio();
-	init_control_gpio();
-	set_profile(0);
-	ad_enable_amplitude_scaler();
-
-	// Ramp Generator
-	drctl_software_controlled();
-	drhold_software_controlled();
-	set_ramp_direction(1);
-
-	// SDIO Input Only
-	r00[3] = 0x02;
-
-	// PLL
-	r02[0] = 0x0D; // VCO + XTAL out enable/disable
-	r02[1] = 0x3F; // Charge pump current
-	r02[2] = 0xC1; // Divider disable + PLL enable
-	r02[3] = 0x64; // x50 multiplier
-
-	//r02[2] = 0xC0; // Divider disable + PLL disable
-	
-	ad_system_clock = 1000*1000*1000;
-	
-	r00[2] = 0b00100000; // Autoclear phase
-	r01[3] = 0b10000000; // Matched latency
-	r00[1] = 0b00000001; // Sine output
-
-
-	// Записать измененные регистры
-	ad_write(0x00, r00, 4);
-	ad_write(0x01, r01, 4);
-	ad_write(0x02, r02, 4);
-	
-	ad_pulse_io_update();
 }
 
 // Включить блок масштабирования амплитуды
@@ -452,4 +419,41 @@ void ad_set_ramp_rate(uint16_t down_rate, uint16_t up_rate) {
 
 	r0D[2] = view_u[1];
 	r0D[3] = view_u[0];
+}
+
+void ad_init() {
+	init_profile_gpio();
+	init_control_gpio();
+	set_profile(0);
+	ad_enable_amplitude_scaler();
+
+	// Ramp Generator
+	drctl_software_controlled();
+	drhold_software_controlled();
+	set_ramp_direction(1);
+
+	// SDIO Input Only
+	r00[3] = 0x02;
+
+	// PLL
+	r02[0] = 0x0D; // VCO + XTAL out enable/disable
+	r02[1] = 0x3F; // Charge pump current
+	r02[2] = 0xC1; // Divider disable + PLL enable
+	r02[3] = 0x64; // x50 multiplier
+
+	//r02[2] = 0xC0; // Divider disable + PLL disable
+	
+	ad_system_clock = 1000*1000*1000;
+	
+	r00[2] = 0b00100000; // Autoclear phase
+	r01[3] = 0b10000000; // Matched latency
+	r00[1] = 0b00000001; // Sine output
+
+
+	// Записать измененные регистры
+	ad_write(0x00, r00, 4);
+	ad_write(0x01, r01, 4);
+	ad_write(0x02, r02, 4);
+	
+	ad_pulse_io_update();
 }
