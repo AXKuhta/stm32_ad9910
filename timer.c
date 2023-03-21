@@ -2,8 +2,12 @@
 #include <stdlib.h>
 
 #include "stm32f7xx_hal.h"
+#include "pin_init.h"
 #include "timer.h"
 #include "units.h"
+
+#define EXT_TRIG  		GPIOA, GPIO_PIN_0
+#define RADAR_EMULATOR  GPIOE, GPIO_PIN_9
 
 TIM_HandleTypeDef timer1;
 TIM_HandleTypeDef timer2;
@@ -11,70 +15,13 @@ TIM_HandleTypeDef timer2;
 // Таймер 1
 // Эмулятор радара
 void timer1_gpio_init() {
-	GPIO_InitTypeDef CH1 = { .Mode = GPIO_MODE_AF_PP, .Pull = GPIO_NOPULL, .Speed = GPIO_SPEED_FREQ_VERY_HIGH, .Pin = GPIO_PIN_9, .Alternate = GPIO_AF1_TIM1 };
-	
-	__HAL_RCC_GPIOE_CLK_ENABLE();
-	
-	HAL_GPIO_Init(GPIOE, &CH1);
+	PIN_AF_Init(RADAR_EMULATOR, GPIO_MODE_AF_PP, GPIO_NOPULL, GPIO_AF1_TIM1); // TIM1_CH1
 }
 
 // Таймер 2
-// Изначально задействован только входной канал
-// Ножки для канала 4 и канала 3 могут быть переданы под управление таймера позже
+// EXT_TRIG
 void timer2_gpio_init() {
-	GPIO_InitTypeDef CH1 = { .Mode = GPIO_MODE_AF_PP, .Pull = GPIO_PULLDOWN, .Speed = GPIO_SPEED_FREQ_VERY_HIGH, .Pin = GPIO_PIN_0, .Alternate = GPIO_AF1_TIM2 };
-	
-	__HAL_RCC_GPIOA_CLK_ENABLE();
-	
-	HAL_GPIO_Init(GPIOA, &CH1);
-}
-
-//
-// DR_CTL
-//
-
-// Передать DR_CTL под управление таймера
-void drctl_timer_controlled() {
-	HAL_GPIO_DeInit(GPIOB, GPIO_PIN_11);
-
-	GPIO_InitTypeDef TIM2_CH4 = { .Mode = GPIO_MODE_AF_PP, .Pull = GPIO_PULLDOWN, .Speed = GPIO_SPEED_FREQ_VERY_HIGH, .Pin = GPIO_PIN_11, .Alternate = GPIO_AF1_TIM2 };
-	__HAL_RCC_GPIOB_CLK_ENABLE();
-
-	HAL_GPIO_Init(GPIOB, &TIM2_CH4);
-}
-
-// Забрать DR_CTL в программный режим
-void drctl_software_controlled() {
-	HAL_GPIO_DeInit(GPIOB, GPIO_PIN_11);
-
-	GPIO_InitTypeDef DR_CTL = { .Mode = GPIO_MODE_OUTPUT_PP, .Pull = GPIO_PULLDOWN, .Speed = GPIO_SPEED_FREQ_VERY_HIGH, .Pin = GPIO_PIN_11 };
-	__HAL_RCC_GPIOB_CLK_ENABLE();
-
-	HAL_GPIO_Init(GPIOB, &DR_CTL);
-}
-
-//
-// DR_HOLD
-//
-
-// Передать DR_HOLD под управление таймера
-void drhold_timer_controlled() {
-	HAL_GPIO_DeInit(GPIOB, GPIO_PIN_10);
-
-	GPIO_InitTypeDef TIM2_CH3 = { .Mode = GPIO_MODE_AF_PP, .Pull = GPIO_PULLDOWN, .Speed = GPIO_SPEED_FREQ_VERY_HIGH, .Pin = GPIO_PIN_10, .Alternate = GPIO_AF1_TIM2 };
-	__HAL_RCC_GPIOB_CLK_ENABLE();
-
-	HAL_GPIO_Init(GPIOB, &TIM2_CH3);
-}
-
-// Забрать DR_HOLD в программный режим
-void drhold_software_controlled() {
-	HAL_GPIO_DeInit(GPIOB, GPIO_PIN_10);
-
-	GPIO_InitTypeDef DR_HOLD = { .Mode = GPIO_MODE_OUTPUT_PP, .Pull = GPIO_PULLDOWN, .Speed = GPIO_SPEED_FREQ_VERY_HIGH, .Pin = GPIO_PIN_10 };
-	__HAL_RCC_GPIOB_CLK_ENABLE();
-
-	HAL_GPIO_Init(GPIOB, &DR_HOLD);
+	PIN_AF_Init(EXT_TRIG, GPIO_MODE_AF_PP, GPIO_PULLDOWN, GPIO_AF1_TIM2); // TIM2_CH1
 }
 
 void timer1_init(uint32_t prescaler, uint32_t period, uint32_t pulse) {

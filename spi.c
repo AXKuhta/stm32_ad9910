@@ -1,19 +1,18 @@
 #include <assert.h>
 
 #include "stm32f7xx_hal.h"
+#include "pin_init.h"
+
+#define SPI4_NSS 	GPIOE, GPIO_PIN_11
+#define SPI4_SCK 	GPIOE, GPIO_PIN_12
+#define SPI4_MISO 	GPIOE, GPIO_PIN_13
+#define SPI4_MOSI 	GPIOE, GPIO_PIN_14
 
 static void spi4_gpio_init() {
-	GPIO_InitTypeDef NSS = { .Mode = GPIO_MODE_AF_PP, .Pull = GPIO_NOPULL, .Speed = GPIO_SPEED_HIGH, .Pin = GPIO_PIN_11, .Alternate = GPIO_AF5_SPI4 };
-	GPIO_InitTypeDef SCK = { .Mode = GPIO_MODE_AF_PP, .Pull = GPIO_NOPULL, .Speed = GPIO_SPEED_HIGH, .Pin = GPIO_PIN_12, .Alternate = GPIO_AF5_SPI4 };
-	GPIO_InitTypeDef MISO = { .Mode = GPIO_MODE_AF_PP, .Pull = GPIO_NOPULL, .Speed = GPIO_SPEED_HIGH, .Pin = GPIO_PIN_13, .Alternate = GPIO_AF5_SPI4 };
-	GPIO_InitTypeDef MOSI = { .Mode = GPIO_MODE_AF_PP, .Pull = GPIO_NOPULL, .Speed = GPIO_SPEED_HIGH, .Pin = GPIO_PIN_14, .Alternate = GPIO_AF5_SPI4 };
-	
-	__HAL_RCC_GPIOE_CLK_ENABLE();
-	
-	HAL_GPIO_Init(GPIOE, &NSS);
-	HAL_GPIO_Init(GPIOE, &SCK);
-	HAL_GPIO_Init(GPIOE, &MISO);
-	HAL_GPIO_Init(GPIOE, &MOSI);
+	PIN_AF_Init(SPI4_NSS, GPIO_MODE_AF_PP, GPIO_NOPULL, GPIO_AF5_SPI4);
+	PIN_AF_Init(SPI4_SCK, GPIO_MODE_AF_PP, GPIO_NOPULL, GPIO_AF5_SPI4);
+	PIN_AF_Init(SPI4_MISO, GPIO_MODE_AF_PP, GPIO_NOPULL, GPIO_AF5_SPI4);
+	PIN_AF_Init(SPI4_MOSI, GPIO_MODE_AF_PP, GPIO_NOPULL, GPIO_AF5_SPI4);
 }
 
 SPI_HandleTypeDef spi4;

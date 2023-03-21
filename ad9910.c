@@ -2,9 +2,20 @@
 #include <assert.h>
 
 #include "stm32f7xx_hal.h"
-#include "timer.h"
+#include "pin_init.h"
 #include "vt100.h"
 #include "spi.h"
+
+// Профили
+#define P_0 	GPIOD, GPIO_PIN_12
+#define P_1 	GPIOD, GPIO_PIN_11
+#define P_2 	GPIOE, GPIO_PIN_2
+
+// Управляющие сигналы
+#define IO_UPDATE 	GPIOB, GPIO_PIN_0
+#define IO_RESET 	GPIOG, GPIO_PIN_9
+#define DR_CTL 		GPIOB, GPIO_PIN_11
+#define DR_HOLD 	GPIOB, GPIO_PIN_10
 
 // Текущая тактовая частота AD9910
 // Используется при вычислении FTW
@@ -62,38 +73,42 @@ static uint8_t* regmap[23] = {
 	r16
 };
 
-// PD11 P_2
-// PD12 P_1
-// PD13 P_0
 static void init_profile_gpio() {
-	GPIO_InitTypeDef P_0 = { .Mode = GPIO_MODE_OUTPUT_PP, .Pull = GPIO_NOPULL, .Speed = GPIO_SPEED_FREQ_VERY_HIGH, .Pin = GPIO_PIN_2 };
-	GPIO_InitTypeDef P_1 = { .Mode = GPIO_MODE_OUTPUT_PP, .Pull = GPIO_NOPULL, .Speed = GPIO_SPEED_FREQ_VERY_HIGH, .Pin = GPIO_PIN_12 };
-	GPIO_InitTypeDef P_2 = { .Mode = GPIO_MODE_OUTPUT_PP, .Pull = GPIO_NOPULL, .Speed = GPIO_SPEED_FREQ_VERY_HIGH, .Pin = GPIO_PIN_11 };
+	PIN_Init(P_0);
+	PIN_Init(P_1);
+	PIN_Init(P_2);
 	
-	__HAL_RCC_GPIOD_CLK_ENABLE();
-	
-	HAL_GPIO_Init(GPIOE, &P_0);
-	HAL_GPIO_Init(GPIOD, &P_1);
-	HAL_GPIO_Init(GPIOD, &P_2);
-	
-	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_11, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(GPIOE, GPIO_PIN_2, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(P_0, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(P_1, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(P_2, GPIO_PIN_RESET);
 }
 
-// PG9 IO_RESET
 static void init_control_gpio() {
-	GPIO_InitTypeDef IO_UPDATE = { .Mode = GPIO_MODE_OUTPUT_PP, .Pull = GPIO_NOPULL, .Speed = GPIO_SPEED_FREQ_VERY_HIGH, .Pin = GPIO_PIN_0 };
-	GPIO_InitTypeDef IO_RESET = { .Mode = GPIO_MODE_OUTPUT_PP, .Pull = GPIO_NOPULL, .Speed = GPIO_SPEED_FREQ_VERY_HIGH, .Pin = GPIO_PIN_9 };
-
-	__HAL_RCC_GPIOB_CLK_ENABLE();
-	__HAL_RCC_GPIOG_CLK_ENABLE();
-
-	HAL_GPIO_Init(GPIOB, &IO_UPDATE);
-	HAL_GPIO_Init(GPIOG, &IO_RESET);
+	PIN_Init(IO_UPDATE);
+	PIN_Init(IO_RESET);
 	
-	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(GPIOG, GPIO_PIN_9, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(IO_UPDATE, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(IO_RESET, GPIO_PIN_RESET);
+}
+
+void drctl_software_controlled() {
+	HAL_GPIO_DeInit(DR_CTL);
+	PIN_Init(DR_CTL);
+}
+
+void drhold_software_controlled() {
+	HAL_GPIO_DeInit(DR_HOLD);
+	PIN_Init(DR_HOLD);
+}
+
+void drctl_timer_controlled() {
+	HAL_GPIO_DeInit(DR_CTL);
+	PIN_AF_Init(DR_CTL, GPIO_MODE_AF_PP, GPIO_PULLDOWN, GPIO_AF1_TIM2); // TIM2_CH4
+}
+
+void drhold_timer_controlled() {
+	HAL_GPIO_DeInit(DR_HOLD);
+	PIN_AF_Init(DR_HOLD, GPIO_MODE_AF_PP, GPIO_PULLDOWN, GPIO_AF1_TIM2); // TIM2_CH3
 }
 
 // Установить профиль
@@ -102,9 +117,9 @@ static void init_control_gpio() {
 void set_profile(uint8_t profile_id) {
 	assert(profile_id < 8);
 
-	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, profile_id & 0b100 ? GPIO_PIN_SET : GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_11, profile_id & 0b010 ? GPIO_PIN_SET : GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(GPIOE, GPIO_PIN_2,  profile_id & 0b001 ? GPIO_PIN_SET : GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(P_0, profile_id & 0b100 ? GPIO_PIN_SET : GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(P_1, profile_id & 0b010 ? GPIO_PIN_SET : GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(P_2, profile_id & 0b001 ? GPIO_PIN_SET : GPIO_PIN_RESET);
 }
 
 // Установить направление хода Digital Ramp генератора
@@ -112,7 +127,7 @@ void set_profile(uint8_t profile_id) {
 // 0 = отсчитывать вниз
 // Вероятно, будет использоваться только режим отсчёта вверх
 void set_ramp_direction(uint8_t direction) {
-	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_11, direction ? GPIO_PIN_SET : GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(DR_CTL, direction ? GPIO_PIN_SET : GPIO_PIN_RESET);
 }
 
 
@@ -124,17 +139,17 @@ void my_delay(uint32_t delay) {
 
 // Хоть какая-то задержка должна присутствовать
 // Без неё импульса вообще не возникнет
-void ad_pulse_io_reset(void) {
-	HAL_GPIO_WritePin(GPIOG, GPIO_PIN_9, GPIO_PIN_SET);
+void ad_pulse_io_reset() {
+	HAL_GPIO_WritePin(IO_RESET, GPIO_PIN_SET);
 	HAL_Delay(1);
-	HAL_GPIO_WritePin(GPIOG, GPIO_PIN_9, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(IO_RESET, GPIO_PIN_RESET);
 	HAL_Delay(1);
 }	
 
-void ad_pulse_io_update(void) {
-	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET);
+void ad_pulse_io_update() {
+	HAL_GPIO_WritePin(IO_UPDATE, GPIO_PIN_SET);
 	HAL_Delay(1);
-	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(IO_UPDATE, GPIO_PIN_RESET);
 }
 
 void ad_write(uint8_t reg_addr, uint8_t* buffer, uint16_t size) {

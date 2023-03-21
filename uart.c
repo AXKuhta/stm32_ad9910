@@ -1,20 +1,19 @@
 #include "stm32f7xx_hal.h"
+#include "pin_init.h"
+
+#define USART3_TX 	GPIOD, GPIO_PIN_8
+#define USART3_RX 	GPIOD, GPIO_PIN_9
 
 UART_HandleTypeDef usart3;
 
 static void usart3_gpio_init() {
-	GPIO_InitTypeDef TX = { .Pin = GPIO_PIN_8, .Mode = GPIO_MODE_AF_PP, .Pull = GPIO_PULLUP, .Speed = GPIO_SPEED_FREQ_VERY_HIGH, .Alternate = GPIO_AF7_USART3 };
-	GPIO_InitTypeDef RX = { .Pin = GPIO_PIN_9, .Mode = GPIO_MODE_AF_PP, .Pull = GPIO_PULLUP, .Speed = GPIO_SPEED_FREQ_VERY_HIGH, .Alternate = GPIO_AF7_USART3 };
-
-	__HAL_RCC_GPIOD_CLK_ENABLE();
-
-	HAL_GPIO_Init(GPIOD, &TX);
-	HAL_GPIO_Init(GPIOD, &RX);
+	PIN_AF_Init(USART3_TX, GPIO_MODE_AF_PP, GPIO_PULLUP, GPIO_AF7_USART3);
+	PIN_AF_Init(USART3_RX, GPIO_MODE_AF_PP, GPIO_PULLUP, GPIO_AF7_USART3);
 }
 
 static void usart3_gpio_deinit() {
-	HAL_GPIO_DeInit(GPIOD, GPIO_PIN_8);
-	HAL_GPIO_DeInit(GPIOD, GPIO_PIN_9);
+	HAL_GPIO_DeInit(USART3_TX);
+	HAL_GPIO_DeInit(USART3_RX);
 }
 
 void usart3_init() {
