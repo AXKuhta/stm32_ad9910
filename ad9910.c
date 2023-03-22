@@ -325,10 +325,7 @@ uint32_t ad_calc_ramp_step_ftw(uint32_t f1_hz, uint32_t f2_hz, uint32_t time_ns)
 void ad_set_profile_freq(int profile_id, uint32_t freq_hz) {
 	uint8_t* profile = regmap[14 + profile_id];
 	uint32_t ftw = ad_calc_ftw(freq_hz);
-	
 	uint8_t* view = (uint8_t*)&ftw;
-	
-	printf("Profile %d freq: %x%x%x%x\n", profile_id, view[3], view[2], view[1], view[0]);
 	
 	profile[7] = view[0];
 	profile[6] = view[1];
@@ -339,10 +336,7 @@ void ad_set_profile_freq(int profile_id, uint32_t freq_hz) {
 // Установить амплитуду в указанном профиле
 void ad_set_profile_amplitude(int profile_id, uint16_t amplitude) {
 	uint8_t* profile = regmap[14 + profile_id];
-	
 	uint8_t* view = (uint8_t*)&amplitude;
-	
-	printf("Profile %d amplitude: %x%x\n", profile_id, view[1], view[0]);
 	
 	profile[1] = view[0];
 	profile[0] = view[1] & 0x3F;

@@ -1,6 +1,4 @@
-#include <stdint.h>
-
-typedef pulse_t vec_elem_t;
+typedef seq_entry_t vec_elem_t;
 
 typedef struct vec_t {
 	uint32_t size;

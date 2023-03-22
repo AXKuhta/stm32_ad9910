@@ -2,10 +2,92 @@
 #include <stdio.h>
 
 #include "stm32f7xx_hal.h"
+#include "sequencer.h"
 #include "timer.h"
-#include "pulse.h"
 #include "ad9910.h"
 #include "vec.h"
+
+extern TIM_HandleTypeDef timer2;
+
+static vec_t* sequence;
+static int seq_index;
+
+void sequencer_init() {
+	sequence = init_vec();
+}
+
+void sequencer_reset() {
+	clear_vec(sequence);
+}
+
+static void debug_print_entry(seq_entry_t* entry) {
+	printf(" === seq_entry_t ===\n");
+	printf(" t1: %lu\n", entry->t1);
+	printf(" t2: %lu\n", entry->t2);
+
+	for (int i = 0; i < 8; i++) {
+		printf(" profile %d: %lu hz\n", i, entry->profiles.freq_hz[i]);
+	}
+
+	printf(" ===============\n");
+}
+
+void sequencer_show() {
+	printf("Sequencer entries: %lu\n", sequence->size);
+	for_every_entry(sequence, debug_print_entry);
+}
+
+void sequencer_add(seq_entry_t entry) {
+	vec_push(sequence, entry);
+}
+
+void sequencer_run() {
+	enter_rfkill_mode();
+	spi_write_entry(sequence->elements[0]);
+	ad_write_all();
+
+	seq_index = 0;
+
+	timer2_restart();
+	// Можно перезаписывать регистры на лету
+	timer2.Instance->CCR3 = sequence->elements[0].t1;
+	timer2.Instance->CCR4 = sequence->elements[0].t2;
+}
+
+void spi_write_entry(seq_entry_t entry) {
+	ad_set_profile_freq(0, entry.profiles.freq_hz[0]);
+	ad_set_profile_freq(1, entry.profiles.freq_hz[1]);
+	ad_set_profile_freq(2, entry.profiles.freq_hz[2]);
+	ad_set_profile_freq(3, entry.profiles.freq_hz[3]);
+	ad_set_profile_freq(4, entry.profiles.freq_hz[4]);
+	ad_set_profile_freq(5, entry.profiles.freq_hz[5]);
+	ad_set_profile_freq(6, entry.profiles.freq_hz[6]);
+	ad_set_profile_freq(7, entry.profiles.freq_hz[7]);
+
+	ad_set_profile_amplitude(0, 0x0);
+	ad_set_profile_amplitude(1, 0x3FFF);
+	ad_set_profile_amplitude(2, 0x3FFF);
+	ad_set_profile_amplitude(3, 0x3FFF);
+	ad_set_profile_amplitude(4, 0x3FFF);
+	ad_set_profile_amplitude(5, 0x3FFF);
+	ad_set_profile_amplitude(6, 0x3FFF);
+	ad_set_profile_amplitude(7, 0x3FFF);
+}
+
+void sequencer_stop() {
+	enter_rfkill_mode();
+}
+
+void pulse_complete_callback() {
+	int next_idx = ++seq_index % sequence->size;
+
+	spi_write_entry(sequence->elements[next_idx]);
+
+	// Принудительно закинуть в таймер очень большое значение, чтобы он случайно не пересёк те точки, которые мы вот вот запишем
+	timer2.Instance->CNT = 0x7FFFFFFF;
+	timer2.Instance->CCR3 = sequence->elements[next_idx].t1;
+	timer2.Instance->CCR4 = sequence->elements[next_idx].t2;
+}
 
 // Прекратить подачу сигналов
 void enter_rfkill_mode() {
@@ -32,117 +114,21 @@ void enter_test_tone_mode(uint32_t freq_hz) {
 	set_profile(1);
 }
 
-pulse_t* timer_pulse_sequence = NULL;
+void enter_basic_pulse_mode(uint32_t offset_ns, uint32_t duration_ns, uint32_t freq_hz) {
+	sequencer_stop();
+	sequencer_reset();
 
-extern TIM_HandleTypeDef timer2;
+	seq_entry_t pulse = {
+		.profiles.freq_hz[0] = 0,
+		.profiles.freq_hz[1] = freq_hz,
+		.t1 = timer_mu(offset_ns),
+		.t2 = timer_mu(offset_ns + duration_ns)
+	};
 
-void enter_basic_pulse_mode(uint32_t t0_ns, uint32_t t1_ns, uint32_t freq_hz) {
-	enter_rfkill_mode();
-
-	ad_set_profile_freq(1, freq_hz);
-	ad_set_profile_amplitude(1, 0x3FFF);
-	ad_write_all();
-
-	if (timer_pulse_sequence != NULL)
-		free(timer_pulse_sequence);
-
-	timer_pulse_sequence = malloc(sizeof(pulse_t) * 2);
-
-	pulse_t null_pulse = {0};
-	pulse_t pulse;
-
-	pulse.timing = timer_points(t0_ns, t1_ns);
-
-	timer_pulse_sequence[0] = pulse;
-	timer_pulse_sequence[1] = null_pulse;
-
-	timer2_restart();
-
-	// Можно перезаписывать регистры на лету
-	timer2.Instance->CCR3 = timer_pulse_sequence[0].timing.t1;
-	timer2.Instance->CCR4 = timer_pulse_sequence[0].timing.t2;
+	sequencer_add(pulse);
+	sequencer_run();
 }
 
-void enter_basic_sweep_mode(uint32_t t0_ns, uint32_t t1_ns, uint32_t f1_hz, uint32_t f2_hz) {
-	enter_rfkill_mode();
+void enter_basic_sweep_mode(uint32_t offset_ns, uint32_t duration_ns, uint32_t f1_hz, uint32_t f2_hz) {
 
-	set_ramp_direction(0);
-	ad_enable_ramp();
-
-	uint32_t step_ftw = ad_calc_ramp_step_ftw(f1_hz, f2_hz, t1_ns);
-
-	ad_set_ramp_limits(f1_hz, f2_hz);
-	ad_set_ramp_step(0, step_ftw);
-	ad_set_ramp_rate(1, 1);
-	ad_set_profile_amplitude(1, 0x3FFF);
-	ad_write_all();
-	ad_pulse_io_update();
-	set_ramp_direction(1);
-
-	if (timer_pulse_sequence != NULL)
-		free(timer_pulse_sequence);
-
-	timer_pulse_sequence = malloc(sizeof(pulse_t) * 2);
-
-	pulse_t null_pulse = {0};
-	pulse_t pulse;
-
-	pulse.timing = timer_points(t0_ns, t1_ns);
-
-	timer_pulse_sequence[0] = pulse;
-	timer_pulse_sequence[1] = null_pulse;
-
-	timer2_restart();
-
-	timer2.Instance->CCR3 = timer_pulse_sequence[0].timing.t1;
-	timer2.Instance->CCR4 = timer_pulse_sequence[0].timing.t2;
-}
-
-
-static void debug_print_pulse(pulse_t* pulse) {
-	printf(" === pulse_t ===\n");
-	printf(" t1: %lu\n", pulse->timing.t1);
-	printf(" t2: %lu\n", pulse->timing.t2);
-	printf(" ===============\n");
-}
-
-vec_t* sequence;
-
-void sequencer_init() {
-	sequence = init_vec();
-}
-
-void sequencer_reset() {
-	clear_vec(sequence);
-}
-
-void sequencer_show() {
-	for_every_entry(sequence, debug_print_pulse);
-}
-
-void sequencer_add(pulse_t pulse) {
-	vec_push(sequence, pulse);
-}
-
-void sequencer_run() {
-	enter_rfkill_mode();
-
-	if (timer_pulse_sequence != NULL)
-		free(timer_pulse_sequence);
-
-	timer_pulse_sequence = sequence->elements;
-
-	timer2_restart();
-
-	// Можно перезаписывать регистры на лету
-	timer2.Instance->CCR3 = timer_pulse_sequence[0].timing.t1;
-	timer2.Instance->CCR4 = timer_pulse_sequence[0].timing.t2;
-}
-
-void sequencer_stop() {
-	enter_rfkill_mode();
-}
-
-void pulse_complete_callback() {
-	// Здесь также будет код для перезаписи регистров на лету
 }

@@ -5,7 +5,6 @@
 #include "uart_cli.h"
 #include "spi.h"
 #include "timer.h"
-#include "pulse.h"
 #include "ad9910.h"
 #include "sequencer.h"
 
@@ -175,8 +174,7 @@ void system_init() {
 	spi4_init();
 	ad_init();
 
-	enter_rfkill_mode();
-
 	sequencer_init();
+	enter_rfkill_mode();
 	uart_cli_init();
 }

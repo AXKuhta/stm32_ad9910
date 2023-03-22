@@ -11,7 +11,6 @@
 #include "ad9910.h"
 #include "units.h"
 #include "timer.h"
-#include "pulse.h"
 #include "sequencer.h"
 
 // =============================================================================
@@ -132,14 +131,14 @@ void basic_sweep_cmd(const char* str) {
 void sequencer_add_pulse_cmd(const char* str) {
 	char seq[4] = {0};
 	char cmd[32] = {0};
-	char t1_unit[4] = {0};
-	char t2_unit[4] = {0};
+	char o_unit[4] = {0};
+	char d_unit[4] = {0};
 	char f_unit[4] = {0};
-	double t1;
-	double t2;
+	double offset;
+	double duration;
 	double freq;
 
-	int rc = sscanf(str, "%3s %31s %lf %3s %lf %3s %lf %3s", seq, cmd, &t1, t1_unit, &t2, t2_unit, &freq, f_unit);
+	int rc = sscanf(str, "%3s %31s %lf %3s %lf %3s %lf %3s", seq, cmd, &offset, o_unit, &duration, d_unit, &freq, f_unit);
 
 	if (rc != 8) {
 		printf("Invalid arguments\n");
@@ -148,29 +147,32 @@ void sequencer_add_pulse_cmd(const char* str) {
 		return;
 	}
 
-	uint32_t freq_hz = parse_freq(freq, f_unit);
-	uint32_t t1_ns = parse_time(t1, t1_unit);
-	uint32_t t2_ns = parse_time(t2, t2_unit);
+	uint32_t freq_hz 		= parse_freq(freq, f_unit);
+	uint32_t offset_ns 		= parse_time(offset, o_unit);
+	uint32_t duration_ns 	= parse_time(duration, d_unit);
 
 	if (freq_hz == 0) {
 		return;
 	}
 
-	char* verif_freq = freq_unit(freq_hz);
-	char* verif_t1 = time_unit(t1_ns / 1000.0 / 1000.0 / 1000.0);
-	char* verif_t2 = time_unit(t2_ns / 1000.0 / 1000.0 / 1000.0);
+	char* verif_freq 		= freq_unit(freq_hz);
+	char* verif_offset 		= time_unit(offset_ns / 1000.0 / 1000.0 / 1000.0);
+	char* verif_duration 	= time_unit(duration_ns / 1000.0 / 1000.0 / 1000.0);
 
-	printf("Sequence basic pulse at %s, offset %s, duration %s\n", verif_freq, verif_t1, verif_t2);
+	printf("Sequence basic pulse at %s, offset %s, duration %s\n", verif_freq, verif_offset, verif_duration);
 
-	pulse_t pulse;
-
-	pulse.timing = timer_points(t1_ns, t2_ns);
+	seq_entry_t pulse = {
+		.profiles.freq_hz[0] = 0,
+		.profiles.freq_hz[1] = freq_hz,
+		.t1 = timer_mu(offset_ns),
+		.t2 = timer_mu(offset_ns + duration_ns)
+	};
 
 	sequencer_add(pulse);
 
 	free(verif_freq);
-	free(verif_t1);
-	free(verif_t2);
+	free(verif_offset);
+	free(verif_duration);
 }
 
 void sequencer_cmd(const char* str) {

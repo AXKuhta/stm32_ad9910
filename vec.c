@@ -3,7 +3,7 @@
 #include <assert.h>
 #include <string.h>
 #include "timer.h"
-#include "pulse.h"
+#include "sequencer.h"
 #include "vec.h"
 
 // Примитивный динамический массив
