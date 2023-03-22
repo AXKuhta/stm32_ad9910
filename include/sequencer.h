@@ -6,8 +6,8 @@ typedef struct ad_profile_set_t {
 typedef struct seq_entry_t {
     struct sweep_t {
         uint32_t prologue_hold;
-        uint32_t upper_limit;
-        uint32_t lower_linit;
+        uint32_t f1;
+        uint32_t f2;
         uint32_t step;
     } sweep;
     uint32_t t1;

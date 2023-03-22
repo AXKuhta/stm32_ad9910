@@ -55,6 +55,20 @@ void sequencer_run() {
 }
 
 void spi_write_entry(seq_entry_t entry) {
+	if (entry.sweep.step > 0) {
+		ad_enable_ramp();
+
+		ad_set_ramp_limits(entry.sweep.f1, entry.sweep.f2);
+		ad_set_ramp_step(0, entry.sweep.step);
+		ad_set_ramp_rate(1, 1);
+
+		set_ramp_direction(0);
+		ad_pulse_io_update(); // !! Большая задержка
+		set_ramp_direction(1);
+	} else {
+		ad_disable_ramp();
+	}
+
 	ad_set_profile_freq(0, entry.profiles.freq_hz[0]);
 	ad_set_profile_freq(1, entry.profiles.freq_hz[1]);
 	ad_set_profile_freq(2, entry.profiles.freq_hz[2]);
@@ -130,5 +144,19 @@ void enter_basic_pulse_mode(uint32_t offset_ns, uint32_t duration_ns, uint32_t f
 }
 
 void enter_basic_sweep_mode(uint32_t offset_ns, uint32_t duration_ns, uint32_t f1_hz, uint32_t f2_hz) {
+	sequencer_stop();
+	sequencer_reset();
 
+	seq_entry_t pulse = {
+		.sweep = {
+			.f1 = f1_hz,
+			.f2 = f2_hz,
+			.step = ad_calc_ramp_step_ftw(f1_hz, f2_hz, duration_ns)
+		},
+		.t1 = timer_mu(offset_ns),
+		.t2 = timer_mu(offset_ns + duration_ns)
+	};
+
+	sequencer_add(pulse);
+	sequencer_run();
 }
