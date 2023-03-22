@@ -88,7 +88,7 @@ void timer2_init() {
 	TIM_SlaveConfigTypeDef slave_config = {
 		.SlaveMode = TIM_SLAVEMODE_COMBINED_RESETTRIGGER,
 		.InputTrigger = TIM_TS_TI1FP1,
-		.TriggerPolarity = TIM_TRIGGERPOLARITY_RISING
+		.TriggerPolarity = TIM_TRIGGERPOLARITY_FALLING
 	};
 	
 	HAL_TIM_SlaveConfigSynchronization(&timer2, &slave_config);
