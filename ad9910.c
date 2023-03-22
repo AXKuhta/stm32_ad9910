@@ -7,9 +7,9 @@
 #include "spi.h"
 
 // Профили
-#define P_0 	GPIOD, GPIO_PIN_12
-#define P_1 	GPIOD, GPIO_PIN_11
-#define P_2 	GPIOE, GPIO_PIN_2
+#define P_0 	GPIOD, GPIO_PIN_13
+#define P_1 	GPIOD, GPIO_PIN_12
+#define P_2 	GPIOD, GPIO_PIN_11
 
 // Управляющие сигналы
 #define IO_UPDATE 	GPIOB, GPIO_PIN_0
@@ -117,9 +117,9 @@ void drhold_timer_controlled() {
 void set_profile(uint8_t profile_id) {
 	assert(profile_id < 8);
 
-	HAL_GPIO_WritePin(P_0, profile_id & 0b100 ? GPIO_PIN_SET : GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(P_0, profile_id & 0b001 ? GPIO_PIN_SET : GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(P_1, profile_id & 0b010 ? GPIO_PIN_SET : GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(P_2, profile_id & 0b001 ? GPIO_PIN_SET : GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(P_2, profile_id & 0b100 ? GPIO_PIN_SET : GPIO_PIN_RESET);
 }
 
 // Установить направление хода Digital Ramp генератора
