@@ -46,6 +46,10 @@ void sequencer_run() {
 	spi_write_entry(sequence->elements[0]);
 	ad_write_all();
 
+	set_ramp_direction(0);
+	ad_pulse_io_update(); // !! Большая задержка
+	set_ramp_direction(1);
+
 	seq_index = 0;
 
 	timer2_restart();
@@ -61,10 +65,6 @@ void spi_write_entry(seq_entry_t entry) {
 		ad_set_ramp_limits(entry.sweep.f1, entry.sweep.f2);
 		ad_set_ramp_step(0, entry.sweep.step);
 		ad_set_ramp_rate(1, 1);
-
-		set_ramp_direction(0);
-		ad_pulse_io_update(); // !! Большая задержка
-		set_ramp_direction(1);
 	} else {
 		ad_disable_ramp();
 	}
@@ -96,6 +96,10 @@ void pulse_complete_callback() {
 	int next_idx = ++seq_index % sequence->size;
 
 	spi_write_entry(sequence->elements[next_idx]);
+	ad_write_all();
+	set_ramp_direction(0);
+	ad_pulse_io_update(); // !! Большая задержка
+	set_ramp_direction(1);
 
 	// Принудительно закинуть в таймер очень большое значение, чтобы он случайно не пересёк те точки, которые мы вот вот запишем
 	timer2.Instance->CNT = 0x7FFFFFFF;

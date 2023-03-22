@@ -175,6 +175,65 @@ void sequencer_add_pulse_cmd(const char* str) {
 	free(verif_duration);
 }
 
+void sequencer_add_sweep_cmd(const char* str) {
+	char seq[4] = {0};
+	char cmd[32] = {0};
+	char o_unit[4] = {0};
+	char d_unit[4] = {0};
+	char f1_unit[4] = {0};
+	char f2_unit[4] = {0};
+	char fstep_unit[4] = {0};
+	double offset;
+	double duration;
+	double f1;
+	double f2;
+	double fstep;
+
+	int rc = sscanf(str, "%3s %31s %lf %3s %lf %3s %lf %3s %lf %3s %lf %3s", seq, cmd, &offset, o_unit, &duration, d_unit, &f1, f1_unit, &f2, f2_unit, &fstep, fstep_unit);
+
+	if (rc != 10 && rc != 12) {
+		printf("Invalid arguments\n");
+		printf("Usage: seq sweep delay unit duration unit f1 unit f2 unit [fstep unit]\n");
+		printf("Example: seq sweep 100 us 250 us 150 MHz 50 MHz\n");
+		return;
+	}
+
+	uint32_t f1_hz 			= parse_freq(f1, f1_unit);
+	uint32_t f2_hz 			= parse_freq(f2, f2_unit);
+	uint32_t offset_ns 		= parse_time(offset, o_unit);
+	uint32_t duration_ns 	= parse_time(duration, d_unit);
+	uint32_t fstep_hz 		= 0;
+
+	if (rc == 12)
+		fstep_hz = parse_freq(fstep, fstep_unit);
+	
+	char* verif_f1 			= freq_unit(f1_hz);
+	char* verif_f2 			= freq_unit(f2_hz);
+	char* verif_fstep 		= freq_unit(fstep_hz);
+	char* verif_offset 		= time_unit(offset_ns / 1000.0 / 1000.0 / 1000.0);
+	char* verif_duration 	= time_unit(duration_ns / 1000.0 / 1000.0 / 1000.0);
+
+	printf("Sequence sweep at %s -> %s step %s, offset %s, duration %s\n", verif_f1, verif_f2, rc == 12 ? verif_fstep : "AUTO", verif_offset, verif_duration);
+
+	seq_entry_t pulse = {
+		.sweep = {
+			.f1 = f1_hz,
+			.f2 = f2_hz,
+			.step = rc == 12 ? ad_calc_ftw(fstep_hz) : ad_calc_ramp_step_ftw(f1_hz, f2_hz, duration_ns)
+		},
+		.t1 = timer_mu(offset_ns),
+		.t2 = timer_mu(offset_ns + duration_ns)
+	};
+
+	sequencer_add(pulse);
+
+	free(verif_f1);
+	free(verif_f2);
+	free(verif_fstep);
+	free(verif_fstep);
+	free(verif_duration);
+}
+
 void sequencer_cmd(const char* str) {
 	char seq[4] = {0};
 	char cmd[32] = {0};
@@ -186,6 +245,7 @@ void sequencer_cmd(const char* str) {
 		printf("Usage: seq reset\n");
 		printf("Usage: seq show\n");
 		printf("Usage: seq pulse delay unit duration unit freq unit\n");
+		printf("Usage: seq sweep delay unit duration unit f1 unit f2 unit {fstep unit | auto}\n");
 		printf("Usage: seq run\n");
 		printf("Usage: seq stop\n");
 	}
@@ -193,6 +253,7 @@ void sequencer_cmd(const char* str) {
 	if (strcmp(cmd, "reset") == 0) return sequencer_reset();
 	if (strcmp(cmd, "show") == 0) return sequencer_show();
 	if (strcmp(cmd, "pulse") == 0) return sequencer_add_pulse_cmd(str);
+	if (strcmp(cmd, "sweep") == 0) return sequencer_add_sweep_cmd(str);
 	if (strcmp(cmd, "run") == 0) return sequencer_run();
 	if (strcmp(cmd, "stop") == 0) return sequencer_stop();
 }
