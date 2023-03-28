@@ -1,7 +1,9 @@
 
-typedef struct ad_profile_set_t {
-    uint32_t freq_hz[8];
-} ad_profile_set_t;
+typedef struct profile_t {
+    uint32_t freq_hz;
+    uint32_t phase;
+    uint16_t amplitude;
+} profile_t;
 
 typedef struct seq_entry_t {
     struct sweep_t {
@@ -12,7 +14,7 @@ typedef struct seq_entry_t {
     } sweep;
     uint32_t t1;
     uint32_t t2;
-    ad_profile_set_t profiles;
+    profile_t profiles[8];
 } seq_entry_t;
 
 void enter_rfkill_mode();

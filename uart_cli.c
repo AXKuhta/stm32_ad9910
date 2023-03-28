@@ -162,10 +162,10 @@ void sequencer_add_pulse_cmd(const char* str) {
 	printf("Sequence basic pulse at %s, offset %s, duration %s\n", verif_freq, verif_offset, verif_duration);
 
 	seq_entry_t pulse = {
-		.profiles.freq_hz[0] = 0,
-		.profiles.freq_hz[1] = freq_hz,
 		.t1 = timer_mu(offset_ns),
-		.t2 = timer_mu(offset_ns + duration_ns)
+		.t2 = timer_mu(offset_ns + duration_ns),
+		.profiles[0] = { .freq_hz = 0, .amplitude = 0 },
+		.profiles[1] = { .freq_hz = freq_hz, .amplitude = 0x3FFF }
 	};
 
 	sequencer_add(pulse);
@@ -222,7 +222,9 @@ void sequencer_add_sweep_cmd(const char* str) {
 			.step = rc == 12 ? ad_calc_ftw(fstep_hz) : ad_calc_ramp_step_ftw(f1_hz, f2_hz, duration_ns)
 		},
 		.t1 = timer_mu(offset_ns),
-		.t2 = timer_mu(offset_ns + duration_ns)
+		.t2 = timer_mu(offset_ns + duration_ns),
+		.profiles[0] = { .amplitude = 0 },
+		.profiles[1] = { .amplitude = 0x3FFF }
 	};
 
 	sequencer_add(pulse);
