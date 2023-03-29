@@ -119,7 +119,7 @@ void timer5_init() {
 		.Init = {
 			.Prescaler = 0,
 			.CounterMode = TIM_COUNTERMODE_UP,
-			.Period = 108*1000*1000,
+			.Period = 216*1000*1000,
 			.ClockDivision = TIM_CLOCKDIVISION_DIV1,
 			.RepetitionCounter = 0
 		}
@@ -186,5 +186,5 @@ void radar_emulator_start() {
 }
 
 uint32_t timer_mu(uint32_t time_ns) {
-	return (uint32_t)((double)time_ns / NANOSEC_108MHZ);
+	return (uint32_t)((double)time_ns / NANOSEC_216MHZ);
 }

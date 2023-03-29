@@ -111,6 +111,15 @@ void SystemClock_Config(void)
 	}
 }
 
+void enable_fast_timers() {
+	RCC_PeriphCLKInitTypeDef RCC_PeriphCLKInitStruct = {
+		.PeriphClockSelection = RCC_PERIPHCLK_TIM,
+		.TIMPresSelection = RCC_TIMPRES_DESACTIVATED
+	};
+
+	HAL_RCCEx_PeriphCLKConfig(&RCC_PeriphCLKInitStruct);
+}
+
 void print_startup_info() {
 	printf("\f\r");
 	printf("System startup\n");
@@ -159,6 +168,7 @@ void system_init() {
 
 	/* Configure the system clock to 216 MHz */
 	SystemClock_Config();
+	enable_fast_timers();
 
 	__HAL_RCC_GPIOA_CLK_ENABLE();
 	__HAL_RCC_GPIOB_CLK_ENABLE();
