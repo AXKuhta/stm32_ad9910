@@ -10,7 +10,7 @@ typedef struct seq_entry_t {
         uint32_t prologue_hold;
         uint32_t f1;
         uint32_t f2;
-        uint32_t step;
+        ad_ramp_cfg_t ramp;
     } sweep;
     uint32_t t1;
     uint32_t t2;

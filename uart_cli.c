@@ -219,7 +219,7 @@ void sequencer_add_sweep_cmd(const char* str) {
 		.sweep = {
 			.f1 = f1_hz,
 			.f2 = f2_hz,
-			.step = rc == 12 ? ad_calc_ftw(fstep_hz) : ad_calc_ramp_step_ftw(f1_hz, f2_hz, duration_ns)
+			.ramp = rc == 12 ? (ad_ramp_cfg_t){ .fstep_ftw = ad_calc_ftw(fstep_hz), .tstep_mul = 1 } : ad_calc_ramp(f1_hz, f2_hz, duration_ns)
 		},
 		.t1 = timer_mu(offset_ns),
 		.t2 = timer_mu(offset_ns + duration_ns),

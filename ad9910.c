@@ -3,6 +3,7 @@
 
 #include "stm32f7xx_hal.h"
 #include "pin_init.h"
+#include "ad9910.h"
 #include "vt100.h"
 #include "spi.h"
 
@@ -302,23 +303,31 @@ uint32_t ad_calc_ftw(uint32_t freq_hz) {
 // f_delta = f2 - f1
 // t_delta = 1 ms
 //
-// desired_fstep = f_delta / (t_delta / tstep)
+// coverage = f_delta / (fstep * (t_delta / tstep))
+// req_tstep = tstep * round(1/coverage)
+// req_fstep = f_delta / (t_delta / req_tstep)
+// ftw = round(2^32 * (req_fstep/sysclk))
 //
-uint32_t ad_calc_ramp_step_ftw(uint32_t f1_hz, uint32_t f2_hz, uint32_t time_ns) {
-	//double fstep_hz = ad_system_clock / 2147483648.0;
+ad_ramp_cfg_t ad_calc_ramp(uint32_t f1_hz, uint32_t f2_hz, uint32_t time_ns) {
+	double fstep_hz = ad_system_clock / 2147483648.0;
 	double tstep_ns = 1*1000*1000*1000 / (ad_system_clock / 4);
-
 	double f_delta = (double)f2_hz - (double)f1_hz;
+	double t_delta = (double)time_ns;
 
 	if (f_delta < 0.0)
 		f_delta = -f_delta;
 
-	double req_fstep = f_delta / ((double)time_ns / tstep_ns);
-	double ratio = req_fstep / (double)ad_system_clock;
-	
+	double coverage = f_delta / (fstep_hz * (t_delta / tstep_ns));
+	double req_tstep = tstep_ns * (uint32_t)(1.0 / coverage + 0.5);
+	double req_fstep = f_delta / (t_delta / req_tstep);
+
+	double ratio = req_fstep / (double)ad_system_clock;	
 	uint32_t ftw = (uint32_t)(4294967296.0 * ratio + 0.5);
+
+	printf("Req fstep: %lf\n", req_fstep);
+	printf("Req tstep: %lf\n", req_tstep);
 	
-	return ftw;
+	return (ad_ramp_cfg_t){ .fstep_ftw = ftw, .tstep_mul = (uint32_t)(req_tstep / tstep_ns) };
 }
 
 // Установить частоту в указанном профиле

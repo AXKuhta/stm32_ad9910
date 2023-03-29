@@ -2,9 +2,9 @@
 #include <stdio.h>
 
 #include "stm32f7xx_hal.h"
-#include "sequencer.h"
 #include "timer.h"
 #include "ad9910.h"
+#include "sequencer.h"
 #include "vec.h"
 
 extern TIM_HandleTypeDef timer2;
@@ -59,12 +59,12 @@ void sequencer_run() {
 }
 
 void spi_write_entry(seq_entry_t entry) {
-	if (entry.sweep.step > 0) {
+	if (entry.sweep.ramp.fstep_ftw > 0) {
 		ad_enable_ramp();
 
 		ad_set_ramp_limits(entry.sweep.f1, entry.sweep.f2);
-		ad_set_ramp_step(0, entry.sweep.step);
-		ad_set_ramp_rate(1, 1);
+		ad_set_ramp_step(0, entry.sweep.ramp.fstep_ftw);
+		ad_set_ramp_rate(entry.sweep.ramp.tstep_mul, entry.sweep.ramp.tstep_mul);
 	} else {
 		ad_disable_ramp();
 	}
@@ -142,7 +142,7 @@ void enter_basic_sweep_mode(uint32_t offset_ns, uint32_t duration_ns, uint32_t f
 		.sweep = {
 			.f1 = f1_hz,
 			.f2 = f2_hz,
-			.step = ad_calc_ramp_step_ftw(f1_hz, f2_hz, duration_ns)
+			.ramp = ad_calc_ramp(f1_hz, f2_hz, duration_ns)
 		},
 		.t1 = timer_mu(offset_ns),
 		.t2 = timer_mu(offset_ns + duration_ns),
