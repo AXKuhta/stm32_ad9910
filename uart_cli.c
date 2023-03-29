@@ -236,6 +236,11 @@ void sequencer_add_sweep_cmd(const char* str) {
 	free(verif_duration);
 }
 
+void dmatest_cmd(const char* str) {
+	(void)str;
+	timer5_restart();
+}
+
 void sequencer_cmd(const char* str) {
 	char seq[4] = {0};
 	char cmd[32] = {0};
@@ -279,6 +284,7 @@ void run(const char* str) {
 	if (strcmp(cmd, "test_tone") == 0) return test_tone_cmd(str);
 	if (strcmp(cmd, "basic_pulse") == 0) return basic_pulse_cmd(str);
 	if (strcmp(cmd, "basic_sweep") == 0) return basic_sweep_cmd(str);
+	if (strcmp(cmd, "dmatest") == 0) return dmatest_cmd(str);
 
 	printf("Unknown command: [%s]\n", cmd);
 }
