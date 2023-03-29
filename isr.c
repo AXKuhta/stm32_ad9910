@@ -124,6 +124,7 @@ void USART3_IRQHandler() {
 }
 
 extern TIM_HandleTypeDef timer2;
+extern TIM_HandleTypeDef timer5;
 extern void pulse_complete_callback();
 
 void TIM2_IRQHandler() {
@@ -140,5 +141,11 @@ void TIM2_IRQHandler() {
 		add_task(pulse_complete_callback);
 	}
 		
+	RECORD_INTERRUPT();
+}
+
+void TIM5_IRQHandler() {
+	HAL_TIM_IRQHandler(&timer5);
+
 	RECORD_INTERRUPT();
 }

@@ -11,6 +11,7 @@
 
 TIM_HandleTypeDef timer1;
 TIM_HandleTypeDef timer2;
+TIM_HandleTypeDef timer5;
 
 // Таймер 1
 // Эмулятор радара
@@ -108,6 +109,38 @@ void timer2_stop() {
 void timer2_restart() {
 	__HAL_RCC_TIM2_RELEASE_RESET();
 	timer2_init();
+}
+
+void timer5_init() {
+	__HAL_RCC_TIM5_CLK_ENABLE();
+	
+	TIM_HandleTypeDef timer5_defaults = {
+		.Instance = TIM5,
+		.Init = {
+			.Prescaler = 0,
+			.CounterMode = TIM_COUNTERMODE_UP,
+			.Period = 108*1000*1000,
+			.ClockDivision = TIM_CLOCKDIVISION_DIV1,
+			.RepetitionCounter = 0
+		}
+	};
+	
+	timer5 = timer5_defaults;
+	
+	HAL_NVIC_SetPriority(TIM5_IRQn, 0, 0);
+	HAL_NVIC_EnableIRQ(TIM5_IRQn);
+
+	HAL_TIM_Base_Init(&timer5);
+	HAL_TIM_Base_Start_IT(&timer5);
+}
+
+void timer5_stop() {
+	__HAL_RCC_TIM5_FORCE_RESET();
+}
+
+void timer5_restart() {
+	__HAL_RCC_TIM5_RELEASE_RESET();
+	timer5_init();
 }
 
 //

@@ -177,4 +177,5 @@ void system_init() {
 	sequencer_init();
 	enter_rfkill_mode();
 	uart_cli_init();
+	timer5_restart();
 }

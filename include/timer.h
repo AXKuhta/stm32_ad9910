@@ -16,4 +16,9 @@ void radar_emulator_start();
 void timer2_init();
 void timer2_stop();
 void timer2_restart();
+
+void timer5_init();
+void timer5_stop();
+void timer5_restart();
+
 uint32_t timer_mu(uint32_t time_ns);
