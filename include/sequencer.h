@@ -1,7 +1,7 @@
 
 typedef struct profile_t {
 	uint32_t freq_hz;
-	uint32_t phase;
+	uint16_t phase;
 	uint16_t amplitude;
 } profile_t;
 
