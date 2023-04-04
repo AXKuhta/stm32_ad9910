@@ -215,11 +215,23 @@ void sequencer_add_sweep_cmd(const char* str) {
 
 	printf("Sequence sweep at %s -> %s step %s, offset %s, duration %s\n", verif_f1, verif_f2, rc == 12 ? verif_fstep : "AUTO", verif_offset, verif_duration);
 
+	ad_ramp_t ramp;
+
+	if (rc == 12) {
+		ramp = (ad_ramp_t){
+			.fstep_ftw = ad_calc_ftw(fstep_hz),
+			.tstep_mul = 1
+		};
+	} else {
+		ramp = ad_calc_ramp(f1_hz, f2_hz, duration_ns);
+	}
+
 	seq_entry_t pulse = {
 		.sweep = {
 			.f1 = f1_hz,
 			.f2 = f2_hz,
-			.ramp = rc == 12 ? (ad_ramp_cfg_t){ .fstep_ftw = ad_calc_ftw(fstep_hz), .tstep_mul = 1 } : ad_calc_ramp(f1_hz, f2_hz, duration_ns)
+			.fstep = ramp.fstep_ftw,
+			.tstep = ramp.tstep_mul
 		},
 		.t1 = timer_mu(offset_ns),
 		.t2 = timer_mu(offset_ns + duration_ns),

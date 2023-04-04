@@ -3,7 +3,6 @@
 #include <assert.h>
 #include <string.h>
 #include "timer.h"
-#include "ad9910.h"
 #include "sequencer.h"
 #include "vec.h"
 

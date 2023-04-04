@@ -1,20 +1,21 @@
 
 typedef struct profile_t {
-    uint32_t freq_hz;
-    uint32_t phase;
-    uint16_t amplitude;
+	uint32_t freq_hz;
+	uint32_t phase;
+	uint16_t amplitude;
 } profile_t;
 
 typedef struct seq_entry_t {
-    struct sweep_t {
-        uint32_t prologue_hold;
-        uint32_t f1;
-        uint32_t f2;
-        ad_ramp_cfg_t ramp;
-    } sweep;
-    uint32_t t1;
-    uint32_t t2;
-    profile_t profiles[8];
+	struct sweep_t {
+		uint32_t prologue_hold;
+		uint32_t f1;
+		uint32_t f2;
+		uint32_t fstep;
+		uint32_t tstep;
+	} sweep;
+	uint32_t t1;
+	uint32_t t2;
+	profile_t profiles[8];
 } seq_entry_t;
 
 void enter_rfkill_mode();

@@ -308,7 +308,7 @@ uint32_t ad_calc_ftw(uint32_t freq_hz) {
 // req_fstep = f_delta / (t_delta / req_tstep)
 // ftw = round(2^32 * (req_fstep/sysclk))
 //
-ad_ramp_cfg_t ad_calc_ramp(uint32_t f1_hz, uint32_t f2_hz, uint32_t time_ns) {
+ad_ramp_t ad_calc_ramp(uint32_t f1_hz, uint32_t f2_hz, uint32_t time_ns) {
 	double fstep_hz = ad_system_clock / 2147483648.0;
 	double tstep_ns = 1*1000*1000*1000 / (ad_system_clock / 4);
 	double f_delta = (double)f2_hz - (double)f1_hz;
@@ -327,7 +327,10 @@ ad_ramp_cfg_t ad_calc_ramp(uint32_t f1_hz, uint32_t f2_hz, uint32_t time_ns) {
 	printf("Req fstep: %lf\n", req_fstep);
 	printf("Req tstep: %lf\n", req_tstep);
 	
-	return (ad_ramp_cfg_t){ .fstep_ftw = ftw, .tstep_mul = (uint32_t)(req_tstep / tstep_ns) };
+	return (ad_ramp_t){
+		.fstep_ftw = ftw,
+		.tstep_mul = (uint32_t)(req_tstep / tstep_ns)
+	};
 }
 
 // Установить частоту в указанном профиле

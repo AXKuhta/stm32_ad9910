@@ -59,12 +59,12 @@ void sequencer_run() {
 }
 
 void spi_write_entry(seq_entry_t entry) {
-	if (entry.sweep.ramp.fstep_ftw > 0) {
+	if (entry.sweep.fstep > 0) {
 		ad_enable_ramp();
 
 		ad_set_ramp_limits(entry.sweep.f1, entry.sweep.f2);
-		ad_set_ramp_step(0, entry.sweep.ramp.fstep_ftw);
-		ad_set_ramp_rate(entry.sweep.ramp.tstep_mul, entry.sweep.ramp.tstep_mul);
+		ad_set_ramp_step(0, entry.sweep.fstep);
+		ad_set_ramp_rate(entry.sweep.tstep, entry.sweep.tstep);
 	} else {
 		ad_disable_ramp();
 	}
@@ -138,11 +138,14 @@ void enter_basic_sweep_mode(uint32_t offset_ns, uint32_t duration_ns, uint32_t f
 	sequencer_stop();
 	sequencer_reset();
 
+	ad_ramp_t ramp = ad_calc_ramp(f1_hz, f2_hz, duration_ns);
+
 	seq_entry_t pulse = {
 		.sweep = {
 			.f1 = f1_hz,
 			.f2 = f2_hz,
-			.ramp = ad_calc_ramp(f1_hz, f2_hz, duration_ns)
+			.fstep = ramp.fstep_ftw,
+			.tstep = ramp.tstep_mul
 		},
 		.t1 = timer_mu(offset_ns),
 		.t2 = timer_mu(offset_ns + duration_ns),
