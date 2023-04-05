@@ -111,10 +111,11 @@ void SystemClock_Config(void)
 	}
 }
 
+// Включение TIMPRES удваивает частоту таймеров до 216 МГц (Непонятно, почему его назвали предделителем, если он не делит)
 void enable_fast_timers() {
 	RCC_PeriphCLKInitTypeDef RCC_PeriphCLKInitStruct = {
 		.PeriphClockSelection = RCC_PERIPHCLK_TIM,
-		.TIMPresSelection = RCC_TIMPRES_DESACTIVATED
+		.TIMPresSelection = RCC_TIMPRES_ACTIVATED
 	};
 
 	HAL_RCCEx_PeriphCLKConfig(&RCC_PeriphCLKInitStruct);
