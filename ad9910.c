@@ -113,8 +113,6 @@ void drhold_timer_controlled() {
 }
 
 // Установить профиль
-// Примечание: перенос значений в активные регистры произойдёт, если на любой из ножек будет rising edge
-// Выполнение set_profile(0) после set_profile(7) __не вызовет__ обновления регистров
 void set_profile(uint8_t profile_id) {
 	assert(profile_id < 8);
 
