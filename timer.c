@@ -119,7 +119,7 @@ void timer5_init() {
 		.Init = {
 			.Prescaler = 0,
 			.CounterMode = TIM_COUNTERMODE_UP,
-			.Period = 216*1000*1000,
+			.Period = 216*1000*1000 / 9600,
 			.ClockDivision = TIM_CLOCKDIVISION_DIV1,
 			.RepetitionCounter = 0
 		}
@@ -127,8 +127,8 @@ void timer5_init() {
 	
 	timer5 = timer5_defaults;
 	
-	HAL_NVIC_SetPriority(TIM5_IRQn, 0, 0);
-	HAL_NVIC_EnableIRQ(TIM5_IRQn);
+	HAL_NVIC_SetPriority(TIM5_IRQn, 0, 1);
+	//HAL_NVIC_EnableIRQ(TIM5_IRQn);
 
 	HAL_TIM_Base_Init(&timer5);
 	HAL_TIM_Base_Start_IT(&timer5);

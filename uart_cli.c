@@ -250,7 +250,22 @@ void sequencer_add_sweep_cmd(const char* str) {
 
 void dmatest_cmd(const char* str) {
 	(void)str;
+	
+	sequencer_stop();
+	sequencer_reset();
+
+	seq_entry_t pulse = {
+		.t1 = timer_mu(0),
+		.t2 = timer_mu(0 + 1*1000*1000), // 1 ms
+		.profiles[0] = { .freq_hz = 0, .amplitude = 0 },
+		.profiles[1] = { .freq_hz = 10*1000*1000, .amplitude = 0x3FFF },
+		.profiles[2] = { .freq_hz = 120*1000*1000, .amplitude = 0x3FFF }
+	};
+
+	sequencer_add(pulse);
+
 	timer5_restart();
+	sequencer_run();
 }
 
 void sequencer_cmd(const char* str) {

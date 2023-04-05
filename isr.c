@@ -119,25 +119,36 @@ extern TIM_HandleTypeDef timer2;
 extern TIM_HandleTypeDef timer5;
 extern void pulse_complete_callback();
 
-void TIM2_IRQHandler() {
-	HAL_TIM_IRQHandler(&timer2);
+static void step() {
+	static uint32_t idx;
 
+	set_profile(1 + (idx & 1));
+
+	idx++;
+}
+
+void TIM2_IRQHandler() {
 	static int pulse_t1_pass;
 
 	if (pulse_t1_pass == 0) {
+		timer5.Instance->CNT = 0; // Принудительно закинуть в таймер 0 для синхронизации
 		set_profile(1);
+		HAL_NVIC_EnableIRQ(TIM5_IRQn);
 		pulse_t1_pass = 1;
 	} else {
+		HAL_NVIC_DisableIRQ(TIM5_IRQn); // Может ли произойти такое, что если прерывание было pending, то обработчик прерывания будет вызван после отключения прерывания?
 		set_profile(0);
 		pulse_t1_pass = 0;
 		add_task(pulse_complete_callback);
 	}
-		
+
+	HAL_TIM_IRQHandler(&timer2);
 	RECORD_INTERRUPT();
 }
 
 void TIM5_IRQHandler() {
-	HAL_TIM_IRQHandler(&timer5);
+	step();
 
+	HAL_TIM_IRQHandler(&timer5);
 	RECORD_INTERRUPT();
 }
