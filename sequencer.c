@@ -1,10 +1,14 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <assert.h>
+#include <string.h>
 
 #include "stm32f7xx_hal.h"
 #include "timer.h"
 #include "ad9910.h"
 #include "sequencer.h"
+
+#define VEC_ELEM_TYPE seq_entry_t
 #include "vec.h"
 
 extern TIM_HandleTypeDef timer2;
