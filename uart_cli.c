@@ -248,26 +248,6 @@ void sequencer_add_sweep_cmd(const char* str) {
 	free(verif_duration);
 }
 
-void dmatest_cmd(const char* str) {
-	(void)str;
-	
-	sequencer_stop();
-	sequencer_reset();
-
-	seq_entry_t pulse = {
-		.t1 = timer_mu(0),
-		.t2 = timer_mu(0 + 1*1000*1000), // 1 ms
-		.profiles[0] = { .freq_hz = 0, .amplitude = 0 },
-		.profiles[1] = { .freq_hz = 10*1000*1000, .amplitude = 0x3FFF },
-		.profiles[2] = { .freq_hz = 120*1000*1000, .amplitude = 0x3FFF }
-	};
-
-	sequencer_add(pulse);
-
-	timer5_restart();
-	sequencer_run();
-}
-
 void sequencer_cmd(const char* str) {
 	char seq[4] = {0};
 	char cmd[32] = {0};
@@ -292,6 +272,58 @@ void sequencer_cmd(const char* str) {
 	if (strcmp(cmd, "stop") == 0) return sequencer_stop();
 }
 
+void datatest_cmd(const char* str) {
+	(void)str;
+	
+	sequencer_stop();
+	sequencer_reset();
+
+	seq_entry_t pulse = {
+		.t1 = timer_mu(0),
+		.t2 = timer_mu(0 + 1*1000*1000), // 1 ms
+		.profiles[0] = { .freq_hz = 0, .amplitude = 0 },
+		.profiles[1] = { .freq_hz = 154*1000*1000, .amplitude = 0x3FFF },
+		.profiles[2] = { .freq_hz = 154*1000*1000, .amplitude = 0x3FFF/2 }
+	};
+
+	sequencer_add(pulse);
+
+	timer5_restart();
+	sequencer_run();
+}
+
+void load_dmabuf_cmd(const char* str) {
+	char cmd[32] = {0};
+	size_t dmabuf_id;
+	size_t offset;
+
+	int rc = sscanf(str, "%31s %u %n", cmd, &dmabuf_id, &offset);
+
+	if (rc != 2) {
+		printf("Invalid arguments\n");
+		printf("Usage: load_dmabuf\n");
+		return;
+	}
+
+	char* values = (char*)str + offset;
+	char* endptr;
+	size_t count = 0;
+
+	while (1) {
+		unsigned int v = strtoul(values, &endptr, 0);
+
+		if (endptr == values) {
+			break;
+		} else {
+			printf("%u\n", v);
+			values = endptr;
+			count++;
+		}
+	}
+
+	printf("Loaded %u values\n", count);
+}
+
 void run(const char* str) {
 	char cmd[32] = {0};
 
@@ -311,7 +343,8 @@ void run(const char* str) {
 	if (strcmp(cmd, "test_tone") == 0) return test_tone_cmd(str);
 	if (strcmp(cmd, "basic_pulse") == 0) return basic_pulse_cmd(str);
 	if (strcmp(cmd, "basic_sweep") == 0) return basic_sweep_cmd(str);
-	if (strcmp(cmd, "dmatest") == 0) return dmatest_cmd(str);
+	if (strcmp(cmd, "load_dmabuf") == 0) return load_dmabuf_cmd(str);
+	if (strcmp(cmd, "datatest") == 0) return datatest_cmd(str);
 
 	printf("Unknown command: [%s]\n", cmd);
 }
