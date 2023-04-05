@@ -8,7 +8,7 @@
 // =============================================================================
 // INTERRUPT PROFILER
 // =============================================================================
-#define LIST_SIZE 8
+#define LIST_SIZE 64
 #define REC_SLOTS 16
 
 typedef struct interrupt_t {
@@ -17,8 +17,23 @@ typedef struct interrupt_t {
 } interrupt_t;
 
 interrupt_t it_list[LIST_SIZE] = {0};
-const char* isr_log[REC_SLOTS] = {0};
-int isr_log_next = 0;
+int isr_recorder_collision = 0;
+
+static void record_it(const char* title) {
+	size_t ptr = (size_t)title;
+	size_t idx = ptr % LIST_SIZE;
+
+	interrupt_t* it = &it_list[idx];
+
+	if (it->title == 0) {
+		it->title = title;
+	} else if (it->title != title) {
+		isr_recorder_collision = 1;
+		return;
+	}
+
+	it->count++;
+}
 
 void print_it() {
 	printf("%10s %s\n", "COUNT", "INTERRUPT");
@@ -27,44 +42,21 @@ void print_it() {
 		interrupt_t* it = &it_list[i];
 
 		if (it->title == 0) {
-			return;
+			continue;
 		}
 
 		printf("%10ld %s\n", it->count, it->title);
 	}
 }
 
-void record_it(const char* title) {
-	for (int i = 0; i < LIST_SIZE; i++) {
-		interrupt_t* it = &it_list[i];
-
-		if (it->title == title) {
-			it->count++;
-			return;
-		}
-
-		if (it->title == 0) {
-			it->title = title;
-			it->count = 1;
-			return;
-		}
-	}
-}
-
 void isr_recorder_sync() {
-	if (isr_log_next > REC_SLOTS) {
-		printf("Interrupt recorder overrun: %d interrupts received.\n", isr_log_next);
+	if (isr_recorder_collision) {
+		printf("Interrupt recorder index collision");
 		while (1) {};
 	}
-
-	for (int i = 0; i < isr_log_next; i++) {
-		record_it(isr_log[i]);
-	}
-
-	isr_log_next = 0;
 }
 
-#define RECORD_INTERRUPT() (isr_log[isr_log_next++ % REC_SLOTS] = __FUNCTION__)
+#define RECORD_INTERRUPT() record_it(__FUNCTION__)
 
 // =============================================================================
 // PROCESSOR EXCEPTIONS
