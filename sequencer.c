@@ -83,6 +83,7 @@ void spi_write_entry(seq_entry_t entry) {
 	for (int i = 0; i < 8; i++) {
 		ad_set_profile_freq(i, entry.profiles[i].freq_hz);
 		ad_set_profile_amplitude(i, entry.profiles[i].amplitude);
+		ad_set_profile_phase(i, entry.profiles[i].phase);
 	}
 }
 
