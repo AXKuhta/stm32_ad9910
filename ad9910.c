@@ -304,7 +304,7 @@ uint32_t ad_calc_ftw(uint32_t freq_hz) {
 // t_delta = 1 ms
 //
 // coverage = f_delta / (fstep * (t_delta / tstep))
-// req_tstep = tstep * round(1/coverage)
+// req_tstep = coverage < 1.0 ? tstep * round(1/coverage) : tstep
 // req_fstep = f_delta / (t_delta / req_tstep)
 // ftw = round(2^32 * (req_fstep/sysclk))
 //
@@ -318,7 +318,7 @@ ad_ramp_t ad_calc_ramp(uint32_t f1_hz, uint32_t f2_hz, uint32_t time_ns) {
 		f_delta = -f_delta;
 
 	double coverage = f_delta / (fstep_hz * (t_delta / tstep_ns));
-	double req_tstep = tstep_ns * (uint32_t)(1.0 / coverage + 0.5);
+	double req_tstep = coverage < 1.0 ? tstep_ns * (uint32_t)(1.0 / coverage + 0.5) : tstep_ns;
 	double req_fstep = f_delta / (t_delta / req_tstep);
 
 	double ratio = req_fstep / (double)ad_system_clock;	
