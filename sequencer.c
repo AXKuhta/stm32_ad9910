@@ -11,10 +11,17 @@
 #define VEC_ELEM_TYPE seq_entry_t
 #include "vec.h"
 
-extern TIM_HandleTypeDef timer2;
+// Глобальные переменные
+uint8_t* profile_mod_buffer;
+size_t profile_mod_size;
+size_t profile_mod_idx;
 
+// "Приватные" глобальные переменные
+static uint8_t default_profile_mod[1] = { 1 };
 static vec_t* sequence;
 static int seq_index;
+
+extern TIM_HandleTypeDef timer2;
 
 void sequencer_init() {
 	sequence = init_vec();
@@ -85,8 +92,17 @@ void sequencer_stop() {
 
 void pulse_complete_callback() {
 	int next_idx = ++seq_index % sequence->size;
+	seq_entry_t entry = sequence->elements[next_idx];
 
-	spi_write_entry(sequence->elements[next_idx]);
+	if (entry.profile_modulation.buffer) {
+		profile_mod_buffer = entry.profile_modulation.buffer;
+		profile_mod_size = entry.profile_modulation.size;
+	} else {
+		profile_mod_buffer = default_profile_mod;
+		profile_mod_size = 0;
+	}
+
+	spi_write_entry(entry);
 	ad_write_all();
 	set_ramp_direction(0);
 	ad_pulse_io_update(); // !! Большая задержка

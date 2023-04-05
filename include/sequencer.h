@@ -13,6 +13,10 @@ typedef struct seq_entry_t {
 		uint32_t fstep;
 		uint32_t tstep;
 	} sweep;
+	struct buffer_t {
+		uint8_t* buffer;
+		size_t size;
+	} profile_modulation;
 	uint32_t t1;
 	uint32_t t2;
 	profile_t profiles[8];

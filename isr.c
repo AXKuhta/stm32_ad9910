@@ -117,22 +117,27 @@ void USART3_IRQHandler() {
 
 extern TIM_HandleTypeDef timer2;
 extern TIM_HandleTypeDef timer5;
+extern uint8_t* profile_mod_buffer;
+extern size_t profile_mod_size;
+extern size_t profile_mod_idx;
 extern void pulse_complete_callback();
 
-static uint32_t idx = 0;
+static void modulation_step() {
+	set_profile(profile_mod_buffer[profile_mod_idx]);
+	profile_mod_idx++;
 
-static void step() {
-	set_profile(1 + (idx & 1));
-	idx++;
+	// Модуляция будет идти по кругу
+	if (profile_mod_idx == profile_mod_size)
+		profile_mod_idx = 0;
 }
 
 void TIM2_IRQHandler() {
 	static int pulse_t1_pass;
 
 	if (pulse_t1_pass == 0) {
-		idx = 0;
+		profile_mod_idx = 0;
 		timer5.Instance->CNT = 0; // Принудительно закинуть в таймер 0 для синхронизации
-		set_profile(1);
+		set_profile(profile_mod_buffer[0]);
 		HAL_NVIC_EnableIRQ(TIM5_IRQn);
 		pulse_t1_pass = 1;
 	} else {
@@ -147,7 +152,7 @@ void TIM2_IRQHandler() {
 }
 
 void TIM5_IRQHandler() {
-	step();
+	modulation_step();
 
 	HAL_TIM_IRQHandler(&timer5);
 	RECORD_INTERRUPT();
