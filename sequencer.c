@@ -1,14 +1,12 @@
 #include <stdlib.h>
-#include <stdio.h>
 #include <assert.h>
 #include <string.h>
+#include <stdio.h>
 
 #include "stm32f7xx_hal.h"
 #include "timer.h"
 #include "ad9910.h"
 #include "sequencer.h"
-
-#define VEC_ELEM_TYPE seq_entry_t
 #include "vec.h"
 
 // Глобальные переменные
@@ -18,13 +16,13 @@ size_t profile_mod_idx;
 
 // "Приватные" глобальные переменные
 static uint8_t default_profile_mod[1] = { 1 };
-static vec_t* sequence;
+static vec_t(seq_entry_t)* sequence;
 static int seq_index;
 
 extern TIM_HandleTypeDef timer2;
 
 void sequencer_init() {
-	sequence = init_vec();
+	sequence = init_vec(seq_entry_t);
 }
 
 void sequencer_reset() {
@@ -44,7 +42,7 @@ static void debug_print_entry(seq_entry_t* entry) {
 }
 
 void sequencer_show() {
-	printf("Sequencer entries: %lu\n", sequence->size);
+	printf("Sequencer entries: %u\n", sequence->size);
 	for_every_entry(sequence, debug_print_entry);
 }
 

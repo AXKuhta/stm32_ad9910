@@ -1,57 +1,50 @@
 
-// Примитивный динамический массив
-// Реализован в рамках заголовочного файла ради возможности использовать разные типы данных
-// Перед подключением должен быть объявлен тип данных:
-// #define VEC_ELEM_TYPE char
-// #include "vec.h"
+#define vec_t(type) struct type##_vec_t { \
+	size_t size; \
+	size_t capacity; \
+	size_t element_size; \
+	type* elements; \
+}
+
+typedef vec_t(void) void_vec_t;
 
 #define unused __attribute__((unused))
 
-#ifndef VEC_ELEM_TYPE
-#error Please define VEC_ELEM_TYPE
-#endif
-
-typedef struct vec_t {
-	uint32_t size;
-	uint32_t capacity;
-	VEC_ELEM_TYPE* elements;
-} vec_t;
-
-unused static vec_t* init_vec() {
-	vec_t* vec = malloc(sizeof(vec_t));
+unused static void* _init_vec(size_t element_size) {
+	void_vec_t* vec = malloc(sizeof(void_vec_t));
 
 	vec->size = 0;
 	vec->capacity = 32;
-	vec->elements = malloc(vec->capacity * sizeof(VEC_ELEM_TYPE));
+	vec->element_size = element_size;
+	vec->elements = malloc(vec->capacity * element_size);
 
 	return vec;
 }
 
-unused static void double_capacity(vec_t* vec) {
-	vec->capacity *= 2;
-	vec->elements = realloc(vec->elements, vec->capacity * sizeof(VEC_ELEM_TYPE));
-
-	assert(vec->elements != NULL);
-}
-
-unused static void vec_push(vec_t* vec, VEC_ELEM_TYPE value) {
-	if (vec->size == vec->capacity)
-		double_capacity(vec);
-
-	vec->elements[vec->size++] = value;
-}
-
-unused static void free_vec(vec_t* vec) {
+unused static void _free_vec(void_vec_t* vec) {
 	free(vec->elements);
 	free(vec);
 }
 
-unused static void clear_vec(vec_t* vec) {
-	memset(vec->elements, 0, vec->size * sizeof(VEC_ELEM_TYPE));
+unused static void _clear_vec(void_vec_t* vec) {
+	memset(vec->elements, 0, vec->size * vec->element_size);
 	vec->size = 0;
 }
 
-unused static void for_every_entry(vec_t* vec, void fn(VEC_ELEM_TYPE*)) {
-	for (uint32_t i = 0; i < vec->size; i++)
-		fn(&vec->elements[i]);
+unused static void _double_capacity(void_vec_t* vec) {
+	vec->capacity *= 2;
+	vec->elements = realloc(vec->elements, vec->capacity * vec->element_size);
+
+	assert(vec->elements != NULL);
 }
+
+unused static void _for_every_entry(void_vec_t* vec, void fn(void*)) {
+	for (size_t i = 0; i < vec->size; i++)
+		fn(vec->elements + i * vec->element_size);
+}
+
+#define init_vec(type) (struct type##_vec_t*)_init_vec(sizeof(type));
+#define vec_push(vec, value) (vec->size == vec->capacity ? _double_capacity((void_vec_t*)vec) : 0, vec->elements[vec->size++] = value)
+#define free_vec(vec) _free_vec((void_vec_t*)vec)
+#define clear_vec(vec) _clear_vec((void_vec_t*)vec)
+#define for_every_entry(vec, fn) _for_every_entry((void_vec_t*)vec, (void (*)(void*))fn)
