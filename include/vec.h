@@ -38,13 +38,8 @@ unused static void _double_capacity(void_vec_t* vec) {
 	assert(vec->elements != NULL);
 }
 
-unused static void _for_every_entry(void_vec_t* vec, void fn(void*)) {
-	for (size_t i = 0; i < vec->size; i++)
-		fn(vec->elements + i * vec->element_size);
-}
-
 #define init_vec(type) (struct type##_vec_t*)_init_vec(sizeof(type));
 #define vec_push(vec, value) (vec->size == vec->capacity ? _double_capacity((void_vec_t*)vec) : 0, vec->elements[vec->size++] = value)
 #define free_vec(vec) _free_vec((void_vec_t*)vec)
 #define clear_vec(vec) _clear_vec((void_vec_t*)vec)
-#define for_every_entry(vec, fn) _for_every_entry((void_vec_t*)vec, (void (*)(void*))fn)
+#define for_every_entry(vec, fn) for (size_t i = 0; i < vec->size; i++) fn(vec->elements + i)
