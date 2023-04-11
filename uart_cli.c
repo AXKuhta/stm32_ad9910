@@ -128,6 +128,59 @@ void basic_sweep_cmd(const char* str) {
 	enter_basic_sweep_mode(t1_ns, t2_ns, f1_hz, f2_hz);
 }
 
+void xmitdata_fsk_cmd(const char* str) {
+	char xmitdata[9] = {0};
+	char cmd[32] = {0};
+	char o_unit[4] = {0};
+	char f1_unit[4] = {0};
+	char f2_unit[4] = {0};
+	double offset;
+	double f1;
+	double f2;
+	size_t data_offset;
+
+	int rc = sscanf(str, "%8s %31s %lf %3s %lf %3s %lf %3s %n", xmitdata, cmd, &offset, o_unit, &f1, f1_unit, &f2, f2_unit, &data_offset);
+
+	if (rc != 8) {
+		printf("Invalid arguments\n");
+		printf("Usage: basic_xmitdata fsk delay unit f1 unit f2 unit rate_hz data data data data ...\n");
+		printf("Example: basic_xmitdata fsk 100 us 151.10 MHz 151.11 MHz 9600 1 1 0 1 ...\n");
+		return;
+	}
+
+	char* values = (char*)str + data_offset;
+	char* endptr;
+	size_t count = 0;
+
+	while (1) {
+		unsigned int v = strtoul(values, &endptr, 0);
+
+		if (endptr == values) {
+			break;
+		} else {
+			printf("%u\n", v);
+			values = endptr;
+			count++;
+		}
+	}
+
+	printf("Loaded %u values\n", count);
+}
+
+void basic_xmitdata_cmd(const char* str) {
+	char xmitdata[9] = {0};
+	char cmd[32] = {0};
+
+	int rc = sscanf(str, "%8s %31s", xmitdata, cmd);
+
+	if (rc != 2) {
+		printf("Invalid arguments\n");
+		printf("Usage: basic_xmitdata fsk delay unit rate data data data data ...\n");
+	}
+
+	if (strcmp(cmd, "fsk") == 0) return xmitdata_fsk_cmd(str);
+}
+
 void sequencer_add_pulse_cmd(const char* str) {
 	char seq[4] = {0};
 	char cmd[32] = {0};
@@ -262,6 +315,7 @@ void sequencer_cmd(const char* str) {
 		printf("Usage: seq sweep delay unit duration unit f1 unit f2 unit {fstep unit | auto}\n");
 		printf("Usage: seq run\n");
 		printf("Usage: seq stop\n");
+		return;
 	}
 
 	if (strcmp(cmd, "reset") == 0) return sequencer_reset();
@@ -292,38 +346,6 @@ void datatest_cmd(const char* str) {
 	sequencer_run();
 }
 
-void load_dmabuf_cmd(const char* str) {
-	char cmd[32] = {0};
-	size_t dmabuf_id;
-	size_t offset;
-
-	int rc = sscanf(str, "%31s %u %n", cmd, &dmabuf_id, &offset);
-
-	if (rc != 2) {
-		printf("Invalid arguments\n");
-		printf("Usage: load_dmabuf\n");
-		return;
-	}
-
-	char* values = (char*)str + offset;
-	char* endptr;
-	size_t count = 0;
-
-	while (1) {
-		unsigned int v = strtoul(values, &endptr, 0);
-
-		if (endptr == values) {
-			break;
-		} else {
-			printf("%u\n", v);
-			values = endptr;
-			count++;
-		}
-	}
-
-	printf("Loaded %u values\n", count);
-}
-
 void run(const char* str) {
 	char cmd[32] = {0};
 
@@ -343,7 +365,7 @@ void run(const char* str) {
 	if (strcmp(cmd, "test_tone") == 0) return test_tone_cmd(str);
 	if (strcmp(cmd, "basic_pulse") == 0) return basic_pulse_cmd(str);
 	if (strcmp(cmd, "basic_sweep") == 0) return basic_sweep_cmd(str);
-	if (strcmp(cmd, "load_dmabuf") == 0) return load_dmabuf_cmd(str);
+	if (strcmp(cmd, "basic_xmitdata") == 0) return basic_xmitdata_cmd(str);
 	if (strcmp(cmd, "datatest") == 0) return datatest_cmd(str);
 
 	printf("Unknown command: [%s]\n", cmd);
