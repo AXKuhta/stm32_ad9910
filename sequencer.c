@@ -77,10 +77,11 @@ void sequencer_run() {
 	enter_rfkill_mode();
 
 	seq_index = 0;
-	pulse_complete_callback();
 
 	timer2_restart();
 	timer5_restart();
+
+	pulse_complete_callback();
 }
 
 void spi_write_entry(seq_entry_t entry) {
