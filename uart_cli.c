@@ -197,8 +197,8 @@ void xmitdata_fsk_cmd(const char* str) {
 		.t1 = timer_mu(t1_ns),
 		.t2 = timer_mu(t1_ns + t2_ns),
 		.profiles[0] = { .freq_hz = 0, .amplitude = 0 },
-		.profiles[1] = { .freq_hz = f1_hz, .amplitude = 0x3FFF },
-		.profiles[2] = { .freq_hz = f2_hz, .amplitude = 0x3FFF },
+		.profiles[2] = { .freq_hz = f1_hz, .amplitude = 0x3FFF },
+		.profiles[3] = { .freq_hz = f2_hz, .amplitude = 0x3FFF },
 		.profile_modulation = { .buffer = vec->elements, .size = vec->size }
 	};
 
