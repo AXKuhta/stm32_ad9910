@@ -12,6 +12,7 @@
 #include "units.h"
 #include "timer.h"
 #include "sequencer.h"
+#include "vec.h"
 
 // =============================================================================
 // CLI COMMANDS
@@ -150,9 +151,9 @@ void xmitdata_fsk_cmd(const char* str) {
 		return;
 	}
 
+	vec_t(uint8_t)* vec = init_vec(uint8_t);
 	char* values = (char*)str + data_offset;
 	char* endptr;
-	size_t count = 0;
 
 	while (1) {
 		unsigned int v = strtoul(values, &endptr, 0);
@@ -160,13 +161,12 @@ void xmitdata_fsk_cmd(const char* str) {
 		if (endptr == values) {
 			break;
 		} else {
-			printf("%u\n", v);
+			vec_push(vec, v);
 			values = endptr;
-			count++;
 		}
 	}
 
-	printf("Loaded %u values\n", count);
+	printf("Loaded %u values\n", vec->size);
 }
 
 void basic_xmitdata_cmd(const char* str) {
