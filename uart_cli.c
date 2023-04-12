@@ -133,39 +133,40 @@ void xmitdata_fsk_cmd(const char* str) {
 	char basic_xmitdata[15] = {0};
 	char cmd[32] = {0};
 	char t1_unit[4] = {0};
+	char t2_unit[4] = {0};
 	char f1_unit[4] = {0};
 	char f2_unit[4] = {0};
-	char rate_unit[4] = {0};
 	double t1;
+	double t2;
 	double f1;
 	double f2;
 	double rate;
 	size_t data_offset;
 
-	int rc = sscanf(str, "%14s %31s %lf %3s %lf %3s %lf %3s %lf %3s %n", basic_xmitdata, cmd, &t1, t1_unit, &f1, f1_unit, &f2, f2_unit, &rate, rate_unit, &data_offset);
+	int rc = sscanf(str, "%14s %31s %lf %3s %lf %3s %lf %3s %lf %3s %lf %n", basic_xmitdata, cmd, &t1, t1_unit, &t2, t2_unit, &f1, f1_unit, &f2, f2_unit, &rate, &data_offset);
 
-	if (rc != 10) {
+	if (rc != 11) {
 		printf("Invalid arguments: %d\n", rc);
-		printf("Usage: basic_xmitdata fsk delay unit f1 unit f2 unit rate unit data data data ...\n");
-		printf("Example: basic_xmitdata fsk 100 us 151.10 MHz 151.11 MHz 9600 Hz 1 1 0 1 ...\n");
+		printf("Usage: basic_xmitdata fsk offset unit duration unit f1 unit f2 unit rate unit data data data ...\n");
+		printf("Example: basic_xmitdata fsk 0 us 1 ms 151.10 MHz 151.11 MHz 9600 1 1 0 1 ...\n");
 		return;
 	}
 
 	uint32_t f1_hz = parse_freq(f1, f1_unit);
 	uint32_t f2_hz = parse_freq(f2, f2_unit);
-	uint32_t rate_hz = parse_freq(rate, rate_unit);
 	uint32_t t1_ns = parse_time(t1, t1_unit);
-
+	uint32_t t2_ns = parse_time(t2, t2_unit);
+	
 	if (f1_hz == 0 || f2_hz == 0) {
 		return;
 	}
 
 	char* verif_f1 = freq_unit(f1_hz);
 	char* verif_f2 = freq_unit(f2_hz);
-	char* verif_rate = freq_unit(rate_hz);
 	char* verif_t1 = time_unit(t1_ns / 1000.0 / 1000.0 / 1000.0);
+	char* verif_t2 = time_unit(t2_ns / 1000.0 / 1000.0 / 1000.0);
 
-	printf("Basic FSK at %s + %s, offset %s, rate %s\n", verif_f1, verif_f2, verif_t1, verif_rate);
+	printf("Basic FSK at %s + %s, offset %s, duration %s, rate %.1lf baud\n", verif_f1, verif_f2, verif_t1, verif_t2, rate);
 
 	vec_t(uint8_t)* vec = init_vec(uint8_t);
 	char* values = (char*)str + data_offset;
@@ -183,6 +184,11 @@ void xmitdata_fsk_cmd(const char* str) {
 	}
 
 	printf("Loaded %u values\n", vec->size);
+
+	free(verif_f1);
+	free(verif_f2);
+	free(verif_t1);
+	free(verif_t2);
 }
 
 void basic_xmitdata_cmd(const char* str) {
