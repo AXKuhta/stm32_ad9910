@@ -143,7 +143,7 @@ void xmitdata_fsk_cmd(const char* str) {
 
 	if (rc != 8) {
 		printf("Invalid arguments\n");
-		printf("Usage: basic_xmitdata fsk delay unit f1 unit f2 unit rate_hz data data data data ...\n");
+		printf("Usage: basic_xmitdata fsk delay unit f1 unit f2 unit rate_hz data data data ...\n");
 		printf("Example: basic_xmitdata fsk 100 us 151.10 MHz 151.11 MHz 9600 1 1 0 1 ...\n");
 		return;
 	}
@@ -168,17 +168,20 @@ void xmitdata_fsk_cmd(const char* str) {
 }
 
 void basic_xmitdata_cmd(const char* str) {
-	char xmitdata[9] = {0};
+	char basic_xmitdata[15] = {0};
 	char cmd[32] = {0};
 
-	int rc = sscanf(str, "%8s %31s", xmitdata, cmd);
+	int rc = sscanf(str, "%14s %31s", basic_xmitdata, cmd);
 
 	if (rc != 2) {
 		printf("Invalid arguments\n");
-		printf("Usage: basic_xmitdata fsk delay unit rate data data data data ...\n");
+		printf("Usage: basic_xmitdata mode ...\n");
+		return;
 	}
 
 	if (strcmp(cmd, "fsk") == 0) return xmitdata_fsk_cmd(str);
+
+	printf("Unknown xmitdata mode: [%s]\n", cmd);
 }
 
 void sequencer_add_pulse_cmd(const char* str) {
@@ -324,6 +327,8 @@ void sequencer_cmd(const char* str) {
 	if (strcmp(cmd, "sweep") == 0) return sequencer_add_sweep_cmd(str);
 	if (strcmp(cmd, "run") == 0) return sequencer_run();
 	if (strcmp(cmd, "stop") == 0) return sequencer_stop();
+
+	printf("Unknown sequencer command: [%s]\n", cmd);
 }
 
 void datatest_cmd(const char* str) {
