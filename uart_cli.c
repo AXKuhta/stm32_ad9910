@@ -168,6 +168,11 @@ void xmitdata_fsk_cmd(const char* str) {
 
 	printf("Basic FSK at %s + %s, offset %s, duration %s, rate %.1lf baud\n", verif_f1, verif_f2, verif_t1, verif_t2, rate);
 
+	free(verif_f1);
+	free(verif_f2);
+	free(verif_t1);
+	free(verif_t2);
+
 	vec_t(uint8_t)* vec = init_vec(uint8_t);
 	char* values = (char*)str + data_offset;
 	char* endptr;
@@ -185,10 +190,22 @@ void xmitdata_fsk_cmd(const char* str) {
 
 	printf("Loaded %u values\n", vec->size);
 
-	free(verif_f1);
-	free(verif_f2);
-	free(verif_t1);
-	free(verif_t2);
+	sequencer_stop();
+	sequencer_reset();
+
+	seq_entry_t pulse = {
+		.t1 = timer_mu(t1_ns),
+		.t2 = timer_mu(t1_ns + t2_ns),
+		.profile_modulation.buffer = vec->elements,
+		.profile_modulation.size = vec->size,
+		.profiles[0] = { .freq_hz = 0, .amplitude = 0 },
+		.profiles[1] = { .freq_hz = f1_hz, .amplitude = 0x3FFF },
+		.profiles[2] = { .freq_hz = f2_hz, .amplitude = 0x3FFF }
+	};
+
+	sequencer_add(pulse);
+	timer5_restart();
+	sequencer_run();
 }
 
 void basic_xmitdata_cmd(const char* str) {
