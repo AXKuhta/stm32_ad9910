@@ -78,9 +78,11 @@ void sequencer_run() {
 
 	seq_index = 0;
 
+	// Полный сброс + активация таймеров
 	timer2_restart();
 	timer5_restart();
 
+	// А что произойдёт, если внешний триггер придёт между timer2_restart() и pulse_complete_callback()?
 	pulse_complete_callback();
 }
 
