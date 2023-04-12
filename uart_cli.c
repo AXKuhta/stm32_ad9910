@@ -132,17 +132,17 @@ void basic_sweep_cmd(const char* str) {
 void xmitdata_fsk_cmd(const char* str) {
 	char basic_xmitdata[15] = {0};
 	char cmd[32] = {0};
-	char o_unit[4] = {0};
+	char t1_unit[4] = {0};
 	char f1_unit[4] = {0};
 	char f2_unit[4] = {0};
-	char r_unit[4] = {0};
-	double offset;
+	char rate_unit[4] = {0};
+	double t1;
 	double f1;
 	double f2;
 	double rate;
 	size_t data_offset;
 
-	int rc = sscanf(str, "%14s %31s %lf %3s %lf %3s %lf %3s %lf %3s %n", basic_xmitdata, cmd, &offset, o_unit, &f1, f1_unit, &f2, f2_unit, &rate, r_unit, &data_offset);
+	int rc = sscanf(str, "%14s %31s %lf %3s %lf %3s %lf %3s %lf %3s %n", basic_xmitdata, cmd, &t1, t1_unit, &f1, f1_unit, &f2, f2_unit, &rate, rate_unit, &data_offset);
 
 	if (rc != 10) {
 		printf("Invalid arguments: %d\n", rc);
@@ -150,6 +150,22 @@ void xmitdata_fsk_cmd(const char* str) {
 		printf("Example: basic_xmitdata fsk 100 us 151.10 MHz 151.11 MHz 9600 Hz 1 1 0 1 ...\n");
 		return;
 	}
+
+	uint32_t f1_hz = parse_freq(f1, f1_unit);
+	uint32_t f2_hz = parse_freq(f2, f2_unit);
+	uint32_t rate_hz = parse_freq(rate, rate_unit);
+	uint32_t t1_ns = parse_time(t1, t1_unit);
+
+	if (f1_hz == 0 || f2_hz == 0) {
+		return;
+	}
+
+	char* verif_f1 = freq_unit(f1_hz);
+	char* verif_f2 = freq_unit(f2_hz);
+	char* verif_rate = freq_unit(rate_hz);
+	char* verif_t1 = time_unit(t1_ns / 1000.0 / 1000.0 / 1000.0);
+
+	printf("Basic FSK at %s + %s, offset %s, rate %s\n", verif_f1, verif_f2, verif_t1, verif_rate);
 
 	vec_t(uint8_t)* vec = init_vec(uint8_t);
 	char* values = (char*)str + data_offset;
@@ -333,26 +349,6 @@ void sequencer_cmd(const char* str) {
 	printf("Unknown sequencer command: [%s]\n", cmd);
 }
 
-void datatest_cmd(const char* str) {
-	(void)str;
-	
-	sequencer_stop();
-	sequencer_reset();
-
-	seq_entry_t pulse = {
-		.t1 = timer_mu(0),
-		.t2 = timer_mu(0 + 1*1000*1000), // 1 ms
-		.profiles[0] = { .freq_hz = 0, .amplitude = 0 },
-		.profiles[1] = { .freq_hz = 154*1000*1000, .amplitude = 0x3FFF },
-		.profiles[2] = { .freq_hz = 154*1000*1000, .amplitude = 0x3FFF/2 }
-	};
-
-	sequencer_add(pulse);
-
-	timer5_restart();
-	sequencer_run();
-}
-
 void run(const char* str) {
 	char cmd[32] = {0};
 
@@ -373,7 +369,6 @@ void run(const char* str) {
 	if (strcmp(cmd, "basic_pulse") == 0) return basic_pulse_cmd(str);
 	if (strcmp(cmd, "basic_sweep") == 0) return basic_sweep_cmd(str);
 	if (strcmp(cmd, "basic_xmitdata") == 0) return basic_xmitdata_cmd(str);
-	if (strcmp(cmd, "datatest") == 0) return datatest_cmd(str);
 
 	printf("Unknown command: [%s]\n", cmd);
 }
