@@ -401,7 +401,7 @@ void run(const char* str) {
 // =============================================================================
 extern UART_HandleTypeDef usart3;
 
-#define INPUT_BUFFER_SIZE 128
+#define INPUT_BUFFER_SIZE 256
 uint8_t input_buffer[INPUT_BUFFER_SIZE] = {0};
 
 void restart_rx() {
