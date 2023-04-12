@@ -129,22 +129,24 @@ void basic_sweep_cmd(const char* str) {
 }
 
 void xmitdata_fsk_cmd(const char* str) {
-	char xmitdata[9] = {0};
+	char basic_xmitdata[15] = {0};
 	char cmd[32] = {0};
 	char o_unit[4] = {0};
 	char f1_unit[4] = {0};
 	char f2_unit[4] = {0};
+	char r_unit[4] = {0};
 	double offset;
 	double f1;
 	double f2;
+	double rate;
 	size_t data_offset;
 
-	int rc = sscanf(str, "%8s %31s %lf %3s %lf %3s %lf %3s %n", xmitdata, cmd, &offset, o_unit, &f1, f1_unit, &f2, f2_unit, &data_offset);
+	int rc = sscanf(str, "%14s %31s %lf %3s %lf %3s %lf %3s %lf %3s %n", basic_xmitdata, cmd, &offset, o_unit, &f1, f1_unit, &f2, f2_unit, &rate, r_unit, &data_offset);
 
-	if (rc != 8) {
-		printf("Invalid arguments\n");
-		printf("Usage: basic_xmitdata fsk delay unit f1 unit f2 unit rate_hz data data data ...\n");
-		printf("Example: basic_xmitdata fsk 100 us 151.10 MHz 151.11 MHz 9600 1 1 0 1 ...\n");
+	if (rc != 10) {
+		printf("Invalid arguments: %d\n", rc);
+		printf("Usage: basic_xmitdata fsk delay unit f1 unit f2 unit rate unit data data data ...\n");
+		printf("Example: basic_xmitdata fsk 100 us 151.10 MHz 151.11 MHz 9600 Hz 1 1 0 1 ...\n");
 		return;
 	}
 
