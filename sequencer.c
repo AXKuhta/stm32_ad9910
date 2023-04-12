@@ -50,21 +50,36 @@ void sequencer_add(seq_entry_t entry) {
 	vec_push(sequence, entry);
 }
 
-void sequencer_run() {
-	enter_rfkill_mode();
-	spi_write_entry(sequence->elements[0]);
-	ad_write_all();
+void pulse_complete_callback() {
+	seq_entry_t entry = sequence->elements[seq_index++ % sequence->size];
 
+	if (entry.profile_modulation.buffer) {
+		profile_mod_buffer = entry.profile_modulation.buffer;
+		profile_mod_size = entry.profile_modulation.size;
+	} else {
+		profile_mod_buffer = default_profile_mod;
+		profile_mod_size = 0;
+	}
+
+	spi_write_entry(entry);
+	ad_write_all();
 	set_ramp_direction(0);
 	ad_pulse_io_update(); // !! Большая задержка
 	set_ramp_direction(1);
 
+	// Принудительно закинуть в таймер очень большое значение, чтобы он случайно не пересёк те точки, которые мы вот вот запишем
+	timer2.Instance->CNT = 0x7FFFFFFF;
+	timer2.Instance->CCR3 = entry.t1;
+	timer2.Instance->CCR4 = entry.t2;
+}
+
+void sequencer_run() {
+	enter_rfkill_mode();
+
 	seq_index = 0;
+	pulse_complete_callback();
 
 	timer2_restart();
-	// Можно перезаписывать регистры на лету
-	timer2.Instance->CCR3 = sequence->elements[0].t1;
-	timer2.Instance->CCR4 = sequence->elements[0].t2;
 }
 
 void spi_write_entry(seq_entry_t entry) {
@@ -87,30 +102,6 @@ void spi_write_entry(seq_entry_t entry) {
 
 void sequencer_stop() {
 	enter_rfkill_mode();
-}
-
-void pulse_complete_callback() {
-	int next_idx = ++seq_index % sequence->size;
-	seq_entry_t entry = sequence->elements[next_idx];
-
-	if (entry.profile_modulation.buffer) {
-		profile_mod_buffer = entry.profile_modulation.buffer;
-		profile_mod_size = entry.profile_modulation.size;
-	} else {
-		profile_mod_buffer = default_profile_mod;
-		profile_mod_size = 0;
-	}
-
-	spi_write_entry(entry);
-	ad_write_all();
-	set_ramp_direction(0);
-	ad_pulse_io_update(); // !! Большая задержка
-	set_ramp_direction(1);
-
-	// Принудительно закинуть в таймер очень большое значение, чтобы он случайно не пересёк те точки, которые мы вот вот запишем
-	timer2.Instance->CNT = 0x7FFFFFFF;
-	timer2.Instance->CCR3 = sequence->elements[next_idx].t1;
-	timer2.Instance->CCR4 = sequence->elements[next_idx].t2;
 }
 
 // Прекратить подачу сигналов
