@@ -80,6 +80,7 @@ void sequencer_run() {
 	pulse_complete_callback();
 
 	timer2_restart();
+	timer5_restart();
 }
 
 void spi_write_entry(seq_entry_t entry) {
@@ -107,6 +108,7 @@ void sequencer_stop() {
 // Прекратить подачу сигналов
 void enter_rfkill_mode() {
 	timer2_stop();
+	timer5_stop();
 
 	ad_set_profile_freq(0, 0);
 	ad_set_profile_amplitude(0, 0);

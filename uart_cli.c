@@ -203,7 +203,6 @@ void xmitdata_fsk_cmd(const char* str) {
 	};
 
 	sequencer_add(pulse);
-	timer5_restart();
 	sequencer_run();
 }
 
