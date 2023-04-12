@@ -58,7 +58,7 @@ void pulse_complete_callback() {
 		profile_mod_size = entry.profile_modulation.size;
 	} else {
 		profile_mod_buffer = default_profile_mod;
-		profile_mod_size = 0;
+		profile_mod_size = 1;
 	}
 
 	spi_write_entry(entry);
