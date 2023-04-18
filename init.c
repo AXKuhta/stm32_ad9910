@@ -3,6 +3,7 @@
 #include "stm32f7xx_hal.h"
 #include "uart.h"
 #include "uart_cli.h"
+#include "dma.h"
 #include "spi.h"
 #include "timer.h"
 #include "ad9910.h"
@@ -187,5 +188,6 @@ void system_init() {
 
 	sequencer_init();
 	enter_rfkill_mode();
+	usart3_rx_dma_init();
 	uart_cli_init();
 }

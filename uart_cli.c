@@ -399,13 +399,13 @@ void run(const char* str) {
 // =============================================================================
 extern UART_HandleTypeDef usart3;
 
-#define INPUT_BUFFER_SIZE 256
+#define INPUT_BUFFER_SIZE 1024
 uint8_t input_buffer[INPUT_BUFFER_SIZE] = {0};
 
 void restart_rx() {
 	memset(input_buffer, 0, INPUT_BUFFER_SIZE);
 	_write(0, "\r> ", 3);
-	assert(HAL_UARTEx_ReceiveToIdle_IT(&usart3, input_buffer, INPUT_BUFFER_SIZE - 1) == HAL_OK);
+	assert(HAL_UARTEx_ReceiveToIdle_DMA(&usart3, input_buffer, INPUT_BUFFER_SIZE - 1) == HAL_OK);
 }
 
 void uart_cli_init() {
@@ -438,35 +438,39 @@ void input_overrun_error() {
 	while (1) {};
 }
 
+// This function is called when the line goes idle
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size) {
-	uint8_t* offset_buffer = huart->pRxBuffPtr;
 	uint16_t space_remains = huart->RxXferCount;
-	uint8_t* last = offset_buffer - 1;
-
-	// Echo keypresses
-	_write(0, (char*)offset_buffer - Size, Size);
+	uint8_t* base = huart->pRxBuffPtr;
+	uint8_t* last = base - 1 + Size;
 
 	// Performance
 	extern uint32_t perf_usart3_bytes_rx;
 	perf_usart3_bytes_rx += Size;
 
+	// Echo keypresses
+	_write(0, (char*)base, Size);
+
+	printf("\nBase: %p, Remains: %d\n", base, space_remains);
+
+	// Backspace handling
 	// Different terminals may send different backspace codes
 	// Handle both types
-	if (*last == 8 || *last == 127) {
-		*last = 0;
-		last--;
+	if (*last == 127) {
+		_write(0, (char[]){8, ' ', 8}, 3);
+		*last = 8;
+	}
 
-		if (last >= input_buffer) {
-			*last = 0;
-
-			offset_buffer--;
-			space_remains++;
-		} else {
+	if (*last == 8) {
+		if (last == input_buffer) {
 			return restart_rx();
 		}
 
-		offset_buffer--;
+		*last = 0;
+		last -= 2;
+
 		space_remains++;
+		base = last;
 	}
 
 	if (space_remains == 0) {
@@ -478,11 +482,6 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size) {
 		_write(0, "\n", 1);
 		add_task(parse);
 	} else {
-		HAL_UARTEx_ReceiveToIdle_IT(huart, offset_buffer, space_remains);
+		HAL_UARTEx_ReceiveToIdle_DMA(huart, base + Size, space_remains);
 	}	
-}
-
-// Restart RX continuously
-void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
-	HAL_UARTEx_ReceiveToIdle_IT(huart, input_buffer, INPUT_BUFFER_SIZE - 1);
 }
