@@ -2,5 +2,5 @@
 sudo apt install make gcc-arm-none-eabi openocd tio
 make -j4
 make flash
-sudo /dev/ttyACM0
+tio /dev/ttyACM0
 ```
