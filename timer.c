@@ -8,6 +8,7 @@
 
 #define EXT_TRIG  		GPIOA, GPIO_PIN_0
 #define RADAR_EMULATOR  GPIOE, GPIO_PIN_9
+#define MODULATION_DBG	GPIOA, GPIO_PIN_3
 
 TIM_HandleTypeDef timer1;
 TIM_HandleTypeDef timer2;
@@ -23,6 +24,12 @@ void timer1_gpio_init() {
 // EXT_TRIG
 void timer2_gpio_init() {
 	PIN_AF_Init(EXT_TRIG, GPIO_MODE_AF_PP, GPIO_PULLDOWN, GPIO_AF1_TIM2); // TIM2_CH1
+}
+
+// Таймер 5
+// Модуляция (отладочный выход)
+void timer5_gpio_init() {
+	PIN_AF_Init(MODULATION_DBG, GPIO_MODE_AF_PP, GPIO_NOPULL, GPIO_AF2_TIM5); // TIM5_CH4
 }
 
 void timer1_init(uint32_t prescaler, uint32_t period, uint32_t pulse) {
@@ -115,19 +122,30 @@ void timer2_restart() {
 // Это можно найти в таблице "TIMx internal trigger connections" в STM32F746 reference manual
 void timer5_init() {
 	__HAL_RCC_TIM5_CLK_ENABLE();
+	timer5_gpio_init();
 	
 	TIM_HandleTypeDef timer5_defaults = {
 		.Instance = TIM5,
 		.Init = {
 			.Prescaler = 0,
 			.CounterMode = TIM_COUNTERMODE_UP,
-			.Period = 216*1000*1000 / 9600,
+			.Period = 216*1000*1000 / 50000,
 			.ClockDivision = TIM_CLOCKDIVISION_DIV1,
 			.RepetitionCounter = 0
 		}
 	};
 	
 	timer5 = timer5_defaults;
+
+	TIM_OC_InitTypeDef oc_config = {
+		.OCMode = TIM_OCMODE_PWM2,
+		.Pulse = 216*1000*1000 / 50000 - (100.0 / NANOSEC_216MHZ),
+		.OCPolarity = TIM_OCPOLARITY_HIGH,
+		.OCFastMode = TIM_OCFAST_DISABLE
+	};
+	
+	HAL_TIM_OC_Init(&timer5);
+	HAL_TIM_OC_ConfigChannel(&timer5, &oc_config, TIM_CHANNEL_4);
 
 	TIM_SlaveConfigTypeDef slave_config = {
 		.SlaveMode = TIM_SLAVEMODE_COMBINED_RESETTRIGGER,
@@ -142,6 +160,7 @@ void timer5_init() {
 
 	HAL_TIM_Base_Init(&timer5);
 	HAL_TIM_Base_Start_IT(&timer5);
+	HAL_TIM_OC_Start(&timer5, TIM_CHANNEL_4);
 }
 
 void timer5_stop() {
