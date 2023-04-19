@@ -171,7 +171,7 @@ void xmitdata_fsk_cmd(const char* str) {
 
 	if (rc != 11) {
 		printf("Invalid arguments: %d\n", rc);
-		printf("Usage: basic_xmitdata fsk offset unit duration unit f1 unit f2 unit rate unit data data data ...\n");
+		printf("Usage: basic_xmitdata fsk offset unit duration unit f1 unit f2 unit rate data data data ...\n");
 		printf("Example: basic_xmitdata fsk 0 us 1 ms 151.10 MHz 151.11 MHz 9600 1 1 0 1 ...\n");
 		return;
 	}
@@ -215,6 +215,63 @@ void xmitdata_fsk_cmd(const char* str) {
 	sequencer_run();
 }
 
+void xmitdata_psk_cmd(const char* str) {
+	char basic_xmitdata[15] = {0};
+	char cmd[32] = {0};
+	char t1_unit[4] = {0};
+	char t2_unit[4] = {0};
+	char f_unit[4] = {0};
+	double t1;
+	double t2;
+	double freq;
+	double rate;
+	size_t data_offset;
+
+	int rc = sscanf(str, "%14s %31s %lf %3s %lf %3s %lf %3s %lf %n", basic_xmitdata, cmd, &t1, t1_unit, &t2, t2_unit, &freq, f_unit, &rate, &data_offset);
+
+	if (rc != 9) {
+		printf("Invalid arguments: %d\n", rc);
+		printf("Usage: basic_xmitdata psk offset unit duration unit freq unit rate data data data ...\n");
+		printf("Example: basic_xmitdata psk 0 us 1 ms 151.10 MHz 9600 1 1 0 1 ...\n");
+		return;
+	}
+
+	uint32_t freq_hz = parse_freq(freq, f_unit);
+	uint32_t t1_ns = parse_time(t1, t1_unit);
+	uint32_t t2_ns = parse_time(t2, t2_unit);
+	
+	if (freq_hz == 0) {
+		return;
+	}
+
+	char* verif_freq = freq_unit(freq_hz);
+	char* verif_t1 = time_unit(t1_ns / 1000.0 / 1000.0 / 1000.0);
+	char* verif_t2 = time_unit(t2_ns / 1000.0 / 1000.0 / 1000.0);
+
+	printf("Basic PSK at %s, offset %s, duration %s, rate %.1lf baud\n", verif_freq, verif_t1, verif_t2, rate);
+
+	free(verif_freq);
+	free(verif_t1);
+	free(verif_t2);
+
+	vec_t(uint8_t)* vec = scan_uint8_data(str + data_offset);
+
+	sequencer_stop();
+	sequencer_reset();
+
+	seq_entry_t pulse = {
+		.t1 = timer_mu(t1_ns),
+		.t2 = timer_mu(t1_ns + t2_ns),
+		.profiles[0] = { .freq_hz = 0, .amplitude = 0 },
+		.profiles[2] = { .freq_hz = freq_hz, .amplitude = 0x3FFF, .phase = 0x0 },
+		.profiles[3] = { .freq_hz = freq_hz, .amplitude = 0x3FFF, .phase = 0xFFFF/2 },
+		.profile_modulation = { .buffer = vec->elements, .size = vec->size }
+	};
+
+	sequencer_add(pulse);
+	sequencer_run();
+}
+
 void basic_xmitdata_cmd(const char* str) {
 	char basic_xmitdata[15] = {0};
 	char cmd[32] = {0};
@@ -228,6 +285,7 @@ void basic_xmitdata_cmd(const char* str) {
 	}
 
 	if (strcmp(cmd, "fsk") == 0) return xmitdata_fsk_cmd(str);
+	if (strcmp(cmd, "psk") == 0) return xmitdata_psk_cmd(str);
 
 	printf("Unknown xmitdata mode: [%s]\n", cmd);
 }

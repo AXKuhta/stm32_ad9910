@@ -357,8 +357,8 @@ void ad_set_profile_phase(int profile_id, uint16_t phase) {
 	uint8_t* profile = regmap[14 + profile_id];
 	uint8_t* view = (uint8_t*)&phase;
 	
-	profile[2] = view[0];
-	profile[3] = view[1];
+	profile[3] = view[0];
+	profile[2] = view[1];
 }
 
 //
