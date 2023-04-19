@@ -129,6 +129,30 @@ void basic_sweep_cmd(const char* str) {
 	enter_basic_sweep_mode(t1_ns, t2_ns, f1_hz, f2_hz);
 }
 
+// The compiler can't tell that two different vec_t(uint8_t)* are actually the same type
+// Declare this function as void pointer to silence type warning
+void* scan_uint8_data(const char* str) {
+	vec_t(uint8_t)* vec = init_vec(uint8_t);
+
+	char* values = (char*)str;
+	char* endptr;
+
+	while (1) {
+		unsigned int v = strtoul(values, &endptr, 0);
+
+		if (endptr == values) {
+			break;
+		} else {
+			vec_push(vec, v);
+			values = endptr;
+		}
+	}
+
+	printf("Loaded %u values\n", vec->size);
+
+	return vec;
+}
+
 void xmitdata_fsk_cmd(const char* str) {
 	char basic_xmitdata[15] = {0};
 	char cmd[32] = {0};
@@ -173,22 +197,7 @@ void xmitdata_fsk_cmd(const char* str) {
 	free(verif_t1);
 	free(verif_t2);
 
-	vec_t(uint8_t)* vec = init_vec(uint8_t);
-	char* values = (char*)str + data_offset;
-	char* endptr;
-
-	while (1) {
-		unsigned int v = strtoul(values, &endptr, 0);
-
-		if (endptr == values) {
-			break;
-		} else {
-			vec_push(vec, v);
-			values = endptr;
-		}
-	}
-
-	printf("Loaded %u values\n", vec->size);
+	vec_t(uint8_t)* vec = scan_uint8_data(str + data_offset);
 
 	sequencer_stop();
 	sequencer_reset();
