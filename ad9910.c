@@ -442,6 +442,20 @@ void ad_set_ramp_rate(uint16_t down_rate, uint16_t up_rate) {
 	r0D[3] = view_u[0];
 }
 
+// Выключить static reset фазы
+// Не изменяет снимок регистров; предполагается, что там static reset всегда должен быть включен
+// Бит будет применён при первом переключении профиля
+void ad_drop_phase_static_reset() {
+	uint8_t altered_r00[4] = {
+		r00[0],
+		r00[1],
+		r00[2] & ~0b00001000,
+		r00[3]
+	};
+
+	ad_write(0x00, altered_r00, 4);
+}
+
 void ad_init() {
 	init_profile_gpio();
 	init_control_gpio();
@@ -466,7 +480,7 @@ void ad_init() {
 	
 	ad_system_clock = 1000*1000*1000;
 	
-	r00[2] = 0b00100000; // Autoclear phase
+	r00[2] = 0b00001000; // Phase static reset
 	r01[3] = 0b10000000; // Matched latency
 	r00[1] = 0b00000001; // Sine output
 

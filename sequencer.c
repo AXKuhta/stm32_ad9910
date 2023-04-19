@@ -67,6 +67,7 @@ void pulse_complete_callback() {
 	set_ramp_direction(0);
 	ad_pulse_io_update(); // !! Большая задержка
 	set_ramp_direction(1);
+	ad_drop_phase_static_reset();
 
 	// Принудительно закинуть в таймер очень большое значение, чтобы он случайно не пересёк те точки, которые мы вот вот запишем
 	timer2.Instance->CNT = 0x7FFFFFFF;
