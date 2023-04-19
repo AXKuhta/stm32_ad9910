@@ -131,8 +131,7 @@ void enter_test_tone_mode(uint32_t freq_hz) {
 	ad_set_profile_freq(1, freq_hz);
 	ad_set_profile_amplitude(1, 0x3FFF);
 	ad_write_all();
-	//ad_pulse_io_update();
-
+	ad_drop_phase_static_reset();
 	set_profile(1);
 }
 
