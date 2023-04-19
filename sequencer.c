@@ -10,6 +10,7 @@
 #include "vec.h"
 
 // Глобальные переменные
+uint8_t parking_profile_mod[1] = { 0 };
 uint8_t default_profile_mod[1] = { 1 };
 uint8_t* profile_mod_buffer;
 size_t profile_mod_size;
