@@ -10,12 +10,12 @@
 #include "vec.h"
 
 // Глобальные переменные
+uint8_t default_profile_mod[1] = { 1 };
 uint8_t* profile_mod_buffer;
 size_t profile_mod_size;
 size_t profile_mod_idx;
 
 // "Приватные" глобальные переменные
-static uint8_t default_profile_mod[1] = { 1 };
 static vec_t(seq_entry_t)* sequence;
 static int seq_index;
 
