@@ -144,7 +144,6 @@ void TIM2_IRQHandler() {
 
 	if (pulse_t1_pass == 0) {
 		profile_mod_idx = 0;
-		timer5.Instance->CNT = 0; // Принудительно закинуть в таймер 0 для синхронизации
 		set_profile(profile_mod_buffer[0]);
 		HAL_NVIC_EnableIRQ(TIM5_IRQn);
 		pulse_t1_pass = 1;

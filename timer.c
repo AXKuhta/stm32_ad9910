@@ -111,6 +111,8 @@ void timer2_restart() {
 	timer2_init();
 }
 
+// Для TIM5, TIM_TS_ITR0 означает триггер от TIM2
+// Это можно найти в таблице "TIMx internal trigger connections" в STM32F746 reference manual
 void timer5_init() {
 	__HAL_RCC_TIM5_CLK_ENABLE();
 	
@@ -126,6 +128,14 @@ void timer5_init() {
 	};
 	
 	timer5 = timer5_defaults;
+
+	TIM_SlaveConfigTypeDef slave_config = {
+		.SlaveMode = TIM_SLAVEMODE_COMBINED_RESETTRIGGER,
+		.InputTrigger = TIM_TS_ITR0,
+		.TriggerPolarity = TIM_TRIGGERPOLARITY_RISING
+	};
+	
+	HAL_TIM_SlaveConfigSynchronization(&timer5, &slave_config);
 	
 	HAL_NVIC_SetPriority(TIM5_IRQn, 0, 1);
 	//HAL_NVIC_EnableIRQ(TIM5_IRQn);
