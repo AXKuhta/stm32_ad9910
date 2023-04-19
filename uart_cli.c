@@ -451,8 +451,6 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size) {
 	// Echo keypresses
 	_write(0, (char*)base, Size);
 
-	printf("\nBase: %p, Remains: %d\n", base, space_remains);
-
 	// Backspace handling
 	// Different terminals may send different backspace codes
 	// Handle both types

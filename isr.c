@@ -118,7 +118,6 @@ void USART3_IRQHandler() {
 
 void DMA1_Stream1_IRQHandler() {
 	HAL_DMA_IRQHandler(&dma_usart3_rx);
-	printf("x\n");
 
 	RECORD_INTERRUPT();
 }
