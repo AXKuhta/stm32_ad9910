@@ -147,6 +147,7 @@ void TIM2_IRQHandler() {
 		set_profile(profile_mod_buffer[0]);
 		HAL_NVIC_EnableIRQ(TIM5_IRQn);
 		pulse_t1_pass = 1;
+		timer5.Instance->CCR4 = 216*1000*1000 / 50000 - (100.0 / 4.629629629629629);
 	} else {
 		HAL_NVIC_DisableIRQ(TIM5_IRQn); // ISR от TIM5 может быть вызван даже после отключения прерывания -- нужно дать ему "парковочный" буфер модуляции
 		profile_mod_buffer = parking_profile_mod;
@@ -155,6 +156,7 @@ void TIM2_IRQHandler() {
 		pulse_t1_pass = 0;
 		set_profile(0);
 		add_task(pulse_complete_callback);
+		timer5.Instance->CCR4 = 0x7FFFFFFF;
 	}
 
 	HAL_TIM_IRQHandler(&timer2);
