@@ -154,7 +154,7 @@ void TIM2_IRQHandler() {
 		profile_mod_size = 1;
 		profile_mod_idx = 0;
 		pulse_t1_pass = 0;
-		set_profile(0);
+		set_profile(parking_profile);
 		add_task(pulse_complete_callback);
 		timer5.Instance->CCR4 = 0x7FFFFFFF;
 	}
