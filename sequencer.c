@@ -10,8 +10,8 @@
 #include "vec.h"
 
 // Глобальные переменные
-uint8_t parking_profile_mod[1] = { 0 };
-uint8_t default_profile_mod[1] = { 1 };
+uint8_t parking_profile = 0;
+uint8_t tone_profile = 1;
 uint8_t* profile_mod_buffer;
 size_t profile_mod_size;
 size_t profile_mod_idx;
@@ -58,7 +58,7 @@ void pulse_complete_callback() {
 		profile_mod_buffer = entry.profile_modulation.buffer;
 		profile_mod_size = entry.profile_modulation.size;
 	} else {
-		profile_mod_buffer = default_profile_mod;
+		profile_mod_buffer = &tone_profile;
 		profile_mod_size = 1;
 	}
 

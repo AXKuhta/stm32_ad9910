@@ -124,7 +124,7 @@ void DMA1_Stream1_IRQHandler() {
 
 extern TIM_HandleTypeDef timer2;
 extern TIM_HandleTypeDef timer5;
-extern uint8_t parking_profile_mod[1];
+extern uint8_t parking_profile;
 extern uint8_t* profile_mod_buffer;
 extern size_t profile_mod_size;
 extern size_t profile_mod_idx;
@@ -150,7 +150,7 @@ void TIM2_IRQHandler() {
 		timer5.Instance->CCR4 = 216*1000*1000 / 50000 - (100.0 / 4.629629629629629);
 	} else {
 		HAL_NVIC_DisableIRQ(TIM5_IRQn); // ISR от TIM5 может быть вызван даже после отключения прерывания -- нужно дать ему "парковочный" буфер модуляции
-		profile_mod_buffer = parking_profile_mod;
+		profile_mod_buffer = &parking_profile;
 		profile_mod_size = 1;
 		profile_mod_idx = 0;
 		pulse_t1_pass = 0;
