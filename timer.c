@@ -6,13 +6,14 @@
 #include "timer.h"
 #include "units.h"
 
+// Выбрано исходя из таблицы "STM32F745xx and STM32F746xx alternate function mapping"
 #define EXT_TRIG  		GPIOA, GPIO_PIN_0
 #define RADAR_EMULATOR  GPIOE, GPIO_PIN_9
-#define MODULATION_DBG	GPIOA, GPIO_PIN_3
+#define MODULATION_DBG	GPIOC, GPIO_PIN_6
 
 TIM_HandleTypeDef timer1;
 TIM_HandleTypeDef timer2;
-TIM_HandleTypeDef timer5;
+TIM_HandleTypeDef timer8;
 
 // Таймер 1
 // Эмулятор радара
@@ -27,9 +28,9 @@ void timer2_gpio_init() {
 }
 
 // Таймер 5
-// Модуляция (отладочный выход)
-void timer5_gpio_init() {
-	PIN_AF_Init(MODULATION_DBG, GPIO_MODE_AF_PP, GPIO_NOPULL, GPIO_AF2_TIM5); // TIM5_CH4
+// Модуляция + отладочный выход
+void timer8_gpio_init() {
+	PIN_AF_Init(MODULATION_DBG, GPIO_MODE_AF_PP, GPIO_NOPULL, GPIO_AF3_TIM8); // TIM8_CH1
 }
 
 void timer1_init(uint32_t prescaler, uint32_t period, uint32_t pulse) {
@@ -74,7 +75,7 @@ void timer2_init() {
 		.Init = {
 			.Prescaler = 0,
 			.CounterMode = TIM_COUNTERMODE_UP,
-			.Period = 4294967295,
+			.Period = 0xFFFFFFFF,
 			.ClockDivision = TIM_CLOCKDIVISION_DIV1,
 			.RepetitionCounter = 0
 		}
@@ -118,58 +119,72 @@ void timer2_restart() {
 	timer2_init();
 }
 
-// Для TIM5, TIM_TS_ITR0 означает триггер от TIM2
-// Это можно найти в таблице "TIMx internal trigger connections" в STM32F746 reference manual
-void timer5_init() {
-	__HAL_RCC_TIM5_CLK_ENABLE();
-	timer5_gpio_init();
+//
+// Таймер модуляции
+//
+// Вычисление параметров выглядит следующим образом:
+//
+// baud = 9600
+// period = round(1/baud * 216000000)
+// actual = 1/period * 216000000
+//
+// period = 22500
+// actual = 9600
+//
+void timer8_init() {
+	__HAL_RCC_TIM8_CLK_ENABLE();
+	timer8_gpio_init();
+
+	uint32_t period = (1.0 / 9600.0) * M_216MHz + 0.5;
 	
-	TIM_HandleTypeDef timer5_defaults = {
-		.Instance = TIM5,
+	TIM_HandleTypeDef timer8_defaults = {
+		.Instance = TIM8,
 		.Init = {
 			.Prescaler = 0,
 			.CounterMode = TIM_COUNTERMODE_UP,
-			.Period = 216*1000*1000 / 50000,
+			.Period = period,
 			.ClockDivision = TIM_CLOCKDIVISION_DIV1,
 			.RepetitionCounter = 0
 		}
 	};
 	
-	timer5 = timer5_defaults;
+	timer8 = timer8_defaults;
 
 	TIM_OC_InitTypeDef oc_config = {
 		.OCMode = TIM_OCMODE_PWM2,
-		.Pulse = 216*1000*1000 / 50000 - (100.0 / NANOSEC_216MHZ),
+		.Pulse = period - (100.0 * NS_TO_216MHZ_MU + 0.5),
 		.OCPolarity = TIM_OCPOLARITY_HIGH,
 		.OCFastMode = TIM_OCFAST_DISABLE
 	};
 	
-	HAL_TIM_OC_Init(&timer5);
-	HAL_TIM_OC_ConfigChannel(&timer5, &oc_config, TIM_CHANNEL_4);
+	HAL_TIM_OC_Init(&timer8);
+	HAL_TIM_OC_ConfigChannel(&timer8, &oc_config, TIM_CHANNEL_1);
 
+	// Для TIM8, TIM_TS_ITR1 означает триггер от TIM2
+	// Это можно найти в таблице "TIMx internal trigger connection" в STM32F746 reference manual
 	TIM_SlaveConfigTypeDef slave_config = {
 		.SlaveMode = TIM_SLAVEMODE_COMBINED_RESETTRIGGER,
-		.InputTrigger = TIM_TS_ITR0,
+		.InputTrigger = TIM_TS_ITR1,
 		.TriggerPolarity = TIM_TRIGGERPOLARITY_RISING
 	};
 	
-	HAL_TIM_SlaveConfigSynchronization(&timer5, &slave_config);
+	HAL_TIM_SlaveConfigSynchronization(&timer8, &slave_config);
 	
-	HAL_NVIC_SetPriority(TIM5_IRQn, 0, 1);
-	//HAL_NVIC_EnableIRQ(TIM5_IRQn);
+	HAL_NVIC_SetPriority(TIM8_UP_TIM13_IRQn, 0, 1);
+	//HAL_NVIC_EnableIRQ(TIM8_UP_TIM13_IRQn);
 
-	HAL_TIM_Base_Init(&timer5);
-	HAL_TIM_Base_Start_IT(&timer5);
-	HAL_TIM_OC_Start(&timer5, TIM_CHANNEL_4);
+	HAL_TIM_Base_Init(&timer8);
+	HAL_TIM_Base_Start_IT(&timer8);
+	HAL_TIM_OC_Start(&timer8, TIM_CHANNEL_1);
 }
 
-void timer5_stop() {
-	__HAL_RCC_TIM5_FORCE_RESET();
+void timer8_stop() {
+	__HAL_RCC_TIM8_FORCE_RESET();
 }
 
-void timer5_restart() {
-	__HAL_RCC_TIM5_RELEASE_RESET();
-	timer5_init();
+void timer8_restart() {
+	__HAL_RCC_TIM8_RELEASE_RESET();
+	timer8_init();
 }
 
 //
