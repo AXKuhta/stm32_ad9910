@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <assert.h>
 
+#include "stm32f7xx_ll_gpio.h"
 #include "stm32f7xx_hal.h"
 #include "pin_init.h"
 #include "ad9910.h"
@@ -116,9 +117,11 @@ void drhold_timer_controlled() {
 void set_profile(uint8_t profile_id) {
 	assert(profile_id < 8);
 
-	HAL_GPIO_WritePin(P_0, profile_id & 0b001 ? GPIO_PIN_SET : GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(P_1, profile_id & 0b010 ? GPIO_PIN_SET : GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(P_2, profile_id & 0b100 ? GPIO_PIN_SET : GPIO_PIN_RESET);
+	uint16_t value = (profile_id & 0b001 ? GPIO_PIN_13 : 0) +
+					 (profile_id & 0b010 ? GPIO_PIN_12 : 0) +
+					 (profile_id & 0b100 ? GPIO_PIN_11 : 0);
+
+	LL_GPIO_WriteOutputPort(GPIOD, value);
 }
 
 // Установить направление хода Digital Ramp генератора
