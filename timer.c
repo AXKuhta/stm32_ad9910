@@ -230,5 +230,5 @@ void radar_emulator_start() {
 }
 
 uint32_t timer_mu(uint32_t time_ns) {
-	return (uint32_t)((double)time_ns / NANOSEC_216MHZ);
+	return time_ns * NS_TO_216MHZ_MU + 0.5;
 }
