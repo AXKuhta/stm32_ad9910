@@ -190,5 +190,6 @@ void system_init() {
 	sequencer_init();
 	enter_rfkill_mode();
 	usart3_rx_dma_init();
+	timer8_up_dma_init();
 	uart_cli_init();
 }

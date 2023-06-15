@@ -109,6 +109,7 @@ void SysTick_Handler(void) {
 
 extern UART_HandleTypeDef usart3;
 extern DMA_HandleTypeDef dma_usart3_rx;
+extern DMA_HandleTypeDef dma_timer8_up;
 
 void USART3_IRQHandler() {
 	HAL_UART_IRQHandler(&usart3);
@@ -122,6 +123,19 @@ void DMA1_Stream1_IRQHandler() {
 	RECORD_INTERRUPT();
 }
 
+uint16_t dma_buf = GPIO_PIN_12;
+
+void DMA2_Stream1_IRQHandler() {
+	HAL_DMA_IRQHandler(&dma_timer8_up);
+
+	printf("DMA2 State: %u Error %u NDTR %u ODR %u\n", HAL_DMA_GetState(&dma_timer8_up), HAL_DMA_GetError(&dma_timer8_up), DMA2_Stream1->NDTR, GPIOD->ODR);
+	//GPIOD->ODR = GPIO_PIN_12;
+
+	//HAL_DMA_Start_IT(&dma_timer8_up, (uint32_t)&dma_buf, (uint32_t)&GPIOD->ODR, 1);
+
+	RECORD_INTERRUPT();
+}
+
 extern TIM_HandleTypeDef timer2;
 extern TIM_HandleTypeDef timer8;
 extern uint8_t parking_profile;
@@ -131,7 +145,7 @@ extern size_t profile_mod_idx;
 extern void pulse_complete_callback();
 
 static void modulation_step() {
-	set_profile(profile_mod_buffer[profile_mod_idx]);
+	//set_profile(profile_mod_buffer[profile_mod_idx]);
 	profile_mod_idx++;
 
 	// Модуляция будет идти по кругу
@@ -144,7 +158,7 @@ void TIM2_IRQHandler() {
 
 	if (pulse_t1_pass == 0) {
 		profile_mod_idx = 0;
-		set_profile(profile_mod_buffer[0]);
+		//set_profile(profile_mod_buffer[0]);
 		HAL_NVIC_EnableIRQ(TIM8_UP_TIM13_IRQn);
 		pulse_t1_pass = 1;
 		TIM8->CCR1 = TIM8->ARR - 20;

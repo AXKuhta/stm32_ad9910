@@ -176,6 +176,8 @@ void timer8_init() {
 	HAL_TIM_Base_Init(&timer8);
 	HAL_TIM_Base_Start_IT(&timer8);
 	HAL_TIM_OC_Start(&timer8, TIM_CHANNEL_1);
+
+	__HAL_TIM_ENABLE_DMA(&timer8, TIM_DMA_UPDATE);
 }
 
 void timer8_stop() {

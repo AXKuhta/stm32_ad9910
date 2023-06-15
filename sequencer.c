@@ -51,6 +51,9 @@ void sequencer_add(seq_entry_t entry) {
 	vec_push(sequence, entry);
 }
 
+extern DMA_HandleTypeDef dma_timer8_up;
+extern uint16_t dma_buf;
+
 void pulse_complete_callback() {
 	seq_entry_t entry = sequence->elements[seq_index++ % sequence->size];
 
@@ -68,6 +71,9 @@ void pulse_complete_callback() {
 	ad_pulse_io_update(); // !! Большая задержка
 	set_ramp_direction(1);
 	ad_drop_phase_static_reset();
+
+	printf("Remaining elements: %u\n", DMA2_Stream1->NDTR);
+	HAL_DMA_Start(&dma_timer8_up, (uint32_t)&dma_buf, (uint32_t)&GPIOD->ODR, 0xFFFF);
 
 	// Принудительно закинуть в таймер очень большое значение, чтобы он случайно не пересёк те точки, которые мы вот вот запишем
 	timer2.Instance->CNT = 0x7FFFFFFF;
