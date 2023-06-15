@@ -73,7 +73,7 @@ void pulse_complete_callback() {
 	ad_drop_phase_static_reset();
 
 	printf("Remaining elements: %u\n", DMA2_Stream1->NDTR);
-	HAL_DMA_Start(&dma_timer8_up, (uint32_t)&dma_buf, (uint32_t)&GPIOD->ODR, 0xFFFF);
+	HAL_DMA_Start_IT(&dma_timer8_up, (uint32_t)&dma_buf, (uint32_t)&GPIOD->ODR, 0xFFFF);
 
 	// Принудительно закинуть в таймер очень большое значение, чтобы он случайно не пересёк те точки, которые мы вот вот запишем
 	timer2.Instance->CNT = 0x7FFFFFFF;
