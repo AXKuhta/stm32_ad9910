@@ -145,10 +145,10 @@ void TIM2_IRQHandler() {
 	if (pulse_t1_pass == 0) {
 		profile_mod_idx = 0;
 		set_profile(profile_mod_buffer[0]);
-		HAL_NVIC_EnableIRQ(TIM5_IRQn);
+		HAL_NVIC_EnableIRQ(TIM8_UP_TIM13_IRQn);
 		pulse_t1_pass = 1;
 	} else {
-		HAL_NVIC_DisableIRQ(TIM5_IRQn); // ISR от TIM5 может быть вызван даже после отключения прерывания -- нужно дать ему "парковочный" буфер модуляции
+		HAL_NVIC_DisableIRQ(TIM8_UP_TIM13_IRQn); // ISR от TIM8 может быть вызван даже после отключения прерывания -- нужно дать ему "парковочный" буфер модуляции
 		profile_mod_buffer = &parking_profile;
 		profile_mod_size = 1;
 		profile_mod_idx = 0;
