@@ -147,6 +147,7 @@ void TIM2_IRQHandler() {
 		set_profile(profile_mod_buffer[0]);
 		HAL_NVIC_EnableIRQ(TIM8_UP_TIM13_IRQn);
 		pulse_t1_pass = 1;
+		TIM8->CCR1 = TIM8->ARR - 20;
 	} else {
 		HAL_NVIC_DisableIRQ(TIM8_UP_TIM13_IRQn); // ISR от TIM8 может быть вызван даже после отключения прерывания -- нужно дать ему "парковочный" буфер модуляции
 		profile_mod_buffer = &parking_profile;
@@ -155,6 +156,7 @@ void TIM2_IRQHandler() {
 		pulse_t1_pass = 0;
 		set_profile(parking_profile);
 		add_task(pulse_complete_callback);
+		TIM8->CCR1 = 0xFFFF;
 	}
 
 	HAL_TIM_IRQHandler(&timer2);
