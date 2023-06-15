@@ -142,7 +142,7 @@ void timer8_init() {
 		.Init = {
 			.Prescaler = 0,
 			.CounterMode = TIM_COUNTERMODE_UP,
-			.Period = period,
+			.Period = period - 1,
 			.ClockDivision = TIM_CLOCKDIVISION_DIV1,
 			.RepetitionCounter = 0
 		}
