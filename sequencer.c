@@ -65,6 +65,8 @@ void pulse_complete_callback() {
 		profile_mod_size = 1;
 	}
 
+	printf("Remaining elements: %u\n", DMA2_Stream1->NDTR);
+
 	spi_write_entry(entry);
 	ad_write_all();
 	set_ramp_direction(0);
@@ -72,7 +74,6 @@ void pulse_complete_callback() {
 	set_ramp_direction(1);
 	ad_drop_phase_static_reset();
 
-	printf("Remaining elements: %u\n", DMA2_Stream1->NDTR);
 	HAL_DMA_Start_IT(&dma_timer8_up, (uint32_t)&dma_buf, (uint32_t)&GPIOD->ODR, 0xFFFF);
 
 	// Принудительно закинуть в таймер очень большое значение, чтобы он случайно не пересёк те точки, которые мы вот вот запишем

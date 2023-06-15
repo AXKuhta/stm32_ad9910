@@ -110,6 +110,8 @@ void SysTick_Handler(void) {
 extern UART_HandleTypeDef usart3;
 extern DMA_HandleTypeDef dma_usart3_rx;
 extern DMA_HandleTypeDef dma_timer8_up;
+extern TIM_HandleTypeDef timer2;
+extern TIM_HandleTypeDef timer8;
 
 void USART3_IRQHandler() {
 	HAL_UART_IRQHandler(&usart3);
@@ -128,16 +130,11 @@ uint16_t dma_buf = GPIO_PIN_12;
 void DMA2_Stream1_IRQHandler() {
 	HAL_DMA_IRQHandler(&dma_timer8_up);
 
-	printf("DMA2 State: %u Error %u NDTR %u ODR %u\n", HAL_DMA_GetState(&dma_timer8_up), HAL_DMA_GetError(&dma_timer8_up), DMA2_Stream1->NDTR, GPIOD->ODR);
-	//GPIOD->ODR = GPIO_PIN_12;
-
-	//HAL_DMA_Start_IT(&dma_timer8_up, (uint32_t)&dma_buf, (uint32_t)&GPIOD->ODR, 1);
+	//printf("DMA2 State: %u Error %u NDTR %u ODR %u\n", HAL_DMA_GetState(&dma_timer8_up), HAL_DMA_GetError(&dma_timer8_up), DMA2_Stream1->NDTR, GPIOD->ODR);
 
 	RECORD_INTERRUPT();
 }
 
-extern TIM_HandleTypeDef timer2;
-extern TIM_HandleTypeDef timer8;
 extern uint8_t parking_profile;
 extern uint8_t* profile_mod_buffer;
 extern size_t profile_mod_size;
@@ -162,7 +159,10 @@ void TIM2_IRQHandler() {
 		HAL_NVIC_EnableIRQ(TIM8_UP_TIM13_IRQn);
 		pulse_t1_pass = 1;
 		TIM8->CCR1 = TIM8->ARR - 20;
+		__HAL_TIM_ENABLE_DMA(&timer8, TIM_DMA_UPDATE);
 	} else {
+		__HAL_TIM_DISABLE_DMA(&timer8, TIM_DMA_UPDATE);
+		HAL_DMA_Abort_IT(&dma_timer8_up); // Делается как можно раньше для получения в NDTR более точной информации об оставшемся количестве элементов
 		HAL_NVIC_DisableIRQ(TIM8_UP_TIM13_IRQn); // ISR от TIM8 может быть вызван даже после отключения прерывания -- нужно дать ему "парковочный" буфер модуляции
 		profile_mod_buffer = &parking_profile;
 		profile_mod_size = 1;
