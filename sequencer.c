@@ -52,6 +52,7 @@ void sequencer_add(seq_entry_t entry) {
 }
 
 extern DMA_HandleTypeDef dma_timer8_up;
+extern TIM_HandleTypeDef timer8;
 extern uint16_t dma_buf;
 
 void pulse_complete_callback() {
@@ -75,6 +76,7 @@ void pulse_complete_callback() {
 	ad_drop_phase_static_reset();
 
 	HAL_DMA_Start_IT(&dma_timer8_up, (uint32_t)&dma_buf, (uint32_t)&GPIOD->ODR, 0xFFFF);
+	__HAL_TIM_ENABLE_DMA(&timer8, TIM_DMA_UPDATE);
 
 	// Принудительно закинуть в таймер очень большое значение, чтобы он случайно не пересёк те точки, которые мы вот вот запишем
 	timer2.Instance->CNT = 0x7FFFFFFF;
