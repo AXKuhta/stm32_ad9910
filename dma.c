@@ -52,7 +52,7 @@ void timer8_up_dma_init() {
 			.Channel = DMA_CHANNEL_7,
 			.Direction = DMA_MEMORY_TO_PERIPH,
 			.PeriphInc = DMA_PINC_DISABLE,
-			.MemInc = DMA_MINC_DISABLE,
+			.MemInc = DMA_MINC_ENABLE,
 			.PeriphDataAlignment = DMA_PDATAALIGN_HALFWORD,
 			.MemDataAlignment = DMA_MDATAALIGN_HALFWORD,
 			.Mode = DMA_NORMAL,

@@ -125,7 +125,7 @@ void DMA1_Stream1_IRQHandler() {
 	RECORD_INTERRUPT();
 }
 
-uint16_t dma_buf = GPIO_PIN_12;
+uint16_t dma_buf[20] = {0};
 
 void DMA2_Stream1_IRQHandler() {
 	HAL_DMA_IRQHandler(&dma_timer8_up);
@@ -142,7 +142,12 @@ extern size_t profile_mod_idx;
 extern void pulse_complete_callback();
 
 static void modulation_step() {
-	//set_profile(profile_mod_buffer[profile_mod_idx]);
+	uint8_t profile_id = profile_mod_buffer[profile_mod_idx];
+	uint16_t value = (profile_id & 0b001 ? GPIO_PIN_13 : 0) +
+					 (profile_id & 0b010 ? GPIO_PIN_12 : 0) +
+					 (profile_id & 0b100 ? GPIO_PIN_11 : 0);
+
+	dma_buf[profile_mod_idx] = value;
 	profile_mod_idx++;
 
 	// Модуляция будет идти по кругу
@@ -150,22 +155,23 @@ static void modulation_step() {
 		profile_mod_idx = 0;
 }
 
+void first_modulation_step() {
+	profile_mod_idx = 0;
+	modulation_step();
+}
+
 void TIM2_IRQHandler() {
 	static int pulse_t1_pass;
 
 	if (pulse_t1_pass == 0) {
-		profile_mod_idx = 0;								// 1. Сбросить индекс модуляции
-		HAL_NVIC_EnableIRQ(TIM8_UP_TIM13_IRQn);				// 2. Включить прерывание модуляции
-		pulse_t1_pass = 1;									// 3. Выставить t1_pass
-		TIM8->CCR1 = TIM8->ARR - 20;						// 4. Включить отладочный выход таймера модуляции
+		HAL_NVIC_EnableIRQ(TIM8_UP_TIM13_IRQn);				// 1. Включить прерывание модуляции
+		pulse_t1_pass = 1;									// 2. Выставить t1_pass
+		TIM8->CCR1 = TIM8->ARR - 20;						// 3. Включить отладочный выход таймера модуляции
 	} else {
 		__HAL_TIM_DISABLE_DMA(&timer8, TIM_DMA_UPDATE);		// 1. Убрать источник DMA request-ов
 		TIM8->CR1 &= ~(TIM_CR1_CEN);						// 2. Поставить таймер на паузу -- почему-то просто __HAL_TIM_DISABLE(&timer8) не рабоает
 		HAL_DMA_Abort_IT(&dma_timer8_up); 					// 3. Сброс DMA [Можно убрать куда-нибудь?]
 		HAL_NVIC_DisableIRQ(TIM8_UP_TIM13_IRQn);			// 4. Выключить прерывание (Правда это не поможет, если оно уже pending => можно и не выключать?)
-		profile_mod_buffer = &parking_profile;				// 
-		profile_mod_size = 1;								//
-		profile_mod_idx = 0;								// 5. Подсунуть парковочный буфер [Нужно ли это теперь??]
 		pulse_t1_pass = 0;									// 6. Сбросить t1_pass
 		set_profile(parking_profile);						// 7. Выставить нулевой профиль принудительно
 		add_task(pulse_complete_callback);					// 8. Запланировать запись параметров следующего импульса
