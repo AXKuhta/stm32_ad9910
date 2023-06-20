@@ -373,7 +373,7 @@ void ad_set_profile_phase(int profile_id, uint16_t phase) {
 	profile[2] = view[1];
 }
 
-// Установит в указанном профиле адрес начала, адрес конца и интервал шагов по оперативной памяти
+// Установить в указанном профиле адрес начала, адрес конца и интервал шагов по оперативной памяти
 void ad_set_ram_profile(int profile_id, uint16_t step_rate, uint16_t start, uint16_t end) {
 	uint8_t* profile = regmap[14 + profile_id];
 	uint8_t* view_step_rate = (uint8_t*)&step_rate;
@@ -390,6 +390,37 @@ void ad_set_ram_profile(int profile_id, uint16_t step_rate, uint16_t start, uint
 	// Включить zero-crossing
 	// Режим: direct switch
 	profile[7] = 0b00001000;
+}
+
+// Установить общую частоту при использовании оперативной памяти
+// Действует когда RAM Playback Destination = Phase или Amplitude
+void ad_set_ram_freq(uint32_t freq_hz) {
+	uint32_t ftw = ad_calc_ftw(freq_hz);
+	uint8_t* view = (uint8_t*)&ftw;
+
+	r07[3] = view[0];
+	r07[2] = view[1];
+	r07[1] = view[2];
+	r07[0] = view[3];
+}
+
+// Установить общий сдвиг фазы при использовании оперативной памяти
+// Действует когда RAM Playback Destination = Frequency или Amplitude
+void ad_set_ram_phase(uint16_t phase) {
+	uint8_t* view = (uint8_t*)&phase;
+
+	r08[1] = view[0];
+	r08[0] = view[1];
+}
+
+// Установить общую амплитуду при использовании оперативной памяти
+// Действует когда RAM Playback Destination = Frequency или Phase
+// Формат несколько отличается от того, что в регистрах профилей
+void ad_set_ram_amplitude(uint16_t amplitude) {
+	assert(amplitude <= 0x3FFF);
+
+	r09[3] = (amplitude << 2) & 0xFF;
+	r09[2] = (amplitude >> 5) & 0xFF;
 }
 
 //
