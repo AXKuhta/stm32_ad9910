@@ -153,6 +153,10 @@ void* scan_uint8_data(const char* str) {
 	return vec;
 }
 
+void prepare_for_dma(uint8_t* ptr) {
+	*ptr = profile_to_gpio_states(*ptr) >> 8;
+}
+
 void xmitdata_fsk_cmd(const char* str) {
 	char basic_xmitdata[15] = {0};
 	char cmd[32] = {0};
@@ -198,6 +202,7 @@ void xmitdata_fsk_cmd(const char* str) {
 	free(verif_t2);
 
 	vec_t(uint8_t)* vec = scan_uint8_data(str + data_offset);
+	for_every_entry(vec, prepare_for_dma);
 
 	sequencer_stop();
 	sequencer_reset();
@@ -255,6 +260,7 @@ void xmitdata_psk_cmd(const char* str) {
 	free(verif_t2);
 
 	vec_t(uint8_t)* vec = scan_uint8_data(str + data_offset);
+	for_every_entry(vec, prepare_for_dma);
 
 	sequencer_stop();
 	sequencer_reset();

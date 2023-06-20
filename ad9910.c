@@ -113,15 +113,18 @@ void drhold_timer_controlled() {
 	PIN_AF_Init(DR_HOLD, GPIO_MODE_AF_PP, GPIO_PULLDOWN, GPIO_AF1_TIM2); // TIM2_CH3
 }
 
+// Перевести номер профиля в значение, пригодное для записи в регистр ODR
+uint16_t profile_to_gpio_states(uint8_t profile_id) {
+	return 	(profile_id & 0b001 ? GPIO_PIN_13 : 0) +
+			(profile_id & 0b010 ? GPIO_PIN_12 : 0) +
+			(profile_id & 0b100 ? GPIO_PIN_11 : 0);
+}
+
 // Установить профиль
 void set_profile(uint8_t profile_id) {
 	assert(profile_id < 8);
 
-	uint16_t value = (profile_id & 0b001 ? GPIO_PIN_13 : 0) +
-					 (profile_id & 0b010 ? GPIO_PIN_12 : 0) +
-					 (profile_id & 0b100 ? GPIO_PIN_11 : 0);
-
-	LL_GPIO_WriteOutputPort(GPIOD, value);
+	LL_GPIO_WriteOutputPort(GPIOD, profile_to_gpio_states(profile_id));
 }
 
 // Установить направление хода Digital Ramp генератора

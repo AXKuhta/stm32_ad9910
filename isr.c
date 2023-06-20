@@ -125,8 +125,6 @@ void DMA1_Stream1_IRQHandler() {
 	RECORD_INTERRUPT();
 }
 
-uint8_t dma_buf[20] = {0};
-
 void DMA2_Stream1_IRQHandler() {
 	HAL_DMA_IRQHandler(&dma_timer8_up);
 
@@ -136,28 +134,10 @@ void DMA2_Stream1_IRQHandler() {
 }
 
 extern uint8_t parking_profile;
-extern uint8_t* profile_mod_buffer;
-extern size_t profile_mod_size;
-extern size_t profile_mod_idx;
 extern void pulse_complete_callback();
 
 static void modulation_step() {
-	uint8_t profile_id = profile_mod_buffer[profile_mod_idx];
-	uint16_t value = (profile_id & 0b001 ? GPIO_PIN_13 : 0) +
-					 (profile_id & 0b010 ? GPIO_PIN_12 : 0) +
-					 (profile_id & 0b100 ? GPIO_PIN_11 : 0);
 
-	dma_buf[profile_mod_idx] = value >> 8;
-	profile_mod_idx++;
-
-	// Модуляция будет идти по кругу
-	if (profile_mod_idx == profile_mod_size)
-		profile_mod_idx = 0;
-}
-
-void first_modulation_step() {
-	profile_mod_idx = 0;
-	modulation_step();
 }
 
 void TIM2_IRQHandler() {

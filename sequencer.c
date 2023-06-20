@@ -11,10 +11,7 @@
 
 // Глобальные переменные
 uint8_t parking_profile = 0;
-uint8_t tone_profile = 1;
-uint8_t* profile_mod_buffer;
-size_t profile_mod_size;
-size_t profile_mod_idx;
+uint8_t tone_profile = GPIO_PIN_13 >> 8;
 
 // "Приватные" глобальные переменные
 static vec_t(seq_entry_t)* sequence;
@@ -57,6 +54,8 @@ extern uint16_t dma_buf[];
 
 void pulse_complete_callback() {
 	seq_entry_t entry = sequence->elements[seq_index++ % sequence->size];
+	uint8_t* profile_mod_buffer;
+	size_t profile_mod_size;
 
 	if (entry.profile_modulation.buffer) {
 		profile_mod_buffer = entry.profile_modulation.buffer;
@@ -66,8 +65,6 @@ void pulse_complete_callback() {
 		profile_mod_size = 1;
 	}
 
-	first_modulation_step();
-
 	spi_write_entry(entry);
 	ad_write_all();
 	set_ramp_direction(0);
@@ -76,7 +73,8 @@ void pulse_complete_callback() {
 	ad_drop_phase_static_reset();
 
 	// Можно производить запись только в верхнюю часть регистра ODR, сдвинув адрес на 1
-	HAL_DMA_Start_IT(&dma_timer8_up, (uint32_t)dma_buf, (uint32_t)&GPIOD->ODR + 1, 0xFFFF);
+	// DMA работает в режиме DMA_CIRCULAR, модуляция будет идти по кругу
+	HAL_DMA_Start_IT(&dma_timer8_up, (uint32_t)profile_mod_buffer, (uint32_t)&GPIOD->ODR + 1, profile_mod_size);
 	__HAL_TIM_ENABLE_DMA(&timer8, TIM_DMA_UPDATE);
 
 	// Принудительно закинуть в таймер очень большое значение, чтобы он случайно не пересёк те точки, которые мы вот вот запишем
