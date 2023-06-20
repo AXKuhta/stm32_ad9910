@@ -458,6 +458,7 @@ void run(const char* str) {
 	if (strcmp(cmd, "perf") == 0) return print_perf();
 	if (strcmp(cmd, "write") == 0) return ad_write_all();
 	if (strcmp(cmd, "verify") == 0) return ad_readback_all();
+	if (strcmp(cmd, "ram_test") == 0) return ad_ram_test();
 	if (strcmp(cmd, "rfkill") == 0) return enter_rfkill_mode();
 	if (strcmp(cmd, "test_tone") == 0) return test_tone_cmd(str);
 	if (strcmp(cmd, "basic_pulse") == 0) return basic_pulse_cmd(str);

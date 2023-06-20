@@ -1,3 +1,5 @@
+
+#include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
 
@@ -235,7 +237,7 @@ void ad_readback_all() {
 
 // Записать все регистры
 // Не трогать недокументированные регистры 0x05 и 0x06
-// Не трогать пытаться записывать в оперативную память
+// Не пытаться записывать в оперативную память
 void ad_write_all() {	
 	ad_pulse_io_reset();
 
@@ -337,6 +339,10 @@ ad_ramp_t ad_calc_ramp(uint32_t f1_hz, uint32_t f2_hz, uint32_t time_ns) {
 	};
 }
 
+//
+// Профили
+//
+
 // Установить частоту в указанном профиле
 void ad_set_profile_freq(int profile_id, uint32_t freq_hz) {
 	uint8_t* profile = regmap[14 + profile_id];
@@ -365,6 +371,25 @@ void ad_set_profile_phase(int profile_id, uint16_t phase) {
 	
 	profile[3] = view[0];
 	profile[2] = view[1];
+}
+
+// Установит в указанном профиле адрес начала, адрес конца и интервал шагов по оперативной памяти
+void ad_set_ram_profile(int profile_id, uint16_t step_rate, uint16_t start, uint16_t end) {
+	uint8_t* profile = regmap[14 + profile_id];
+	uint8_t* view_step_rate = (uint8_t*)&step_rate;
+
+	profile[2] = view_step_rate[0];
+	profile[1] = view_step_rate[1];
+
+	profile[4] = (end << 6) & 0b11000000;
+	profile[3] = (end >> 2);
+
+	profile[6] = (start << 6) & 0b11000000;
+	profile[5] = (start >> 2);
+
+	// Включить zero-crossing
+	// Режим: direct switch
+	profile[7] = 0b00001000;
 }
 
 //
@@ -446,6 +471,78 @@ void ad_set_ramp_rate(uint16_t down_rate, uint16_t up_rate) {
 
 	r0D[2] = view_u[1];
 	r0D[3] = view_u[0];
+}
+
+//
+// AD9910 RAM
+//
+
+void ad_enable_ram() {
+	r00[0] |=  0b10000000;
+}
+
+void ad_disable_ram() {
+	r00[0] &= ~0b10000000;
+}
+
+// Записать count 32-битных слов в оперативную память AD9910, начиная с адреса 0
+void ad_write_ram(uint32_t* buffer, size_t size) {
+	assert(size <= 1024);
+
+	ad_set_ram_profile(0, 0, 0, size - 1);
+	ad_disable_ram();
+	ad_write_all();
+	ad_pulse_io_update();
+	set_profile(0);
+
+	uint8_t instruction = 0x16;
+	spi_send(&instruction, 1);
+
+	for (size_t i = 0; i < size; i++) {
+		spi_send((uint8_t*)&buffer[i], 4);
+	}
+}
+
+// Прочитать count 32-битных слов из оперативной памяти AD9910, начиная с адреса 0
+void ad_read_ram(uint32_t* buffer, size_t count) {
+	assert(count <= 1024);
+
+	ad_set_ram_profile(0, 0, 0, count - 1);
+	ad_disable_ram();
+	ad_write_all();
+	ad_pulse_io_update();
+	set_profile(0);
+
+	uint8_t instruction = 0x80 | 0x16;
+	spi_send(&instruction, 1);
+
+	for (size_t i = 0; i < count; i++) {
+		spi_recv((uint8_t*)&buffer[i], 4);
+	}
+}
+
+// Протестировать оперативную память
+void ad_ram_test() {
+	uint8_t* buffer_a = malloc(4096);
+	uint8_t* buffer_b = malloc(4096);
+
+	for (size_t i = 0; i < 4096; i++) {
+		buffer_a[i] = i & 0xFF;
+	}
+
+	ad_write_ram((uint32_t*)buffer_a, 1024);
+	ad_read_ram((uint32_t*)buffer_b, 1024);
+
+	for (size_t i = 0; i < 4096; i++) {
+		printf(COLOR_GREEN "%s0x%02X ", buffer_a[i] == buffer_b[i] ? COLOR_GREEN : COLOR_RED, buffer_b[i]);
+
+		if (((1+i) % 16) == 0) printf("\n"); 
+	}
+
+	printf(COLOR_RESET "\n");
+
+	free(buffer_a);
+	free(buffer_b);
 }
 
 // Выключить static reset фазы
