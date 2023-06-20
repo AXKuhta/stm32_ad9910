@@ -125,7 +125,7 @@ void DMA1_Stream1_IRQHandler() {
 	RECORD_INTERRUPT();
 }
 
-uint16_t dma_buf[20] = {0};
+uint8_t dma_buf[20] = {0};
 
 void DMA2_Stream1_IRQHandler() {
 	HAL_DMA_IRQHandler(&dma_timer8_up);
@@ -147,7 +147,7 @@ static void modulation_step() {
 					 (profile_id & 0b010 ? GPIO_PIN_12 : 0) +
 					 (profile_id & 0b100 ? GPIO_PIN_11 : 0);
 
-	dma_buf[profile_mod_idx] = value;
+	dma_buf[profile_mod_idx] = value >> 8;
 	profile_mod_idx++;
 
 	// Модуляция будет идти по кругу

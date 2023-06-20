@@ -75,7 +75,8 @@ void pulse_complete_callback() {
 	set_ramp_direction(1);
 	ad_drop_phase_static_reset();
 
-	HAL_DMA_Start_IT(&dma_timer8_up, (uint32_t)dma_buf, (uint32_t)&GPIOD->ODR, 0xFFFF);
+	// Можно производить запись только в верхнюю часть регистра ODR, сдвинув адрес на 1
+	HAL_DMA_Start_IT(&dma_timer8_up, (uint32_t)dma_buf, (uint32_t)&GPIOD->ODR + 1, 0xFFFF);
 	__HAL_TIM_ENABLE_DMA(&timer8, TIM_DMA_UPDATE);
 
 	// Принудительно закинуть в таймер очень большое значение, чтобы он случайно не пересёк те точки, которые мы вот вот запишем
