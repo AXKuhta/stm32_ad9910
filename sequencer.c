@@ -74,7 +74,7 @@ void pulse_complete_callback() {
 
 	// Можно производить запись только в верхнюю часть регистра ODR, сдвинув адрес на 1
 	// DMA работает в режиме DMA_CIRCULAR, модуляция будет идти по кругу
-	HAL_DMA_Start_IT(&dma_timer8_up, (uint32_t)profile_mod_buffer, (uint32_t)&GPIOD->ODR + 1, profile_mod_size);
+	HAL_DMA_Start(&dma_timer8_up, (uint32_t)profile_mod_buffer, (uint32_t)&GPIOD->ODR + 1, profile_mod_size);
 	__HAL_TIM_ENABLE_DMA(&timer8, TIM_DMA_UPDATE);
 
 	// Принудительно закинуть в таймер очень большое значение, чтобы он случайно не пересёк те точки, которые мы вот вот запишем

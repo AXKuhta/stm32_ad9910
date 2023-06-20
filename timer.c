@@ -174,7 +174,7 @@ void timer8_init() {
 	HAL_NVIC_EnableIRQ(TIM8_UP_TIM13_IRQn);
 
 	HAL_TIM_Base_Init(&timer8);
-	HAL_TIM_Base_Start_IT(&timer8); // Не спровоцирует запуск, поскольку сконфигурирован мастер
+	HAL_TIM_Base_Start(&timer8); // Не спровоцирует запуск, поскольку сконфигурирован мастер
 	HAL_TIM_OC_Start(&timer8, TIM_CHANNEL_1);
 }
 
