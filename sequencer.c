@@ -65,6 +65,8 @@ void pulse_complete_callback() {
 		profile_mod_size = 1;
 	}
 
+	HAL_DMA_Abort(&dma_timer8_up);
+
 	spi_write_entry(entry);
 	ad_write_all();
 	set_ramp_direction(0);

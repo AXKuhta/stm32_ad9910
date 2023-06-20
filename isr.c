@@ -145,7 +145,6 @@ void TIM2_IRQHandler() {
 	} else {
 		__HAL_TIM_DISABLE_DMA(&timer8, TIM_DMA_UPDATE);		// 1. Убрать источник DMA request-ов
 		TIM8->CR1 &= ~(TIM_CR1_CEN);						// 2. Поставить таймер на паузу -- почему-то просто __HAL_TIM_DISABLE(&timer8) не рабоает
-		HAL_DMA_Abort(&dma_timer8_up); 						// 3. Сброс DMA [Можно убрать куда-нибудь?]
 		pulse_t1_pass = 0;									// 4. Сбросить t1_pass
 		set_profile(parking_profile);						// 5. Выставить нулевой профиль принудительно
 		add_task(pulse_complete_callback);					// 6. Запланировать запись параметров следующего импульса
