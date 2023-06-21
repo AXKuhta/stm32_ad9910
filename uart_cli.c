@@ -462,14 +462,18 @@ void test_cmd() {
 	};
 
 	uint8_t ram_image[] = {
+		0x7F, 0xFF, 0xFF, 0xFC,
 		0x00, 0x00, 0xFF, 0xFC,
-		0x7F, 0xFF, 0xFF, 0xFC
+		0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00
 	};
 
-	ad_write_ram(ram_image, 2);
+	ad_write_ram(ram_image, 4);
 
-	ad_set_ram_profile(2, 0, 0, 0);
-	ad_set_ram_profile(3, 0, 1, 1);
+	ad_set_ram_profile(0, 0, 0, 0);
+	ad_set_ram_profile(1, 0, 1, 1);
+	ad_set_ram_profile(2, 0, 2, 2);
+	ad_set_ram_profile(3, 0, 3, 3);
 
 	ad_set_ram_freq(12*1000*1000);
 	ad_ram_destination_polar();
