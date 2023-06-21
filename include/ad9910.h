@@ -32,6 +32,8 @@ void ad_ram_destination_freq();
 void ad_ram_destination_phase();
 void ad_ram_destination_amplitude();
 void ad_ram_destination_polar();
+void ad_write_ram(uint32_t* buffer, size_t size);
+void ad_read_ram(uint32_t* buffer, size_t size);
 void ad_ram_test();
 
 // Прочее

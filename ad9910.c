@@ -618,7 +618,7 @@ void ad_init() {
 	
 	ad_system_clock = 1000*1000*1000;
 	
-	r01[0] = 0b00000001; // Amplitude scaler enable
+	r01[0] = 0b00000001; // Enable amplitude scale from single tone profiles
 	r00[2] = 0b00001000; // Phase static reset
 	r01[3] = 0b10000000; // Matched latency
 	r00[1] = 0b00000001; // Sine output

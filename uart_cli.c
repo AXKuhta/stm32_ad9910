@@ -443,6 +443,42 @@ void sequencer_cmd(const char* str) {
 	printf("Unknown sequencer command: [%s]\n", cmd);
 }
 
+void test_cmd() {
+	sequencer_stop();
+	sequencer_reset();
+
+	uint8_t* x = malloc(2);
+
+	x[0] = profile_to_gpio_states(2) >> 8;
+	x[1] = profile_to_gpio_states(3) >> 8;
+
+	seq_entry_t pulse = {
+		.t1 = timer_mu(0),
+		.t2 = timer_mu(0 + 1*1000*1000),
+		//.profiles[0] = { .freq_hz = 0, .amplitude = 0 },
+		//.profiles[2] = { .freq_hz = 12*1000*1000, .amplitude = 0x3FFF, .phase = 0x0 },
+		//.profiles[3] = { .freq_hz = 12*1000*1000, .amplitude = 0x3FFF/2, .phase = 0xFFFF/2 },
+		.profile_modulation = { .buffer = x, .size = 2 }
+	};
+
+	uint8_t ram_image[] = {
+		0x00, 0x00, 0xFF, 0xFC,
+		0x7F, 0xFF, 0xFF, 0xFC
+	};
+
+	ad_write_ram(ram_image, 2);
+
+	ad_set_ram_profile(2, 0, 0, 0);
+	ad_set_ram_profile(3, 0, 1, 1);
+
+	ad_set_ram_freq(12*1000*1000);
+	ad_ram_destination_polar();
+	ad_enable_ram();
+
+	sequencer_add(pulse);
+	sequencer_run();
+}
+
 void run(const char* str) {
 	char cmd[32] = {0};
 
@@ -464,6 +500,7 @@ void run(const char* str) {
 	if (strcmp(cmd, "basic_pulse") == 0) return basic_pulse_cmd(str);
 	if (strcmp(cmd, "basic_sweep") == 0) return basic_sweep_cmd(str);
 	if (strcmp(cmd, "basic_xmitdata") == 0) return basic_xmitdata_cmd(str);
+	if (strcmp(cmd, "test") == 0) return test_cmd();
 
 	printf("Unknown command: [%s]\n", cmd);
 }
