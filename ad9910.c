@@ -407,7 +407,7 @@ void ad_set_ram_phase(uint16_t phase) {
 }
 
 // Установить общую амплитуду при использовании оперативной памяти
-// Действует когда RAM Playback Destination = Frequency или Phase
+// Не действует, пока выставлен бит Enable amplitude scale from single tone profiles
 // Формат несколько отличается от того, что в регистрах профилей
 void ad_set_ram_amplitude(uint16_t amplitude) {
 	assert(amplitude <= 0x3FFF);
@@ -517,7 +517,7 @@ static void ad_ram_destination_set(uint8_t id) {
 }
 
 void ad_ram_destination_freq() { ad_ram_destination_set(0); }
-void ad_ram_destination_phase() { ad_ram_destination_set(1); }
+void ad_ram_destination_phase() { ad_ram_destination_set(1); } // <- Не будет работать, пока выставлен бит Enable amplitude scale from single tone profiles (Амплитуда будет нулевая)
 void ad_ram_destination_amplitude() { ad_ram_destination_set(2); }
 void ad_ram_destination_polar() { ad_ram_destination_set(3); }
 
