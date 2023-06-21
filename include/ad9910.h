@@ -21,6 +21,10 @@ void ad_set_ramp_step(uint32_t decrement, uint32_t increment);
 void ad_set_ramp_rate(uint16_t down_rate, uint16_t up_rate);
 void ad_enable_ram();
 void ad_disable_ram();
+void ad_ram_destination_freq();
+void ad_ram_destination_phase();
+void ad_ram_destination_amplitude();
+void ad_ram_destination_polar();
 void ad_drop_phase_static_reset();
 void ad_init();
 
