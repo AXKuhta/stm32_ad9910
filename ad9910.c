@@ -191,13 +191,6 @@ void ad_readback(uint8_t reg_addr, uint8_t* buffer, uint16_t size) {
 	printf(COLOR_RESET "\n");
 }
 
-// Включить блок масштабирования амплитуды
-// По умолчанию выключен в целях энергосбережения
-// Необходимо для ad_set_profile_amplitude()
-void ad_enable_amplitude_scaler() {
-	r01[0] |= 0b0000001;
-}
-
 // Прочитать и сверить содержимое всех регистров с ожидаемыми значениями
 // Не трогать недокументированные регистры 0x05 и 0x06
 // Не пытаться сверять оперативную память
@@ -606,7 +599,6 @@ void ad_init() {
 	init_profile_gpio();
 	init_control_gpio();
 	set_profile(0);
-	ad_enable_amplitude_scaler();
 
 	// Ramp Generator
 	drctl_software_controlled();
@@ -626,6 +618,7 @@ void ad_init() {
 	
 	ad_system_clock = 1000*1000*1000;
 	
+	r01[0] = 0b00000001; // Amplitude scaler enable
 	r00[2] = 0b00001000; // Phase static reset
 	r01[3] = 0b10000000; // Matched latency
 	r00[1] = 0b00000001; // Sine output
