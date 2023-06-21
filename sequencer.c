@@ -68,10 +68,6 @@ void pulse_complete_callback() {
 	HAL_DMA_Abort(&dma_timer8_up);
 
 	spi_write_entry(entry);
-	ad_write_all();
-	set_ramp_direction(0);
-	ad_pulse_io_update(); // !! Большая задержка
-	set_ramp_direction(1);
 	ad_drop_phase_static_reset();
 
 	// Можно производить запись только в верхнюю часть регистра ODR, сдвинув адрес на 1
@@ -125,7 +121,14 @@ void spi_write_entry(seq_entry_t entry) {
 			ad_set_profile_amplitude(i, entry.profiles[i].amplitude);
 			ad_set_profile_phase(i, entry.profiles[i].phase);
 		}
+
+		ad_disable_ram();
 	}
+
+	ad_write_all();
+	set_ramp_direction(0);
+	ad_pulse_io_update(); // !! Большая задержка
+	set_ramp_direction(1);
 }
 
 void sequencer_stop() {
