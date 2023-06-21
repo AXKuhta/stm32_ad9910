@@ -447,37 +447,36 @@ void test_cmd() {
 	sequencer_stop();
 	sequencer_reset();
 
-	uint8_t* x = malloc(2);
+	uint8_t* x = malloc(6);
 
-	x[0] = profile_to_gpio_states(2) >> 8;
+	x[0] = profile_to_gpio_states(3) >> 8;
 	x[1] = profile_to_gpio_states(3) >> 8;
+	x[2] = profile_to_gpio_states(3) >> 8;
+	x[3] = profile_to_gpio_states(2) >> 8;
+	x[4] = profile_to_gpio_states(3) >> 8;
+	x[5] = profile_to_gpio_states(0) >> 8;
 
-	seq_entry_t pulse = {
-		.t1 = timer_mu(0),
-		.t2 = timer_mu(0 + 1*1000*1000),
-		//.profiles[0] = { .freq_hz = 0, .amplitude = 0 },
-		//.profiles[2] = { .freq_hz = 12*1000*1000, .amplitude = 0x3FFF, .phase = 0x0 },
-		//.profiles[3] = { .freq_hz = 12*1000*1000, .amplitude = 0x3FFF/2, .phase = 0xFFFF/2 },
-		.profile_modulation = { .buffer = x, .size = 2 }
-	};
+	uint32_t* ram = malloc(4*4);
 
-	uint8_t ram_image[] = {
+	memcpy(ram, (uint8_t[]) {
 		0x7F, 0xFF, 0xFF, 0xFC,
 		0x00, 0x00, 0xFF, 0xFC,
 		0x00, 0x00, 0x00, 0x00,
 		0x00, 0x00, 0x00, 0x00
+	}, 4*4);
+
+	seq_entry_t pulse = {
+		.t1 = timer_mu(0),
+		.t2 = timer_mu(0 + 125*7),
+		.ram_profiles[0] = { .start = 0, .end = 0, .rate = 0, .mode = 0 },
+		.ram_profiles[2] = { .start = 2, .end = 2, .rate = 0, .mode = 0 },
+		.ram_profiles[3] = { .start = 3, .end = 3, .rate = 0, .mode = 0 },
+		.profile_modulation = { .buffer = x, .size = 6 },
+		.ram_image = { .buffer = ram, .size = 4 }
 	};
-
-	ad_write_ram(ram_image, 4);
-
-	ad_set_ram_profile(0, 0, 0, 0);
-	ad_set_ram_profile(1, 0, 1, 1);
-	ad_set_ram_profile(2, 0, 2, 2);
-	ad_set_ram_profile(3, 0, 3, 3);
 
 	ad_set_ram_freq(12*1000*1000);
 	ad_ram_destination_polar();
-	ad_enable_ram();
 
 	sequencer_add(pulse);
 	sequencer_run();

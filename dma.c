@@ -55,7 +55,7 @@ void timer8_up_dma_init() {
 			.MemInc = DMA_MINC_ENABLE,
 			.PeriphDataAlignment = DMA_PDATAALIGN_BYTE,
 			.MemDataAlignment = DMA_MDATAALIGN_BYTE,
-			.Mode = DMA_CIRCULAR,
+			.Mode = DMA_NORMAL,
 			.Priority = DMA_PRIORITY_VERY_HIGH,
 			.FIFOMode = DMA_FIFOMODE_DISABLE,
 			.FIFOThreshold = DMA_FIFO_THRESHOLD_1QUARTERFULL,

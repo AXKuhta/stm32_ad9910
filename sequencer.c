@@ -109,11 +109,23 @@ void spi_write_entry(seq_entry_t entry) {
 		ad_disable_ramp();
 	}
 
-	//for (int i = 0; i < 8; i++) {
-	//	ad_set_profile_freq(i, entry.profiles[i].freq_hz);
-	//	ad_set_profile_amplitude(i, entry.profiles[i].amplitude);
-	//	ad_set_profile_phase(i, entry.profiles[i].phase);
-	//}
+	// Выбор формата профилей происходит на основе присутствия/отсутствия образа оперативной памяти
+	if (entry.ram_image.size > 0) {
+
+		// Портит профили, должно быть выполнено до записи профилей
+		ad_write_ram(entry.ram_image.buffer, entry.ram_image.size); 
+
+		for (int i = 0; i < 8; i++)
+			ad_set_ram_profile(i, entry.ram_profiles[i].rate, entry.ram_profiles[i].start, entry.ram_profiles[i].end);
+
+		ad_enable_ram();
+	} else {
+		for (int i = 0; i < 8; i++) {
+			ad_set_profile_freq(i, entry.profiles[i].freq_hz);
+			ad_set_profile_amplitude(i, entry.profiles[i].amplitude);
+			ad_set_profile_phase(i, entry.profiles[i].phase);
+		}
+	}
 }
 
 void sequencer_stop() {

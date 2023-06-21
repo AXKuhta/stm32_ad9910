@@ -135,7 +135,7 @@ void timer8_init() {
 	__HAL_RCC_TIM8_CLK_ENABLE();
 	timer8_gpio_init();
 
-	uint32_t period = (1.0 / 9600.0) * M_216MHz + 0.5;
+	uint32_t period = 125 * NS_TO_216MHZ_MU + 0.5;
 	
 	TIM_HandleTypeDef timer8_defaults = {
 		.Instance = TIM8,

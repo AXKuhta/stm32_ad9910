@@ -5,6 +5,13 @@ typedef struct profile_t {
 	uint16_t amplitude;
 } profile_t;
 
+typedef struct ram_profile_t {
+	uint16_t start;
+	uint16_t end;
+	uint16_t rate;
+	uint8_t mode;
+} ram_profile_t;
+
 typedef struct seq_entry_t {
 	struct sweep_t {
 		uint32_t prologue_hold;
@@ -13,13 +20,20 @@ typedef struct seq_entry_t {
 		uint32_t fstep;
 		uint32_t tstep;
 	} sweep;
-	struct buffer_t {
+	struct {
 		uint8_t* buffer;
 		size_t size;
 	} profile_modulation;
+	struct {
+		uint32_t* buffer;
+		size_t size;
+	} ram_image;
 	uint32_t t1;
 	uint32_t t2;
-	profile_t profiles[8];
+	union {
+		profile_t profiles[8];
+		ram_profile_t ram_profiles[8];
+	};
 } seq_entry_t;
 
 void enter_rfkill_mode();
