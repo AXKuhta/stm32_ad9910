@@ -51,7 +51,6 @@ void sequencer_add(seq_entry_t entry) {
 extern DMA_HandleTypeDef dma_timer8_up;
 extern TIM_HandleTypeDef timer8;
 extern uint16_t dma_buf[];
-extern int pulse_t1_pass;
 
 void pulse_complete_callback() {
 	seq_entry_t entry = sequence->elements[seq_index++ % sequence->size];
@@ -77,8 +76,6 @@ void pulse_complete_callback() {
 	// DMA работает в режиме DMA_CIRCULAR, модуляция будет идти по кругу
 	HAL_DMA_Start(&dma_timer8_up, (uint32_t)profile_mod_buffer, (uint32_t)&GPIOD->ODR + 1, profile_mod_size);
 	__HAL_TIM_ENABLE_DMA(&timer8, TIM_DMA_UPDATE);
-
-	pulse_t1_pass = 0;
 
 	// Принудительно закинуть в таймер очень большое значение, чтобы он случайно не пересёк те точки, которые мы вот вот запишем
 	timer2.Instance->CNT = 0x7FFFFFFF;

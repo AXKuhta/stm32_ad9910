@@ -106,7 +106,7 @@ void timer2_init() {
 	HAL_NVIC_EnableIRQ(TIM2_IRQn);
 	
 	// Запуск требуется даже при настроенном триггере
-	HAL_TIM_OC_Start_IT(&timer2, TIM_CHANNEL_3);
+	HAL_TIM_OC_Start(&timer2, TIM_CHANNEL_3);
 	HAL_TIM_OC_Start_IT(&timer2, TIM_CHANNEL_4);
 }
 
@@ -143,7 +143,7 @@ void timer8_init() {
 
 	TIM_OC_InitTypeDef oc_config = {
 		.OCMode = TIM_OCMODE_PWM2,
-		.Pulse = period - (100.0 * NS_TO_216MHZ_MU + 0.5),
+		.Pulse = period - (20.0 * NS_TO_216MHZ_MU + 0.5),
 		.OCPolarity = TIM_OCPOLARITY_HIGH,
 		.OCFastMode = TIM_OCFAST_DISABLE
 	};
@@ -180,6 +180,7 @@ void timer8_reconfigure(uint32_t period) {
 	};
 
 	TIM_Base_SetConfig(TIM8, &base_config);
+	TIM8->CCR1 = period - (20.0 * NS_TO_216MHZ_MU + 0.5);
 }
 
 void timer8_stop() {

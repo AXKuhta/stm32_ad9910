@@ -135,20 +135,12 @@ void DMA2_Stream1_IRQHandler() {
 
 extern uint8_t parking_profile;
 extern void pulse_complete_callback();
-int pulse_t1_pass = 0;
 
 void TIM2_IRQHandler() {
-	if (pulse_t1_pass == 0) {
-		pulse_t1_pass = 1;									// 1. Выставить t1_pass
-		TIM8->CCR1 = TIM8->ARR - 20;						// 2. Включить отладочный выход таймера модуляции
-	} else {
-		__HAL_TIM_DISABLE_DMA(&timer8, TIM_DMA_UPDATE);		// 1. Убрать источник DMA request-ов
-		TIM8->CR1 &= ~(TIM_CR1_CEN);						// 2. Поставить таймер на паузу -- почему-то просто __HAL_TIM_DISABLE(&timer8) не рабоает
-		pulse_t1_pass = 0;									// 4. Сбросить t1_pass
-		set_profile(parking_profile);						// 5. Выставить нулевой профиль принудительно
-		add_task(pulse_complete_callback);					// 6. Запланировать запись параметров следующего импульса
-		TIM8->CCR1 = 0xFFFF;								// 7. Заглушить отладочный выход таймера модуляции
-	}
+	__HAL_TIM_DISABLE_DMA(&timer8, TIM_DMA_UPDATE);		// 1. Убрать источник DMA request-ов
+	TIM8->CR1 &= ~(TIM_CR1_CEN);						// 2. Поставить таймер на паузу -- почему-то просто __HAL_TIM_DISABLE(&timer8) не рабоает
+	set_profile(parking_profile);						// 3. Выставить нулевой профиль принудительно
+	add_task(pulse_complete_callback);					// 4. Запланировать запись параметров следующего импульса
 
 	HAL_TIM_IRQHandler(&timer2);
 	RECORD_INTERRUPT();
