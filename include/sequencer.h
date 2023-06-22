@@ -23,6 +23,7 @@ typedef struct seq_entry_t {
 	struct {
 		uint8_t* buffer;
 		size_t size;
+		uint32_t tstep;
 	} profile_modulation;
 	struct {
 		uint32_t* buffer;

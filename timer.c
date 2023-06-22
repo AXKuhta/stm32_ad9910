@@ -122,20 +122,11 @@ void timer2_restart() {
 //
 // Таймер модуляции
 //
-// Вычисление параметров выглядит следующим образом:
-//
-// baud = 9600
-// period = round(1/baud * 216000000)
-// actual = 1/period * 216000000
-//
-// period = 22500
-// actual = 9600
-//
 void timer8_init() {
 	__HAL_RCC_TIM8_CLK_ENABLE();
 	timer8_gpio_init();
 
-	uint32_t period = 125 * NS_TO_216MHZ_MU + 0.5;
+	uint32_t period = 1*1000*1000 * NS_TO_216MHZ_MU + 0.5;
 	
 	TIM_HandleTypeDef timer8_defaults = {
 		.Instance = TIM8,
@@ -176,6 +167,19 @@ void timer8_init() {
 	HAL_TIM_Base_Init(&timer8);
 	HAL_TIM_Base_Start(&timer8); // Не спровоцирует запуск, поскольку сконфигурирован мастер
 	HAL_TIM_OC_Start(&timer8, TIM_CHANNEL_1);
+}
+
+// Изменить период на лету
+void timer8_reconfigure(uint32_t period) {
+	TIM_Base_InitTypeDef base_config = {
+		.Prescaler = 0,
+		.CounterMode = TIM_COUNTERMODE_UP,
+		.Period = period - 1,
+		.ClockDivision = TIM_CLOCKDIVISION_DIV1,
+		.RepetitionCounter = 0
+	};
+
+	TIM_Base_SetConfig(TIM8, &base_config);
 }
 
 void timer8_stop() {

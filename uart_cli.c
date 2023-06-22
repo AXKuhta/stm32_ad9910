@@ -160,30 +160,33 @@ void prepare_for_dma(uint8_t* ptr) {
 void xmitdata_fsk_cmd(const char* str) {
 	char basic_xmitdata[15] = {0};
 	char cmd[32] = {0};
-	char t1_unit[4] = {0};
-	char t2_unit[4] = {0};
+	char o_unit[4] = {0};
 	char f1_unit[4] = {0};
 	char f2_unit[4] = {0};
-	double t1;
-	double t2;
+	char ts_unit[4] = {0};
+	double offset;
 	double f1;
 	double f2;
-	double rate;
+	double tstep;
 	size_t data_offset;
 
-	int rc = sscanf(str, "%14s %31s %lf %3s %lf %3s %lf %3s %lf %3s %lf %n", basic_xmitdata, cmd, &t1, t1_unit, &t2, t2_unit, &f1, f1_unit, &f2, f2_unit, &rate, &data_offset);
+	int rc = sscanf(str, "%14s %31s %lf %3s %lf %3s %lf %3s %lf %3s %n", basic_xmitdata, cmd, &offset, o_unit, &f1, f1_unit, &f2, f2_unit, &tstep, ts_unit, &data_offset);
 
-	if (rc != 11) {
+	if (rc != 10) {
 		printf("Invalid arguments: %d\n", rc);
-		printf("Usage: basic_xmitdata fsk offset unit duration unit f1 unit f2 unit rate data data data ...\n");
-		printf("Example: basic_xmitdata fsk 0 us 1 ms 151.10 MHz 151.11 MHz 9600 1 1 0 1 ...\n");
+		printf("Usage: basic_xmitdata fsk offset unit f1 unit f2 unit tstep unit data data data ...\n");
+		printf("Example: basic_xmitdata fsk 0 us 151.10 MHz 151.11 MHz 10 us 1 1 0 1 ...\n");
 		return;
 	}
 
+	vec_t(uint8_t)* vec = scan_uint8_data(str + data_offset);
+	for_every_entry(vec, prepare_for_dma);
+
 	uint32_t f1_hz = parse_freq(f1, f1_unit);
 	uint32_t f2_hz = parse_freq(f2, f2_unit);
-	uint32_t t1_ns = parse_time(t1, t1_unit);
-	uint32_t t2_ns = parse_time(t2, t2_unit);
+	uint32_t offset_ns = parse_time(offset, o_unit);
+	uint32_t tstep_ns = parse_time(tstep, ts_unit);
+	uint32_t duration_ns = tstep_ns * vec->size;
 	
 	if (f1_hz == 0 || f2_hz == 0) {
 		return;
@@ -191,29 +194,28 @@ void xmitdata_fsk_cmd(const char* str) {
 
 	char* verif_f1 = freq_unit(f1_hz);
 	char* verif_f2 = freq_unit(f2_hz);
-	char* verif_t1 = time_unit(t1_ns / 1000.0 / 1000.0 / 1000.0);
-	char* verif_t2 = time_unit(t2_ns / 1000.0 / 1000.0 / 1000.0);
+	char* verif_offset = time_unit(offset_ns / 1000.0 / 1000.0 / 1000.0);
+	char* verif_tstep = time_unit(tstep_ns / 1000.0 / 1000.0 / 1000.0);
+	char* verif_duration_ns = time_unit(duration_ns / 1000.0 / 1000.0 / 1000.0);
 
-	printf("Basic FSK at %s + %s, offset %s, duration %s, rate %.1lf baud\n", verif_f1, verif_f2, verif_t1, verif_t2, rate);
+	printf("Basic FSK at %s + %s, offset %s, %u * %s elements = %s total duration\n", verif_f1, verif_f2, verif_offset, vec->size, verif_tstep, verif_duration_ns);
 
 	free(verif_f1);
 	free(verif_f2);
-	free(verif_t1);
-	free(verif_t2);
-
-	vec_t(uint8_t)* vec = scan_uint8_data(str + data_offset);
-	for_every_entry(vec, prepare_for_dma);
+	free(verif_offset);
+	free(verif_tstep);
+	free(verif_duration_ns);
 
 	sequencer_stop();
 	sequencer_reset();
 
 	seq_entry_t pulse = {
-		.t1 = timer_mu(t1_ns),
-		.t2 = timer_mu(t1_ns + t2_ns),
+		.t1 = timer_mu(offset_ns),
+		.t2 = timer_mu(offset_ns + duration_ns),
 		.profiles[0] = { .freq_hz = 0, .amplitude = 0 },
 		.profiles[2] = { .freq_hz = f1_hz, .amplitude = 0x3FFF },
 		.profiles[3] = { .freq_hz = f2_hz, .amplitude = 0x3FFF },
-		.profile_modulation = { .buffer = vec->elements, .size = vec->size }
+		.profile_modulation = { .buffer = vec->elements, .size = vec->size, .tstep = timer_mu(tstep_ns) }
 	};
 
 	sequencer_add(pulse);
@@ -223,55 +225,57 @@ void xmitdata_fsk_cmd(const char* str) {
 void xmitdata_psk_cmd(const char* str) {
 	char basic_xmitdata[15] = {0};
 	char cmd[32] = {0};
-	char t1_unit[4] = {0};
-	char t2_unit[4] = {0};
+	char o_unit[4] = {0};
 	char f_unit[4] = {0};
-	double t1;
-	double t2;
+	char ts_unit[4] = {0};
+	double offset;
 	double freq;
-	double rate;
+	double tstep;
 	size_t data_offset;
 
-	int rc = sscanf(str, "%14s %31s %lf %3s %lf %3s %lf %3s %lf %n", basic_xmitdata, cmd, &t1, t1_unit, &t2, t2_unit, &freq, f_unit, &rate, &data_offset);
+	int rc = sscanf(str, "%14s %31s %lf %3s %lf %3s %lf %3s %n", basic_xmitdata, cmd, &offset, o_unit, &freq, f_unit, &tstep, ts_unit, &data_offset);
 
-	if (rc != 9) {
+	if (rc != 8) {
 		printf("Invalid arguments: %d\n", rc);
-		printf("Usage: basic_xmitdata psk offset unit duration unit freq unit rate data data data ...\n");
-		printf("Example: basic_xmitdata psk 0 us 1 ms 151.10 MHz 9600 1 1 0 1 ...\n");
+		printf("Usage: basic_xmitdata psk offset unit freq unit elem_dt unit data data data ...\n");
+		printf("Example: basic_xmitdata psk 0 us 151.10 MHz 10 us 1 1 0 1 ...\n");
 		return;
 	}
 
+	vec_t(uint8_t)* vec = scan_uint8_data(str + data_offset);
+	for_every_entry(vec, prepare_for_dma);
+
 	uint32_t freq_hz = parse_freq(freq, f_unit);
-	uint32_t t1_ns = parse_time(t1, t1_unit);
-	uint32_t t2_ns = parse_time(t2, t2_unit);
+	uint32_t offset_ns = parse_time(offset, o_unit);
+	uint32_t tstep_ns = parse_time(tstep, ts_unit);
+	uint32_t duration_ns = tstep_ns * vec->size;
 	
 	if (freq_hz == 0) {
 		return;
 	}
 
 	char* verif_freq = freq_unit(freq_hz);
-	char* verif_t1 = time_unit(t1_ns / 1000.0 / 1000.0 / 1000.0);
-	char* verif_t2 = time_unit(t2_ns / 1000.0 / 1000.0 / 1000.0);
+	char* verif_offset = time_unit(offset_ns / 1000.0 / 1000.0 / 1000.0);
+	char* verif_tstep = time_unit(tstep_ns / 1000.0 / 1000.0 / 1000.0);
+	char* verif_duration = time_unit(duration_ns / 1000.0 / 1000.0 / 1000.0);
 
-	printf("Basic PSK at %s, offset %s, duration %s, rate %.1lf baud\n", verif_freq, verif_t1, verif_t2, rate);
+	printf("Basic PSK at %s, offset %s, %u * %s elements = %s total duration\n", verif_freq, verif_offset, vec->size, verif_tstep, verif_duration);
 
 	free(verif_freq);
-	free(verif_t1);
-	free(verif_t2);
-
-	vec_t(uint8_t)* vec = scan_uint8_data(str + data_offset);
-	for_every_entry(vec, prepare_for_dma);
+	free(verif_offset);
+	free(verif_tstep);
+	free(verif_duration);
 
 	sequencer_stop();
 	sequencer_reset();
 
 	seq_entry_t pulse = {
-		.t1 = timer_mu(t1_ns),
-		.t2 = timer_mu(t1_ns + t2_ns),
+		.t1 = timer_mu(offset_ns),
+		.t2 = timer_mu(offset_ns + duration_ns),
 		.profiles[0] = { .freq_hz = 0, .amplitude = 0 },
 		.profiles[2] = { .freq_hz = freq_hz, .amplitude = 0x3FFF, .phase = 0x0 },
 		.profiles[3] = { .freq_hz = freq_hz, .amplitude = 0x3FFF, .phase = 0xFFFF/2 },
-		.profile_modulation = { .buffer = vec->elements, .size = vec->size }
+		.profile_modulation = { .buffer = vec->elements, .size = vec->size, .tstep = timer_mu(tstep_ns) }
 	};
 
 	sequencer_add(pulse);

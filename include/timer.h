@@ -8,6 +8,7 @@ void timer2_stop();
 void timer2_restart();
 
 void timer8_init();
+void timer8_reconfigure(uint32_t period);
 void timer8_stop();
 void timer8_restart();
 

@@ -60,6 +60,8 @@ void pulse_complete_callback() {
 	if (entry.profile_modulation.buffer) {
 		profile_mod_buffer = entry.profile_modulation.buffer;
 		profile_mod_size = entry.profile_modulation.size;
+
+		timer8_reconfigure(entry.profile_modulation.tstep);
 	} else {
 		profile_mod_buffer = &tone_profile;
 		profile_mod_size = 1;
