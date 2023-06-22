@@ -103,8 +103,7 @@ void timer2_init() {
 	HAL_TIM_SlaveConfigSynchronization(&timer2, &slave_config);
 
 	TIM_MasterConfigTypeDef master_config = {
-		.MasterOutputTrigger = TIM_TRGO_OC3REF,
-		.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE
+		.MasterOutputTrigger = TIM_TRGO_OC3REF
 	};
 
 	HAL_TIMEx_MasterConfigSynchronization(&timer2, &master_config);
