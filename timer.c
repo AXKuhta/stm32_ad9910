@@ -84,8 +84,8 @@ void timer2_init() {
 	timer2 = timer2_defaults;
 
 	TIM_OC_InitTypeDef oc_config = {
-		.OCMode = TIM_OCMODE_TOGGLE,
-		.Pulse = 50,
+		.OCMode = TIM_OCMODE_PWM2,
+		.Pulse = 0,
 		.OCPolarity = TIM_OCPOLARITY_HIGH,
 		.OCFastMode = TIM_OCFAST_DISABLE
 	};
@@ -101,6 +101,13 @@ void timer2_init() {
 	};
 	
 	HAL_TIM_SlaveConfigSynchronization(&timer2, &slave_config);
+
+	TIM_MasterConfigTypeDef master_config = {
+		.MasterOutputTrigger = TIM_TRGO_OC3REF,
+		.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE
+	};
+
+	HAL_TIMEx_MasterConfigSynchronization(&timer2, &master_config);
 	
 	HAL_NVIC_SetPriority(TIM2_IRQn, 0, 0);
 	HAL_NVIC_EnableIRQ(TIM2_IRQn);
