@@ -222,6 +222,13 @@ void xmitdata_fsk_cmd(const char* str) {
 	sequencer_run();
 }
 
+uint8_t bpsk_ram_image[] = {
+	0x7F, 0xFF, 0xFF, 0xFC,
+	0x00, 0x00, 0xFF, 0xFC,
+	0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00
+};
+
 void xmitdata_psk_cmd(const char* str) {
 	char basic_xmitdata[15] = {0};
 	char cmd[32] = {0};
@@ -237,7 +244,7 @@ void xmitdata_psk_cmd(const char* str) {
 
 	if (rc != 8) {
 		printf("Invalid arguments: %d\n", rc);
-		printf("Usage: basic_xmitdata psk offset unit freq unit elem_dt unit data data data ...\n");
+		printf("Usage: basic_xmitdata psk offset unit freq unit tstep unit data data data ...\n");
 		printf("Example: basic_xmitdata psk 0 us 151.10 MHz 10 us 1 1 0 1 ...\n");
 		return;
 	}
@@ -272,11 +279,15 @@ void xmitdata_psk_cmd(const char* str) {
 	seq_entry_t pulse = {
 		.t1 = timer_mu(offset_ns),
 		.t2 = timer_mu(offset_ns + duration_ns),
-		.profiles[0] = { .freq_hz = 0, .amplitude = 0 },
-		.profiles[2] = { .freq_hz = freq_hz, .amplitude = 0x3FFF, .phase = 0x0 },
-		.profiles[3] = { .freq_hz = freq_hz, .amplitude = 0x3FFF, .phase = 0xFFFF/2 },
-		.profile_modulation = { .buffer = vec->elements, .size = vec->size, .tstep = timer_mu(tstep_ns) }
+		.ram_profiles[0] = { .start = 0, .end = 0, .rate = 0, .mode = 0 },
+		.ram_profiles[2] = { .start = 2, .end = 2, .rate = 0, .mode = 0 },
+		.ram_profiles[3] = { .start = 3, .end = 3, .rate = 0, .mode = 0 },
+		.profile_modulation = { .buffer = vec->elements, .size = vec->size, .tstep = timer_mu(tstep_ns) },
+		.ram_image = { .buffer = (uint32_t*)bpsk_ram_image, .size = 4 }
 	};
+
+	ad_set_ram_freq(freq_hz);
+	ad_ram_destination_polar();
 
 	sequencer_add(pulse);
 	sequencer_run();
@@ -447,45 +458,6 @@ void sequencer_cmd(const char* str) {
 	printf("Unknown sequencer command: [%s]\n", cmd);
 }
 
-void test_cmd() {
-	sequencer_stop();
-	sequencer_reset();
-
-	uint8_t* x = malloc(6);
-
-	x[0] = profile_to_gpio_states(3) >> 8;
-	x[1] = profile_to_gpio_states(3) >> 8;
-	x[2] = profile_to_gpio_states(3) >> 8;
-	x[3] = profile_to_gpio_states(2) >> 8;
-	x[4] = profile_to_gpio_states(3) >> 8;
-	x[5] = profile_to_gpio_states(0) >> 8;
-
-	uint32_t* ram = malloc(4*4);
-
-	memcpy(ram, (uint8_t[]) {
-		0x7F, 0xFF, 0xFF, 0xFC,
-		0x00, 0x00, 0xFF, 0xFC,
-		0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00
-	}, 4*4);
-
-	seq_entry_t pulse = {
-		.t1 = timer_mu(0),
-		.t2 = timer_mu(0 + 125*7),
-		.ram_profiles[0] = { .start = 0, .end = 0, .rate = 0, .mode = 0 },
-		.ram_profiles[2] = { .start = 2, .end = 2, .rate = 0, .mode = 0 },
-		.ram_profiles[3] = { .start = 3, .end = 3, .rate = 0, .mode = 0 },
-		.profile_modulation = { .buffer = x, .size = 6 },
-		.ram_image = { .buffer = ram, .size = 4 }
-	};
-
-	ad_set_ram_freq(12*1000*1000);
-	ad_ram_destination_polar();
-
-	sequencer_add(pulse);
-	sequencer_run();
-}
-
 void run(const char* str) {
 	char cmd[32] = {0};
 
@@ -507,7 +479,6 @@ void run(const char* str) {
 	if (strcmp(cmd, "basic_pulse") == 0) return basic_pulse_cmd(str);
 	if (strcmp(cmd, "basic_sweep") == 0) return basic_sweep_cmd(str);
 	if (strcmp(cmd, "basic_xmitdata") == 0) return basic_xmitdata_cmd(str);
-	if (strcmp(cmd, "test") == 0) return test_cmd();
 
 	printf("Unknown command: [%s]\n", cmd);
 }
