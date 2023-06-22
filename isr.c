@@ -135,10 +135,9 @@ void DMA2_Stream1_IRQHandler() {
 
 extern uint8_t parking_profile;
 extern void pulse_complete_callback();
+int pulse_t1_pass = 0;
 
 void TIM2_IRQHandler() {
-	static int pulse_t1_pass;
-
 	if (pulse_t1_pass == 0) {
 		pulse_t1_pass = 1;									// 1. Выставить t1_pass
 		TIM8->CCR1 = TIM8->ARR - 20;						// 2. Включить отладочный выход таймера модуляции
