@@ -192,6 +192,11 @@ void xmitdata_fsk_cmd(const char* str) {
 		return;
 	}
 
+	if (tstep_ns < MAX_NS_16BIT_216MHz) {
+		printf("Error: tstep too large\n");
+		return;
+	}
+
 	char* verif_f1 = freq_unit(f1_hz);
 	char* verif_f2 = freq_unit(f2_hz);
 	char* verif_offset = time_unit(offset_ns / 1000.0 / 1000.0 / 1000.0);
@@ -258,6 +263,11 @@ void xmitdata_psk_cmd(const char* str) {
 	uint32_t duration_ns = tstep_ns * vec->size;
 	
 	if (freq_hz == 0) {
+		return;
+	}
+
+	if (tstep_ns < MAX_NS_16BIT_216MHz) {
+		printf("Error: tstep too large\n");
 		return;
 	}
 
