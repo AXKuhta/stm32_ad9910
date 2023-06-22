@@ -139,8 +139,9 @@ extern void pulse_complete_callback();
 void TIM2_IRQHandler() {
 	__HAL_TIM_DISABLE_DMA(&timer8, TIM_DMA_UPDATE);		// 1. Убрать источник DMA request-ов
 	TIM8->CR1 &= ~(TIM_CR1_CEN);						// 2. Поставить таймер на паузу -- почему-то просто __HAL_TIM_DISABLE(&timer8) не рабоает
-	set_profile(parking_profile);						// 3. Выставить нулевой профиль принудительно
-	add_task(pulse_complete_callback);					// 4. Запланировать запись параметров следующего импульса
+	TIM8->CNT = 0;										// 3. И занулить его, чтобы он случайно не застрял на значении выше CCR1
+	set_profile(parking_profile);						// 4. Выставить нулевой профиль принудительно
+	add_task(pulse_complete_callback);					// 5. Запланировать запись параметров следующего импульса
 
 	HAL_TIM_IRQHandler(&timer2);
 	RECORD_INTERRUPT();
