@@ -1,2 +1,2 @@
 
-void print_perf(void);
+void print_perf();

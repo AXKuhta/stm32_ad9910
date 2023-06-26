@@ -1,2 +1,2 @@
 
-void system_init(void);
+void system_init();

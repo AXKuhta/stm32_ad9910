@@ -1,3 +1,3 @@
 
-void print_it(void);
-void isr_recorder_sync(void);
+void print_it();
+void isr_recorder_sync();
