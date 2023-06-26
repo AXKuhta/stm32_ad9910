@@ -18,13 +18,12 @@
 // CLI COMMANDS
 // =============================================================================
 void test_tone_cmd(const char* str) {
-	char cmd[32] = {0};
 	char unit[4] = {0};
 	double freq;
 
-	int rc = sscanf(str, "%31s %lf %3s", cmd, &freq, unit);
+	int rc = sscanf(str, "%*s %lf %3s", &freq, unit);
 
-	if (rc != 3) {
+	if (rc != 2) {
 		printf("Invalid arguments\n");
 		printf("Usage: test_tone freq unit\n");
 		printf("Example: test_tone 150 MHz\n");
@@ -47,7 +46,6 @@ void test_tone_cmd(const char* str) {
 }
 
 void basic_pulse_cmd(const char* str) {
-	char cmd[32] = {0};
 	char t1_unit[4] = {0};
 	char t2_unit[4] = {0};
 	char f_unit[4] = {0};
@@ -55,9 +53,9 @@ void basic_pulse_cmd(const char* str) {
 	double t2;
 	double freq;
 
-	int rc = sscanf(str, "%31s %lf %3s %lf %3s %lf %3s", cmd, &t1, t1_unit, &t2, t2_unit, &freq, f_unit);
+	int rc = sscanf(str, "%*s %lf %3s %lf %3s %lf %3s", &t1, t1_unit, &t2, t2_unit, &freq, f_unit);
 
-	if (rc != 7) {
+	if (rc != 6) {
 		printf("Invalid arguments\n");
 		printf("Usage: basic_pulse delay unit duration unit freq unit\n");
 		printf("Example: basic_pulse 100 us 250 us 150 MHz\n");
@@ -86,7 +84,6 @@ void basic_pulse_cmd(const char* str) {
 }
 
 void basic_sweep_cmd(const char* str) {
-	char cmd[32] = {0};
 	char t1_unit[4] = {0};
 	char t2_unit[4] = {0};
 	char f1_unit[4] = {0};
@@ -96,9 +93,9 @@ void basic_sweep_cmd(const char* str) {
 	double f1;
 	double f2;
 
-	int rc = sscanf(str, "%31s %lf %3s %lf %3s %lf %3s %lf %3s", cmd, &t1, t1_unit, &t2, t2_unit, &f1, f1_unit, &f2, f2_unit);
+	int rc = sscanf(str, "%*s %lf %3s %lf %3s %lf %3s %lf %3s", &t1, t1_unit, &t2, t2_unit, &f1, f1_unit, &f2, f2_unit);
 
-	if (rc != 9) {
+	if (rc != 8) {
 		printf("Invalid arguments\n");
 		printf("Usage: basic_sweep delay unit duration unit freq_start unit freq_end unit\n");
 		printf("Example: basic_sweep 100 us 250 us 140 MHz 160 MHz\n");
@@ -158,8 +155,6 @@ void prepare_for_dma(uint8_t* ptr) {
 }
 
 void xmitdata_fsk_cmd(const char* str) {
-	char basic_xmitdata[15] = {0};
-	char cmd[32] = {0};
 	char o_unit[4] = {0};
 	char f1_unit[4] = {0};
 	char f2_unit[4] = {0};
@@ -170,9 +165,9 @@ void xmitdata_fsk_cmd(const char* str) {
 	double tstep;
 	size_t data_offset;
 
-	int rc = sscanf(str, "%14s %31s %lf %3s %lf %3s %lf %3s %lf %3s %n", basic_xmitdata, cmd, &offset, o_unit, &f1, f1_unit, &f2, f2_unit, &tstep, ts_unit, &data_offset);
+	int rc = sscanf(str, "%*s %*s %lf %3s %lf %3s %lf %3s %lf %3s %n", &offset, o_unit, &f1, f1_unit, &f2, f2_unit, &tstep, ts_unit, &data_offset);
 
-	if (rc != 10) {
+	if (rc != 8) {
 		printf("Invalid arguments: %d\n", rc);
 		printf("Usage: basic_xmitdata fsk offset unit f1 unit f2 unit tstep unit data data data ...\n");
 		printf("Example: basic_xmitdata fsk 0 us 151.10 MHz 151.11 MHz 10 us 1 1 0 1 ...\n");
@@ -235,8 +230,6 @@ uint8_t bpsk_ram_image[] = {
 };
 
 void xmitdata_psk_cmd(const char* str) {
-	char basic_xmitdata[15] = {0};
-	char cmd[32] = {0};
 	char o_unit[4] = {0};
 	char f_unit[4] = {0};
 	char ts_unit[4] = {0};
@@ -245,9 +238,9 @@ void xmitdata_psk_cmd(const char* str) {
 	double tstep;
 	size_t data_offset;
 
-	int rc = sscanf(str, "%14s %31s %lf %3s %lf %3s %lf %3s %n", basic_xmitdata, cmd, &offset, o_unit, &freq, f_unit, &tstep, ts_unit, &data_offset);
+	int rc = sscanf(str, "%*s %*s %lf %3s %lf %3s %lf %3s %n", &offset, o_unit, &freq, f_unit, &tstep, ts_unit, &data_offset);
 
-	if (rc != 8) {
+	if (rc != 6) {
 		printf("Invalid arguments: %d\n", rc);
 		printf("Usage: basic_xmitdata psk offset unit freq unit tstep unit data data data ...\n");
 		printf("Example: basic_xmitdata psk 0 us 151.10 MHz 10 us 1 1 0 1 ...\n");
@@ -304,12 +297,11 @@ void xmitdata_psk_cmd(const char* str) {
 }
 
 void basic_xmitdata_cmd(const char* str) {
-	char basic_xmitdata[15] = {0};
 	char cmd[32] = {0};
 
-	int rc = sscanf(str, "%14s %31s", basic_xmitdata, cmd);
+	int rc = sscanf(str, "%*s %31s", cmd);
 
-	if (rc != 2) {
+	if (rc != 1) {
 		printf("Invalid arguments\n");
 		printf("Usage: basic_xmitdata mode ...\n");
 		return;
@@ -322,8 +314,6 @@ void basic_xmitdata_cmd(const char* str) {
 }
 
 void sequencer_add_pulse_cmd(const char* str) {
-	char seq[4] = {0};
-	char cmd[32] = {0};
 	char o_unit[4] = {0};
 	char d_unit[4] = {0};
 	char f_unit[4] = {0};
@@ -331,9 +321,9 @@ void sequencer_add_pulse_cmd(const char* str) {
 	double duration;
 	double freq;
 
-	int rc = sscanf(str, "%3s %31s %lf %3s %lf %3s %lf %3s", seq, cmd, &offset, o_unit, &duration, d_unit, &freq, f_unit);
+	int rc = sscanf(str, "%*s %*s %lf %3s %lf %3s %lf %3s", &offset, o_unit, &duration, d_unit, &freq, f_unit);
 
-	if (rc != 8) {
+	if (rc != 6) {
 		printf("Invalid arguments\n");
 		printf("Usage: seq pulse delay unit duration unit freq unit\n");
 		printf("Example: seq pulse 100 us 250 us 150 MHz\n");
@@ -369,8 +359,6 @@ void sequencer_add_pulse_cmd(const char* str) {
 }
 
 void sequencer_add_sweep_cmd(const char* str) {
-	char seq[4] = {0};
-	char cmd[32] = {0};
 	char o_unit[4] = {0};
 	char d_unit[4] = {0};
 	char f1_unit[4] = {0};
@@ -382,9 +370,9 @@ void sequencer_add_sweep_cmd(const char* str) {
 	double f2;
 	double fstep;
 
-	int rc = sscanf(str, "%3s %31s %lf %3s %lf %3s %lf %3s %lf %3s %lf %3s", seq, cmd, &offset, o_unit, &duration, d_unit, &f1, f1_unit, &f2, f2_unit, &fstep, fstep_unit);
+	int rc = sscanf(str, "%*s %*s %lf %3s %lf %3s %lf %3s %lf %3s %lf %3s", &offset, o_unit, &duration, d_unit, &f1, f1_unit, &f2, f2_unit, &fstep, fstep_unit);
 
-	if (rc != 10 && rc != 12) {
+	if (rc != 8 && rc != 10) {
 		printf("Invalid arguments\n");
 		printf("Usage: seq sweep delay unit duration unit f1 unit f2 unit [fstep unit]\n");
 		printf("Example: seq sweep 100 us 250 us 150 MHz 50 MHz\n");
@@ -397,7 +385,7 @@ void sequencer_add_sweep_cmd(const char* str) {
 	uint32_t duration_ns 	= parse_time(duration, d_unit);
 	uint32_t fstep_hz 		= 0;
 
-	if (rc == 12)
+	if (rc == 10)
 		fstep_hz = parse_freq(fstep, fstep_unit);
 	
 	char* verif_f1 			= freq_unit(f1_hz);
@@ -410,7 +398,7 @@ void sequencer_add_sweep_cmd(const char* str) {
 
 	ad_ramp_t ramp;
 
-	if (rc == 12) {
+	if (rc == 10) {
 		ramp = (ad_ramp_t){
 			.fstep_ftw = ad_calc_ftw(fstep_hz),
 			.tstep_mul = 1
@@ -442,12 +430,11 @@ void sequencer_add_sweep_cmd(const char* str) {
 }
 
 void sequencer_cmd(const char* str) {
-	char seq[4] = {0};
 	char cmd[32] = {0};
 
-	int rc = sscanf(str, "%3s %31s", seq, cmd);
+	int rc = sscanf(str, "%*s %31s", cmd);
 
-	if (rc != 2) {
+	if (rc != 1) {
 		printf("Invalid arguments\n");
 		printf("Usage: seq reset\n");
 		printf("Usage: seq show\n");
