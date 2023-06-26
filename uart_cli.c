@@ -163,7 +163,7 @@ void xmitdata_fsk_cmd(const char* str) {
 	double f1;
 	double f2;
 	double tstep;
-	size_t data_offset;
+	int data_offset;
 
 	int rc = sscanf(str, "%*s %*s %lf %3s %lf %3s %lf %3s %lf %3s %n", &offset, o_unit, &f1, f1_unit, &f2, f2_unit, &tstep, ts_unit, &data_offset);
 
@@ -236,7 +236,7 @@ void xmitdata_psk_cmd(const char* str) {
 	double offset;
 	double freq;
 	double tstep;
-	size_t data_offset;
+	int data_offset;
 
 	int rc = sscanf(str, "%*s %*s %lf %3s %lf %3s %lf %3s %n", &offset, o_unit, &freq, f_unit, &tstep, ts_unit, &data_offset);
 
