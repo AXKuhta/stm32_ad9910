@@ -136,7 +136,7 @@ void spi_write_entry(seq_entry_t entry) {
 		ad_write_ram(entry.ram_image.buffer, entry.ram_image.size); 
 
 		for (int i = 0; i < 8; i++)
-			ad_set_ram_profile(i, entry.ram_profiles[i].rate, entry.ram_profiles[i].start, entry.ram_profiles[i].end);
+			ad_set_ram_profile(i, entry.ram_profiles[i].rate, entry.ram_profiles[i].start, entry.ram_profiles[i].end, entry.ram_profiles[i].mode);
 
 		ad_set_ram_destination(entry.ram_destination);
 		ad_set_ram_freq(entry.ram_secondary_params.freq_hz);

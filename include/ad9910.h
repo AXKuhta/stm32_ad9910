@@ -13,7 +13,7 @@ void ad_write_all();
 void ad_set_profile_freq(int profile_id, uint32_t freq_hz);
 void ad_set_profile_amplitude(int profile_id, uint16_t amplitude);
 void ad_set_profile_phase(int profile_id, uint16_t phase);
-void ad_set_ram_profile(int profile_id, uint16_t step_rate, uint16_t start, uint16_t end);
+void ad_set_ram_profile(int profile_id, uint16_t step_rate, uint16_t start, uint16_t end, uint8_t mode);
 void ad_set_ram_freq(uint32_t freq_hz);
 void ad_set_ram_phase(uint16_t phase);
 void ad_set_ram_amplitude(uint16_t amplitude);
@@ -30,6 +30,9 @@ void ad_set_ramp_rate(uint16_t down_rate, uint16_t up_rate);
 #define AD_RAM_DESTINATION_PHASE 		1 // Не будет работать, пока выставлен бит Enable amplitude scale from single tone profiles (так как амплитуда будет нулевая)
 #define AD_RAM_DESTINATION_AMPLITUDE 	2
 #define AD_RAM_DESTINATION_POLAR 		3
+
+#define AD_RAM_PROFILE_MODE_DIRECTSWITCH 0b00000000
+#define AD_RAM_PROFILE_MODE_ZEROCROSSING 0b00001000 // Если включен zero-crossing, то режим обязательно direct switch
 
 void ad_enable_ram();
 void ad_disable_ram();

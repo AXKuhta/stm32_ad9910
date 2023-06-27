@@ -367,7 +367,7 @@ void ad_set_profile_phase(int profile_id, uint16_t phase) {
 }
 
 // Установить в указанном профиле адрес начала, адрес конца и интервал шагов по оперативной памяти
-void ad_set_ram_profile(int profile_id, uint16_t step_rate, uint16_t start, uint16_t end) {
+void ad_set_ram_profile(int profile_id, uint16_t step_rate, uint16_t start, uint16_t end, uint8_t mode) {
 	uint8_t* profile = regmap[14 + profile_id];
 	uint8_t* view_step_rate = (uint8_t*)&step_rate;
 
@@ -380,9 +380,7 @@ void ad_set_ram_profile(int profile_id, uint16_t step_rate, uint16_t start, uint
 	profile[6] = (start << 6) & 0b11000000;
 	profile[5] = (start >> 2);
 
-	// Включить zero-crossing
-	// Режим: direct switch
-	profile[7] = 0b00001000;
+	profile[7] = mode;
 }
 
 // Установить общую частоту при использовании оперативной памяти
@@ -518,7 +516,7 @@ void ad_set_ram_destination(uint8_t destination) {
 void ad_write_ram(uint32_t* buffer, size_t size) {
 	assert(size <= 1024);
 
-	ad_set_ram_profile(0, 0, 0, size - 1);
+	ad_set_ram_profile(0, 0, 0, size - 1, AD_RAM_PROFILE_MODE_DIRECTSWITCH);
 	ad_disable_ram();
 	ad_write_all();
 	ad_pulse_io_update();
@@ -536,7 +534,7 @@ void ad_write_ram(uint32_t* buffer, size_t size) {
 void ad_read_ram(uint32_t* buffer, size_t count) {
 	assert(count <= 1024);
 
-	ad_set_ram_profile(0, 0, 0, count - 1);
+	ad_set_ram_profile(0, 0, 0, count - 1, AD_RAM_PROFILE_MODE_DIRECTSWITCH);
 	ad_disable_ram();
 	ad_write_all();
 	ad_pulse_io_update();

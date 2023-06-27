@@ -282,9 +282,9 @@ void xmitdata_psk_cmd(const char* str) {
 	seq_entry_t pulse = {
 		.t1 = timer_mu(offset_ns),
 		.t2 = timer_mu(offset_ns + duration_ns),
-		.ram_profiles[0] = { .start = 0, .end = 0, .rate = 0, .mode = 0 },
-		.ram_profiles[2] = { .start = 2, .end = 2, .rate = 0, .mode = 0 },
-		.ram_profiles[3] = { .start = 3, .end = 3, .rate = 0, .mode = 0 },
+		.ram_profiles[0] = { .start = 0, .end = 0, .rate = 0, .mode = AD_RAM_PROFILE_MODE_ZEROCROSSING },
+		.ram_profiles[2] = { .start = 2, .end = 2, .rate = 0, .mode = AD_RAM_PROFILE_MODE_ZEROCROSSING },
+		.ram_profiles[3] = { .start = 3, .end = 3, .rate = 0, .mode = AD_RAM_PROFILE_MODE_ZEROCROSSING },
 		.profile_modulation = { .buffer = vec->elements, .size = vec->size, .tstep = timer_mu(tstep_ns) },
 		.ram_image = { .buffer = (uint32_t*)bpsk_ram_image, .size = 4 },
 		.ram_destination = AD_RAM_DESTINATION_POLAR,
