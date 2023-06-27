@@ -32,8 +32,22 @@ static void debug_print_entry(seq_entry_t* entry) {
 	printf(" t1: %lu\n", entry->t1);
 	printf(" t2: %lu\n", entry->t2);
 
-	for (int i = 0; i < 8; i++) {
-		printf(" profile %d: %lu hz\n", i, entry->profiles[i].freq_hz);
+	if (entry->ram_image.size > 0) {
+		printf(" Profiles [RAM]:\n");
+
+		for (int i = 0; i < 8; i++)
+			printf(" %d: start %u end %u rate %u mode %u\n", i, entry->ram_profiles[i].start, entry->ram_profiles[i].end, entry->ram_profiles[i].rate, entry->ram_profiles[i].mode);
+
+		printf(" Secondary params:\n");
+		printf(" ftw: 0x%08lX\n", ad_calc_ftw(entry->ram_secondary_params.freq_hz));
+		printf(" phase: %u\n", entry->ram_secondary_params.phase);
+		printf(" amplitude: %u\n", entry->ram_secondary_params.amplitude);
+
+	} else {
+		printf(" Profiles:\n");
+
+		for (int i = 0; i < 8; i++)
+			printf(" %d: ftw 0x%08lX\n", i, ad_calc_ftw(entry->profiles[i].freq_hz));
 	}
 
 	printf(" ===============\n");
