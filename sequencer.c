@@ -72,6 +72,14 @@ void pulse_complete_callback() {
 	spi_write_entry(entry);
 	ad_drop_phase_static_reset();
 
+	// Если t1 == 0, то TIM2 CH3 не сможет сгенерировать событие для запуска таймера модуляции
+	// Пересесть на TIM2 RESET в таких ситуациях
+	if (entry.t1 > 0) {
+		timer2_trgo_on_ch3();
+	} else {
+		timer2_trgo_on_reset();
+	}
+
 	// Можно производить запись только в верхнюю часть регистра ODR, сдвинув адрес на 1
 	// DMA работает в режиме DMA_CIRCULAR, модуляция будет идти по кругу
 	HAL_DMA_Start(&dma_timer8_up, (uint32_t)profile_mod_buffer, (uint32_t)&GPIOD->ODR + 1, profile_mod_size);

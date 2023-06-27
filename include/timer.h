@@ -6,6 +6,8 @@
 #define MAX_NS_16BIT_216MHz ((1 << 16) - 1) / NS_TO_216MHZ_MU
 
 void timer2_init();
+void timer2_trgo_on_ch3();
+void timer2_trgo_on_reset();
 void timer2_stop();
 void timer2_restart();
 

@@ -101,12 +101,6 @@ void timer2_init() {
 	};
 	
 	HAL_TIM_SlaveConfigSynchronization(&timer2, &slave_config);
-
-	TIM_MasterConfigTypeDef master_config = {
-		.MasterOutputTrigger = TIM_TRGO_OC3REF
-	};
-
-	HAL_TIMEx_MasterConfigSynchronization(&timer2, &master_config);
 	
 	HAL_NVIC_SetPriority(TIM2_IRQn, 0, 0);
 	HAL_NVIC_EnableIRQ(TIM2_IRQn);
@@ -114,6 +108,16 @@ void timer2_init() {
 	// Запуск требуется даже при настроенном триггере
 	HAL_TIM_OC_Start(&timer2, TIM_CHANNEL_3);
 	HAL_TIM_OC_Start_IT(&timer2, TIM_CHANNEL_4);
+}
+
+// Обычный режим, отступ > 0
+void timer2_trgo_on_ch3() {
+	HAL_TIMEx_MasterConfigSynchronization(&timer2, &(TIM_MasterConfigTypeDef){ .MasterOutputTrigger = TIM_TRGO_OC3REF });
+}
+
+// Особый режим для ситуаций, когда отступ = 0
+void timer2_trgo_on_reset() {
+	HAL_TIMEx_MasterConfigSynchronization(&timer2, &(TIM_MasterConfigTypeDef){ .MasterOutputTrigger = TIM_TRGO_RESET });
 }
 
 void timer2_stop() {	
