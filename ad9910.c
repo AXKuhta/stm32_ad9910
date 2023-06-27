@@ -509,17 +509,10 @@ void ad_disable_ram() {
 	r00[0] &= ~0b10000000;
 }
 
-static void ad_ram_destination_set(uint8_t id) {
-	assert(id < 4);
-
+void ad_set_ram_destination(uint8_t destination) {
 	r00[0] &= ~0b01100000;
-	r00[0] |= id << 5;
+	r00[0] |= destination << 5;
 }
-
-void ad_ram_destination_freq() { ad_ram_destination_set(0); }
-void ad_ram_destination_phase() { ad_ram_destination_set(1); } // <- Не будет работать, пока выставлен бит Enable amplitude scale from single tone profiles (Амплитуда будет нулевая)
-void ad_ram_destination_amplitude() { ad_ram_destination_set(2); }
-void ad_ram_destination_polar() { ad_ram_destination_set(3); }
 
 // Записать count 32-битных слов в оперативную память AD9910, начиная с адреса 0
 void ad_write_ram(uint32_t* buffer, size_t size) {

@@ -26,12 +26,14 @@ void ad_set_ramp_step(uint32_t decrement, uint32_t increment);
 void ad_set_ramp_rate(uint16_t down_rate, uint16_t up_rate);
 
 // RAM
+#define AD_RAM_DESTINATION_FREQ 		0
+#define AD_RAM_DESTINATION_PHASE 		1 // Не будет работать, пока выставлен бит Enable amplitude scale from single tone profiles (так как амплитуда будет нулевая)
+#define AD_RAM_DESTINATION_AMPLITUDE 	2
+#define AD_RAM_DESTINATION_POLAR 		3
+
 void ad_enable_ram();
 void ad_disable_ram();
-void ad_ram_destination_freq();
-void ad_ram_destination_phase();
-void ad_ram_destination_amplitude();
-void ad_ram_destination_polar();
+void ad_set_ram_destination(uint8_t destination);
 void ad_write_ram(uint32_t* buffer, size_t size);
 void ad_read_ram(uint32_t* buffer, size_t size);
 void ad_ram_test();
