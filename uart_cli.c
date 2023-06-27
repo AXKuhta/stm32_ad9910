@@ -287,10 +287,9 @@ void xmitdata_psk_cmd(const char* str) {
 		.ram_profiles[3] = { .start = 3, .end = 3, .rate = 0, .mode = 0 },
 		.profile_modulation = { .buffer = vec->elements, .size = vec->size, .tstep = timer_mu(tstep_ns) },
 		.ram_image = { .buffer = (uint32_t*)bpsk_ram_image, .size = 4 },
-		.ram_destination = AD_RAM_DESTINATION_POLAR
+		.ram_destination = AD_RAM_DESTINATION_POLAR,
+		.ram_secondary_params = { .freq_hz = freq_hz }
 	};
-
-	ad_set_ram_freq(freq_hz);
 
 	sequencer_add(pulse);
 	sequencer_run();

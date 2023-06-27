@@ -117,6 +117,9 @@ void spi_write_entry(seq_entry_t entry) {
 			ad_set_ram_profile(i, entry.ram_profiles[i].rate, entry.ram_profiles[i].start, entry.ram_profiles[i].end);
 
 		ad_set_ram_destination(entry.ram_destination);
+		ad_set_ram_freq(entry.ram_secondary_params.freq_hz);
+		ad_set_ram_amplitude(entry.ram_secondary_params.amplitude);
+		ad_set_ram_phase(entry.ram_secondary_params.phase);
 		ad_enable_ram();
 	} else {
 		for (int i = 0; i < 8; i++) {
