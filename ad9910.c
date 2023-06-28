@@ -281,8 +281,8 @@ void ad_toggle_sync_clk() {
 
 // Вычислить значение FTW для указанной частоты
 // Если частота превышает SYSCLK/2, то на выходе получится противоположная частота, т.е. f_настоящая = SYSCLK - f_указанная
-uint32_t ad_calc_ftw(uint32_t freq_hz) {
-	double ratio = (double)freq_hz / (double)ad_system_clock;
+uint32_t ad_calc_ftw(double freq_hz) {
+	double ratio = freq_hz / (double)ad_system_clock;
 	uint32_t ftw = (uint32_t)(4294967296.0 * ratio + 0.5);
 	
 	return ftw;
@@ -337,9 +337,8 @@ ad_ramp_t ad_calc_ramp(uint32_t f1_hz, uint32_t f2_hz, uint32_t time_ns) {
 //
 
 // Установить частоту в указанном профиле
-void ad_set_profile_freq(int profile_id, uint32_t freq_hz) {
+void ad_set_profile_freq(int profile_id, uint32_t ftw) {
 	uint8_t* profile = regmap[14 + profile_id];
-	uint32_t ftw = ad_calc_ftw(freq_hz);
 	uint8_t* view = (uint8_t*)&ftw;
 	
 	profile[7] = view[0];
@@ -349,18 +348,18 @@ void ad_set_profile_freq(int profile_id, uint32_t freq_hz) {
 }
 
 // Установить амплитуду в указанном профиле
-void ad_set_profile_amplitude(int profile_id, uint16_t amplitude) {
+void ad_set_profile_amplitude(int profile_id, uint16_t asf) {
 	uint8_t* profile = regmap[14 + profile_id];
-	uint8_t* view = (uint8_t*)&amplitude;
+	uint8_t* view = (uint8_t*)&asf;
 	
 	profile[1] = view[0];
 	profile[0] = view[1] & 0x3F;
 }
 
 // Установить сдвиг фазы в указанном профиле
-void ad_set_profile_phase(int profile_id, uint16_t phase) {
+void ad_set_profile_phase(int profile_id, uint16_t pow) {
 	uint8_t* profile = regmap[14 + profile_id];
-	uint8_t* view = (uint8_t*)&phase;
+	uint8_t* view = (uint8_t*)&pow;
 	
 	profile[3] = view[0];
 	profile[2] = view[1];
@@ -385,8 +384,7 @@ void ad_set_ram_profile(int profile_id, uint16_t step_rate, uint16_t start, uint
 
 // Установить общую частоту при использовании оперативной памяти
 // Действует когда RAM Playback Destination = Phase или Amplitude
-void ad_set_ram_freq(uint32_t freq_hz) {
-	uint32_t ftw = ad_calc_ftw(freq_hz);
+void ad_set_ram_freq(uint32_t ftw) {
 	uint8_t* view = (uint8_t*)&ftw;
 
 	r07[3] = view[0];
@@ -397,8 +395,8 @@ void ad_set_ram_freq(uint32_t freq_hz) {
 
 // Установить общий сдвиг фазы при использовании оперативной памяти
 // Действует когда RAM Playback Destination = Frequency или Amplitude
-void ad_set_ram_phase(uint16_t phase) {
-	uint8_t* view = (uint8_t*)&phase;
+void ad_set_ram_phase(uint16_t pow) {
+	uint8_t* view = (uint8_t*)&pow;
 
 	r08[1] = view[0];
 	r08[0] = view[1];
@@ -407,11 +405,11 @@ void ad_set_ram_phase(uint16_t phase) {
 // Установить общую амплитуду при использовании оперативной памяти
 // Не действует, пока выставлен бит Enable amplitude scale from single tone profiles
 // Формат несколько отличается от того, что в регистрах профилей
-void ad_set_ram_amplitude(uint16_t amplitude) {
-	assert(amplitude <= 0x3FFF);
+void ad_set_ram_amplitude(uint16_t asf) {
+	assert(asf <= 0x3FFF);
 
-	r09[3] = (amplitude << 2) & 0xFF;
-	r09[2] = (amplitude >> 5) & 0xFF;
+	r09[3] = (asf << 2) & 0xFF;
+	r09[2] = (asf >> 5) & 0xFF;
 }
 
 //

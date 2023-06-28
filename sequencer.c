@@ -39,15 +39,15 @@ static void debug_print_entry(seq_entry_t* entry) {
 			printf(" %d: start %u end %u rate %u mode %u\n", i, entry->ram_profiles[i].start, entry->ram_profiles[i].end, entry->ram_profiles[i].rate, entry->ram_profiles[i].mode);
 
 		printf(" Secondary params:\n");
-		printf(" ftw: 0x%08lX\n", ad_calc_ftw(entry->ram_secondary_params.freq_hz));
-		printf(" phase: %u\n", entry->ram_secondary_params.phase);
-		printf(" amplitude: %u\n", entry->ram_secondary_params.amplitude);
+		printf(" ftw: 0x%08lX\n", entry->ram_secondary_params.ftw);
+		printf(" phase: %u\n", entry->ram_secondary_params.pow);
+		printf(" amplitude: %u\n", entry->ram_secondary_params.asf);
 
 	} else {
 		printf(" Profiles:\n");
 
 		for (int i = 0; i < 8; i++)
-			printf(" %d: ftw 0x%08lX\n", i, ad_calc_ftw(entry->profiles[i].freq_hz));
+			printf(" %d: ftw 0x%08lX\n", i, entry->profiles[i].ftw);
 	}
 
 	printf(" ===============\n");
@@ -139,15 +139,15 @@ void spi_write_entry(seq_entry_t entry) {
 			ad_set_ram_profile(i, entry.ram_profiles[i].rate, entry.ram_profiles[i].start, entry.ram_profiles[i].end, entry.ram_profiles[i].mode);
 
 		ad_set_ram_destination(entry.ram_destination);
-		ad_set_ram_freq(entry.ram_secondary_params.freq_hz);
-		ad_set_ram_amplitude(entry.ram_secondary_params.amplitude);
-		ad_set_ram_phase(entry.ram_secondary_params.phase);
+		ad_set_ram_freq(entry.ram_secondary_params.ftw);
+		ad_set_ram_amplitude(entry.ram_secondary_params.asf);
+		ad_set_ram_phase(entry.ram_secondary_params.pow);
 		ad_enable_ram();
 	} else {
 		for (int i = 0; i < 8; i++) {
-			ad_set_profile_freq(i, entry.profiles[i].freq_hz);
-			ad_set_profile_amplitude(i, entry.profiles[i].amplitude);
-			ad_set_profile_phase(i, entry.profiles[i].phase);
+			ad_set_profile_freq(i, entry.profiles[i].ftw);
+			ad_set_profile_amplitude(i, entry.profiles[i].asf);
+			ad_set_profile_phase(i, entry.profiles[i].pow);
 		}
 
 		ad_disable_ram();
@@ -181,7 +181,7 @@ void enter_rfkill_mode() {
 void enter_test_tone_mode(uint32_t freq_hz) {
 	enter_rfkill_mode();
 
-	ad_set_profile_freq(1, freq_hz);
+	ad_set_profile_freq(1, ad_calc_ftw(freq_hz));
 	ad_set_profile_amplitude(1, 0x3FFF);
 	ad_write_all();
 	ad_drop_phase_static_reset();
@@ -195,8 +195,8 @@ void enter_basic_pulse_mode(uint32_t offset_ns, uint32_t duration_ns, uint32_t f
 	seq_entry_t pulse = {
 		.t1 = timer_mu(offset_ns),
 		.t2 = timer_mu(offset_ns + duration_ns),
-		.profiles[0] = { .freq_hz = 0, .amplitude = 0 },
-		.profiles[1] = { .freq_hz = freq_hz, .amplitude = 0x3FFF }
+		.profiles[0] = { .ftw = 0, .asf = 0 },
+		.profiles[1] = { .ftw = ad_calc_ftw(freq_hz), .asf = 0x3FFF }
 	};
 
 	sequencer_add(pulse);
@@ -218,8 +218,8 @@ void enter_basic_sweep_mode(uint32_t offset_ns, uint32_t duration_ns, uint32_t f
 		},
 		.t1 = timer_mu(offset_ns),
 		.t2 = timer_mu(offset_ns + duration_ns),
-		.profiles[0] = { .amplitude = 0 },
-		.profiles[1] = { .amplitude = 0x3FFF }
+		.profiles[0] = { .asf = 0 },
+		.profiles[1] = { .asf = 0x3FFF }
 	};
 
 	sequencer_add(pulse);

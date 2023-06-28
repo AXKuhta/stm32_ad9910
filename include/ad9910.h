@@ -10,13 +10,13 @@ void ad_readback_all();
 void ad_write_all();
 
 // Профили
-void ad_set_profile_freq(int profile_id, uint32_t freq_hz);
-void ad_set_profile_amplitude(int profile_id, uint16_t amplitude);
-void ad_set_profile_phase(int profile_id, uint16_t phase);
+void ad_set_profile_freq(int profile_id, uint32_t ftw);
+void ad_set_profile_amplitude(int profile_id, uint16_t pow);
+void ad_set_profile_phase(int profile_id, uint16_t asf);
 void ad_set_ram_profile(int profile_id, uint16_t step_rate, uint16_t start, uint16_t end, uint8_t mode);
-void ad_set_ram_freq(uint32_t freq_hz);
-void ad_set_ram_phase(uint16_t phase);
-void ad_set_ram_amplitude(uint16_t amplitude);
+void ad_set_ram_freq(uint32_t ftw);
+void ad_set_ram_phase(uint16_t pow);
+void ad_set_ram_amplitude(uint16_t asf);
 
 // DRG
 void ad_enable_ramp();
@@ -50,5 +50,5 @@ typedef struct ad_ramp_t {
 	uint32_t tstep_mul;
 } ad_ramp_t;
 
-uint32_t ad_calc_ftw(uint32_t freq_hz);
+uint32_t ad_calc_ftw(double freq_hz);
 ad_ramp_t ad_calc_ramp(uint32_t f1_hz, uint32_t f2_hz, uint32_t time_ns);

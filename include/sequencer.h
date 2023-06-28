@@ -1,8 +1,8 @@
 
 typedef struct profile_t {
-	uint32_t freq_hz;
-	uint16_t phase;
-	uint16_t amplitude;
+	uint32_t ftw;
+	uint16_t pow;
+	uint16_t asf;
 } profile_t;
 
 typedef struct ram_profile_t {

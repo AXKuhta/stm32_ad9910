@@ -212,9 +212,9 @@ void xmitdata_fsk_cmd(const char* str) {
 	seq_entry_t pulse = {
 		.t1 = timer_mu(offset_ns),
 		.t2 = timer_mu(offset_ns + duration_ns),
-		.profiles[0] = { .freq_hz = 0, .amplitude = 0 },
-		.profiles[2] = { .freq_hz = f1_hz, .amplitude = 0x3FFF },
-		.profiles[3] = { .freq_hz = f2_hz, .amplitude = 0x3FFF },
+		.profiles[0] = { .ftw = 0, .asf = 0 },
+		.profiles[2] = { .ftw = ad_calc_ftw(f1_hz), .asf = 0x3FFF },
+		.profiles[3] = { .ftw = ad_calc_ftw(f2_hz), .asf = 0x3FFF },
 		.profile_modulation = { .buffer = vec->elements, .size = vec->size, .tstep = timer_mu(tstep_ns) }
 	};
 
@@ -288,7 +288,7 @@ void xmitdata_psk_cmd(const char* str) {
 		.profile_modulation = { .buffer = vec->elements, .size = vec->size, .tstep = timer_mu(tstep_ns) },
 		.ram_image = { .buffer = (uint32_t*)bpsk_ram_image, .size = 4 },
 		.ram_destination = AD_RAM_DESTINATION_POLAR,
-		.ram_secondary_params = { .freq_hz = freq_hz }
+		.ram_secondary_params = { .ftw = ad_calc_ftw(freq_hz) }
 	};
 
 	sequencer_add(pulse);
@@ -346,8 +346,8 @@ void sequencer_add_pulse_cmd(const char* str) {
 	seq_entry_t pulse = {
 		.t1 = timer_mu(offset_ns),
 		.t2 = timer_mu(offset_ns + duration_ns),
-		.profiles[0] = { .freq_hz = 0, .amplitude = 0 },
-		.profiles[1] = { .freq_hz = freq_hz, .amplitude = 0x3FFF }
+		.profiles[0] = { .ftw = 0, .asf = 0 },
+		.profiles[1] = { .ftw = ad_calc_ftw(freq_hz), .asf = 0x3FFF }
 	};
 
 	sequencer_add(pulse);
@@ -415,8 +415,8 @@ void sequencer_add_sweep_cmd(const char* str) {
 		},
 		.t1 = timer_mu(offset_ns),
 		.t2 = timer_mu(offset_ns + duration_ns),
-		.profiles[0] = { .amplitude = 0 },
-		.profiles[1] = { .amplitude = 0x3FFF }
+		.profiles[0] = { .asf = 0 },
+		.profiles[1] = { .asf = 0x3FFF }
 	};
 
 	sequencer_add(pulse);
