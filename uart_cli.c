@@ -276,6 +276,22 @@ void xmitdata_psk_cmd(const char* str) {
 	free(verif_tstep);
 	free(verif_duration);
 
+	/*
+	int highest_bit = 0;
+
+	while (tstep_ns >> highest_bit)
+		highest_bit++;
+
+	highest_bit -= 4;
+
+	uint32_t keep_mask = ~(0xFFFFFFFF >> highest_bit);
+	uint32_t ftw = ad_calc_ftw(freq_hz) & keep_mask;
+
+	printf("Keep mask: 0x%08lX\n", keep_mask);
+	*/
+
+	uint32_t ftw = ad_calc_ftw(freq_hz) & 0xFFFC0000;
+
 	sequencer_stop();
 	sequencer_reset();
 
@@ -288,7 +304,7 @@ void xmitdata_psk_cmd(const char* str) {
 		.profile_modulation = { .buffer = vec->elements, .size = vec->size, .tstep = timer_mu(tstep_ns) },
 		.ram_image = { .buffer = (uint32_t*)bpsk_ram_image, .size = 4 },
 		.ram_destination = AD_RAM_DESTINATION_POLAR,
-		.ram_secondary_params = { .ftw = ad_calc_ftw(freq_hz) }
+		.ram_secondary_params = { .ftw =  ftw }
 	};
 
 	sequencer_add(pulse);
