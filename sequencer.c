@@ -28,23 +28,14 @@ void sequencer_reset() {
 	clear_vec(sequence);
 }
 
-static void print_profiles(profile_t profiles[8]) {
-	printf(" Profiles:\n");
+static void print_profile(profile_t profile) {
+	char* freq = freq_unit(ad_backconvert_ftw(profile.ftw));
 
-	for (int i = 0; i < 8; i++) {
-		profile_t profile = profiles[i];
+	printf("\tftw 0x%08lX (%s)\n", profile.ftw, freq);
+	printf("\tpow 0x%04X     (%.3lf deg)\n", profile.pow, ad_backconvert_pow(profile.pow));
+	printf("\tasf 0x%04X     (%.3lfx)\n", profile.asf, ad_backconvert_asf(profile.asf));
 
-		printf(" %d:", i);
-
-		char* freq = freq_unit(ad_backconvert_ftw(profile.ftw));
-
-		printf("\tftw 0x%08lX (%s)\n", profile.ftw, freq);
-		printf("\tpow 0x%04X\n", profile.pow);
-		printf("\tasf 0x%04X\n", profile.asf);
-		printf("\n");
-
-		free(freq);
-	}
+	free(freq);
 }
 
 static void debug_print_entry(seq_entry_t* entry) {
@@ -58,18 +49,17 @@ static void debug_print_entry(seq_entry_t* entry) {
 		for (int i = 0; i < 8; i++)
 			printf(" %d: start %u end %u rate %u mode %u\n", i, entry->ram_profiles[i].start, entry->ram_profiles[i].end, entry->ram_profiles[i].rate, entry->ram_profiles[i].mode);
 
-		double freq_hz = ad_backconvert_ftw(entry->ram_secondary_params.ftw);
-		char* readable_freq = freq_unit(freq_hz);
-
 		printf(" Secondary params:\n");
-		printf(" ftw: 0x%08lX (%s)\n", entry->ram_secondary_params.ftw, readable_freq);
-		printf(" phase: %u\n", entry->ram_secondary_params.pow);
-		printf(" amplitude: %u\n", entry->ram_secondary_params.asf);
-
-		free(readable_freq);
+		print_profile(entry->ram_secondary_params);
 
 	} else {
-		print_profiles(entry->profiles);
+		printf(" Profiles:\n");
+
+		for (int i = 0; i < 8; i++) {
+			printf(" %d:", i);
+			print_profile(entry->profiles[i]);
+			printf("\n");
+		}
 	}
 
 	printf(" ===============\n");

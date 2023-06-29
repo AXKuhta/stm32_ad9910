@@ -292,6 +292,14 @@ double ad_backconvert_ftw(uint32_t ftw) {
 	return (double)ftw * ((double)ad_system_clock / 4294967296.0);
 }
 
+double ad_backconvert_pow(uint16_t pow) {
+	return 360.0 * ((double)pow / 65536.0);
+}
+
+double ad_backconvert_asf(uint16_t asf) {
+	return (double)asf / (double)0x3FFF;
+}
+
 // Вычислить размер шага, необходимый, чтобы пройти с частоты f1 до f2 за указанное время
 // Используется минимальная возможная задержка между шагами
 //
