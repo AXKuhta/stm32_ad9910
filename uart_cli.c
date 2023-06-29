@@ -222,13 +222,6 @@ void xmitdata_fsk_cmd(const char* str) {
 	sequencer_run();
 }
 
-uint8_t bpsk_ram_image[] = {
-	0x00, 0x00, 0x00, 0x00,
-	0x00, 0x00, 0x00, 0x00,
-	0x00, 0x00, 0xFF, 0xFC,
-	0x7F, 0xFF, 0xFF, 0xFC
-};
-
 void xmitdata_psk_cmd(const char* str) {
 	char o_unit[4] = {0};
 	char f_unit[4] = {0};
@@ -244,6 +237,78 @@ void xmitdata_psk_cmd(const char* str) {
 		printf("Invalid arguments: %d\n", rc);
 		printf("Usage: basic_xmitdata psk offset unit freq unit tstep unit data data data ...\n");
 		printf("Example: basic_xmitdata psk 0 us 151.10 MHz 10 us 1 1 0 1 ...\n");
+		return;
+	}
+
+	vec_t(uint8_t)* vec = scan_uint8_data(str + data_offset);
+	for_every_entry(vec, prepare_for_dma);
+
+	uint32_t freq_hz = parse_freq(freq, f_unit);
+	uint32_t offset_ns = parse_time(offset, o_unit);
+	uint32_t tstep_ns = parse_time(tstep, ts_unit);
+	uint32_t duration_ns = tstep_ns * vec->size;
+	
+	if (freq_hz == 0) {
+		return;
+	}
+
+	if (tstep_ns >= MAX_NS_16BIT_216MHz) {
+		printf("Error: tstep too large\n");
+		return;
+	}
+
+	char* verif_freq = freq_unit(freq_hz);
+	char* verif_offset = time_unit(offset_ns / 1000.0 / 1000.0 / 1000.0);
+	char* verif_tstep = time_unit(tstep_ns / 1000.0 / 1000.0 / 1000.0);
+	char* verif_duration = time_unit(duration_ns / 1000.0 / 1000.0 / 1000.0);
+
+	printf("Basic PSK at %s, offset %s, %u * %s elements = %s total duration\n", verif_freq, verif_offset, vec->size, verif_tstep, verif_duration);
+
+	free(verif_freq);
+	free(verif_offset);
+	free(verif_tstep);
+	free(verif_duration);
+
+	uint32_t ftw = ad_calc_ftw(freq_hz);
+
+	sequencer_stop();
+	sequencer_reset();
+
+	seq_entry_t pulse = {
+		.t1 = timer_mu(offset_ns),
+		.t2 = timer_mu(offset_ns + duration_ns),
+		.profiles[0] = { .ftw = 0, .asf = 0 },
+		.profiles[2] = { .ftw = ftw, .pow = 0x0000, .asf = 0x3FFF },
+		.profiles[3] = { .ftw = ftw, .pow = 0x7FFF, .asf = 0x3FFF },
+		.profile_modulation = { .buffer = vec->elements, .size = vec->size, .tstep = timer_mu(tstep_ns) }
+	};
+
+	sequencer_add(pulse);
+	sequencer_run();
+}
+
+uint8_t bpsk_ram_image[] = {
+	0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0xFF, 0xFC,
+	0x7F, 0xFF, 0xFF, 0xFC
+};
+
+void xmitdata_zc_psk_cmd(const char* str) {
+	char o_unit[4] = {0};
+	char f_unit[4] = {0};
+	char ts_unit[4] = {0};
+	double offset;
+	double freq;
+	double tstep;
+	int data_offset;
+
+	int rc = sscanf(str, "%*s %*s %lf %3s %lf %3s %lf %3s %n", &offset, o_unit, &freq, f_unit, &tstep, ts_unit, &data_offset);
+
+	if (rc != 6) {
+		printf("Invalid arguments: %d\n", rc);
+		printf("Usage: basic_xmitdata zc_psk offset unit freq unit tstep unit data data data ...\n");
+		printf("Example: basic_xmitdata zc_psk 0 us 151.10 MHz 10 us 1 1 0 1 ...\n");
 		return;
 	}
 
@@ -324,6 +389,7 @@ void basic_xmitdata_cmd(const char* str) {
 
 	if (strcmp(cmd, "fsk") == 0) return xmitdata_fsk_cmd(str);
 	if (strcmp(cmd, "psk") == 0) return xmitdata_psk_cmd(str);
+	if (strcmp(cmd, "zc_psk") == 0) return xmitdata_zc_psk_cmd(str);
 
 	printf("Unknown xmitdata mode: [%s]\n", cmd);
 }
