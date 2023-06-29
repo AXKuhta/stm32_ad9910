@@ -19,3 +19,4 @@ void timer8_restart();
 void radar_emulator_start();
 
 uint32_t timer_mu(uint32_t time_ns);
+double timer_ns(uint32_t time_mu);
