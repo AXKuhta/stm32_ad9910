@@ -45,6 +45,17 @@ static void print_ram_image(uint32_t* buffer, size_t size) {
 		printf("\t0x%02X 0x%02X 0x%02X 0x%02X\n", byte[4*i], byte[4*i+1], byte[4*i+2], byte[4*i+3]);
 }
 
+static void print_profile_modulation_buffer(uint8_t* buffer, size_t size) {
+	printf("\t");
+
+	for (size_t i = 0; i < size; i++) {
+		printf("%02X ", buffer[i]);
+
+		if ((i & 0b111) == 0b111)
+			printf("\n\t");
+	}
+}
+
 static void debug_print_entry(seq_entry_t* entry) {
 	printf(" === seq_entry_t ===\n");
 	printf(" t1: %lu\n", entry->t1);
@@ -70,6 +81,12 @@ static void debug_print_entry(seq_entry_t* entry) {
 			print_profile(entry->profiles[i]);
 			printf("\n");
 		}
+	}
+
+	if (entry->profile_modulation.size) {
+		printf(" Profile modulation:\n");
+		print_profile_modulation_buffer(entry->profile_modulation.buffer, entry->profile_modulation.size);
+		printf("\n");
 	}
 
 	printf(" ===============\n");
