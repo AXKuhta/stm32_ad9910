@@ -37,8 +37,8 @@ void ad_set_ramp_rate(uint16_t down_rate, uint16_t up_rate);
 void ad_enable_ram();
 void ad_disable_ram();
 void ad_set_ram_destination(uint8_t destination);
-void ad_write_ram(uint32_t* buffer, size_t size);
-void ad_read_ram(uint32_t* buffer, size_t size);
+void ad_write_ram(uint32_t* buffer, size_t count);
+void ad_read_ram(uint32_t* buffer, size_t count);
 void ad_ram_test();
 
 // Прочее

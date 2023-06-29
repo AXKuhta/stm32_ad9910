@@ -510,11 +510,12 @@ void ad_set_ram_destination(uint8_t destination) {
 	r00[0] |= destination << 5;
 }
 
-// Записать count 32-битных слов в оперативную память AD9910, начиная с адреса 0
-void ad_write_ram(uint32_t* buffer, size_t size) {
-	assert(size <= 1024);
+// Записать count 32-битных слов в оперативную память AD9910
+// Запись происходит с конца, т.е. с count - 1
+void ad_write_ram(uint32_t* buffer, size_t count) {
+	assert(count <= 1024);
 
-	ad_set_ram_profile(0, 0, 0, size - 1, AD_RAM_PROFILE_MODE_DIRECTSWITCH);
+	ad_set_ram_profile(0, 0, 0, count - 1, AD_RAM_PROFILE_MODE_DIRECTSWITCH);
 	ad_disable_ram();
 	ad_write_all();
 	ad_pulse_io_update();
@@ -523,12 +524,13 @@ void ad_write_ram(uint32_t* buffer, size_t size) {
 	uint8_t instruction = 0x16;
 	spi_send(&instruction, 1);
 
-	for (size_t i = 0; i < size; i++) {
-		spi_send((uint8_t*)&buffer[i], 4);
+	for (size_t i = 0; i < count; i++) {
+		spi_send((uint8_t*)&buffer[count - 1 - i], 4);
 	}
 }
 
-// Прочитать count 32-битных слов из оперативной памяти AD9910, начиная с адреса 0
+// Прочитать count 32-битных слов из оперативной памяти AD9910
+// Чтение тоже происходит с конца, т.е. count - 1
 void ad_read_ram(uint32_t* buffer, size_t count) {
 	assert(count <= 1024);
 
@@ -542,7 +544,7 @@ void ad_read_ram(uint32_t* buffer, size_t count) {
 	spi_send(&instruction, 1);
 
 	for (size_t i = 0; i < count; i++) {
-		spi_recv((uint8_t*)&buffer[i], 4);
+		spi_recv((uint8_t*)&buffer[count - 1 - i], 4);
 	}
 }
 
