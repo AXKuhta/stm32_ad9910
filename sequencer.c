@@ -38,6 +38,13 @@ static void print_profile(profile_t profile) {
 	free(freq);
 }
 
+static void print_ram_image(uint32_t* buffer, size_t size) {
+	uint8_t* byte = (uint8_t*)buffer;
+
+	for (size_t i = 0; i < size; i++)
+		printf("\t0x%02X 0x%02X 0x%02X 0x%02X\n", byte[4*i], byte[4*i+1], byte[4*i+2], byte[4*i+3]);
+}
+
 static void debug_print_entry(seq_entry_t* entry) {
 	printf(" === seq_entry_t ===\n");
 	printf(" t1: %lu\n", entry->t1);
@@ -48,6 +55,9 @@ static void debug_print_entry(seq_entry_t* entry) {
 
 		for (int i = 0; i < 8; i++)
 			printf(" %d: start %u end %u rate %u mode %u\n", i, entry->ram_profiles[i].start, entry->ram_profiles[i].end, entry->ram_profiles[i].rate, entry->ram_profiles[i].mode);
+
+		printf(" RAM image:\n");
+		print_ram_image(entry->ram_image.buffer, entry->ram_image.size);
 
 		printf(" Secondary params:\n");
 		print_profile(entry->ram_secondary_params);
