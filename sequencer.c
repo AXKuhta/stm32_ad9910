@@ -7,6 +7,7 @@
 #include "timer.h"
 #include "ad9910.h"
 #include "sequencer.h"
+#include "units.h"
 #include "vec.h"
 
 // Глобальные переменные
@@ -27,6 +28,25 @@ void sequencer_reset() {
 	clear_vec(sequence);
 }
 
+static void print_profiles(profile_t profiles[8]) {
+	printf(" Profiles:\n");
+
+	for (int i = 0; i < 8; i++) {
+		profile_t profile = profiles[i];
+
+		printf(" %d:", i);
+
+		char* freq = freq_unit(ad_backconvert_ftw(profile.ftw));
+
+		printf("\tftw 0x%08lX (%s)\n", profile.ftw, freq);
+		printf("\tpow 0x%04X\n", profile.pow);
+		printf("\tasf 0x%04X\n", profile.asf);
+		printf("\n");
+
+		free(freq);
+	}
+}
+
 static void debug_print_entry(seq_entry_t* entry) {
 	printf(" === seq_entry_t ===\n");
 	printf(" t1: %lu\n", entry->t1);
@@ -38,16 +58,18 @@ static void debug_print_entry(seq_entry_t* entry) {
 		for (int i = 0; i < 8; i++)
 			printf(" %d: start %u end %u rate %u mode %u\n", i, entry->ram_profiles[i].start, entry->ram_profiles[i].end, entry->ram_profiles[i].rate, entry->ram_profiles[i].mode);
 
+		double freq_hz = ad_backconvert_ftw(entry->ram_secondary_params.ftw);
+		char* readable_freq = freq_unit(freq_hz);
+
 		printf(" Secondary params:\n");
-		printf(" ftw: 0x%08lX\n", entry->ram_secondary_params.ftw);
+		printf(" ftw: 0x%08lX (%s)\n", entry->ram_secondary_params.ftw, readable_freq);
 		printf(" phase: %u\n", entry->ram_secondary_params.pow);
 		printf(" amplitude: %u\n", entry->ram_secondary_params.asf);
 
-	} else {
-		printf(" Profiles:\n");
+		free(readable_freq);
 
-		for (int i = 0; i < 8; i++)
-			printf(" %d: ftw 0x%08lX\n", i, entry->profiles[i].ftw);
+	} else {
+		print_profiles(entry->profiles);
 	}
 
 	printf(" ===============\n");

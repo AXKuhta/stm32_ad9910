@@ -51,4 +51,5 @@ typedef struct ad_ramp_t {
 } ad_ramp_t;
 
 uint32_t ad_calc_ftw(double freq_hz);
+double ad_backconvert_ftw(uint32_t ftw);
 ad_ramp_t ad_calc_ramp(uint32_t f1_hz, uint32_t f2_hz, uint32_t time_ns);

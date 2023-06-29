@@ -288,6 +288,10 @@ uint32_t ad_calc_ftw(double freq_hz) {
 	return ftw;
 }
 
+double ad_backconvert_ftw(uint32_t ftw) {
+	return (double)ftw * ((double)ad_system_clock / 4294967296.0);
+}
+
 // Вычислить размер шага, необходимый, чтобы пройти с частоты f1 до f2 за указанное время
 // Используется минимальная возможная задержка между шагами
 //
