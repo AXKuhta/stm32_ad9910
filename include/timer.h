@@ -18,5 +18,5 @@ void timer8_restart();
 
 void radar_emulator_start();
 
-uint32_t timer_mu(uint32_t time_ns);
-double timer_ns(uint32_t time_mu);
+#define timer_mu(time_ns) (uint32_t)(time_ns * NS_TO_216MHZ_MU + 0.5)
+#define timer_ns(time_mu) ((double)time_mu / NS_TO_216MHZ_MU)

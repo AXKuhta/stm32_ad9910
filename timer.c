@@ -243,11 +243,3 @@ void radar_emulator_start() {
 
 	free(tstr);
 }
-
-uint32_t timer_mu(uint32_t time_ns) {
-	return time_ns * NS_TO_216MHZ_MU + 0.5;
-}
-
-double timer_ns(uint32_t time_mu) {
-	return (double)time_mu / NS_TO_216MHZ_MU;
-}
