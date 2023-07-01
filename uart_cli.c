@@ -1,11 +1,10 @@
+#include <stdint.h>
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
 #include <stdlib.h>
 
-#include "stm32f7xx_hal.h"
 #include "isr.h"
-#include "syscalls.h"
 #include "performance.h"
 #include "ad9910.h"
 #include "units.h"
