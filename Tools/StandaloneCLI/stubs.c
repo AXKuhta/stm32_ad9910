@@ -15,7 +15,7 @@ int scan_and_run() {
 	char* cmd = readline("> ");
 
 	if (cmd) {
-        add_history(cmd);
+		add_history(cmd);
 		run(cmd);
 		free(cmd);
 	} else {
