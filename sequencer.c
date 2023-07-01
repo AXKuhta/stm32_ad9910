@@ -1,24 +1,22 @@
+#include <stdint.h>
 #include <stdlib.h>
 #include <assert.h>
 #include <string.h>
 #include <stdio.h>
 
+#ifndef STANDALONE_CLI_APP
 #include "stm32f7xx_hal.h"
+#endif
+
 #include "timer.h"
 #include "ad9910.h"
 #include "sequencer.h"
 #include "units.h"
 #include "vec.h"
 
-// Глобальные переменные
-uint8_t parking_profile = 0;
-uint8_t tone_profile = GPIO_PIN_13 >> 8;
-
 // "Приватные" глобальные переменные
 static vec_t(seq_entry_t)* sequence;
 static int seq_index;
-
-extern TIM_HandleTypeDef timer2;
 
 void sequencer_init() {
 	sequence = init_vec(seq_entry_t);
@@ -108,8 +106,15 @@ void sequencer_add(seq_entry_t entry) {
 	vec_push(sequence, entry);
 }
 
+#ifndef STANDALONE_CLI_APP
+
+// Глобальные переменные
+uint8_t parking_profile = 0;
+uint8_t tone_profile = GPIO_PIN_13 >> 8;
+
 extern DMA_HandleTypeDef dma_timer8_up;
 extern TIM_HandleTypeDef timer8;
+extern TIM_HandleTypeDef timer2;
 extern uint16_t dma_buf[];
 
 void pulse_complete_callback() {
@@ -271,3 +276,5 @@ void enter_basic_sweep_mode(uint32_t offset_ns, uint32_t duration_ns, uint32_t f
 	sequencer_add(pulse);
 	sequencer_run();
 }
+
+#endif
