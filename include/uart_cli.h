@@ -1,2 +1,2 @@
 
-void uart_cli_init(void);
+void run(const char* str);

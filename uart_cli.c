@@ -4,7 +4,6 @@
 #include <stdlib.h>
 
 #include "stm32f7xx_hal.h"
-#include "tasks.h"
 #include "isr.h"
 #include "syscalls.h"
 #include "performance.h"
@@ -559,94 +558,4 @@ void run(const char* str) {
 	if (strcmp(cmd, "basic_xmitdata") == 0) return basic_xmitdata_cmd(str);
 
 	printf("Unknown command: [%s]\n", cmd);
-}
-
-// =============================================================================
-// INPUT HANDLING
-// =============================================================================
-extern UART_HandleTypeDef usart3;
-
-#define INPUT_BUFFER_SIZE 1024
-uint8_t input_buffer[INPUT_BUFFER_SIZE] = {0};
-
-void restart_rx() {
-	memset(input_buffer, 0, INPUT_BUFFER_SIZE);
-	_write(0, "\r> ", 3);
-	assert(HAL_UARTEx_ReceiveToIdle_DMA(&usart3, input_buffer, INPUT_BUFFER_SIZE - 1) == HAL_OK);
-}
-
-void uart_cli_init() {
-	printf("Entering CLI\n");
-	restart_rx();
-}
-
-const char* get_next_str(const char* buf) {
-	while (*buf) {
-		if (*buf == '\n' || *buf == '\r') return buf + 1;
-		buf++;
-	}
-
-	return NULL;
-}
-
-void parse() {
-	const char* buf = (const char*)input_buffer;
-
-	do {
-		run(buf);
-		buf = get_next_str(buf);
-	} while (*buf != 0);
-
-	restart_rx();
-}
-
-void input_overrun_error() {
-	printf("\nInput overrun error\n");
-	while (1) {};
-}
-
-// This function is called when the line goes idle
-void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size) {
-	uint16_t space_remains = huart->RxXferCount;
-	uint8_t* base = huart->pRxBuffPtr;
-	uint8_t* last = base - 1 + Size;
-
-	// Performance
-	extern uint32_t perf_usart3_bytes_rx;
-	perf_usart3_bytes_rx += Size;
-
-	// Echo keypresses
-	_write(0, (char*)base, Size);
-
-	// Backspace handling
-	// Different terminals may send different backspace codes
-	// Handle both types
-	if (*last == 127) {
-		_write(0, (char[]){8, ' ', 8}, 3);
-		*last = 8;
-	}
-
-	if (*last == 8) {
-		if (last == input_buffer) {
-			return restart_rx();
-		}
-
-		*last = 0;
-		last -= 2;
-
-		space_remains++;
-		base = last;
-	}
-
-	if (space_remains == 0) {
-		return add_task(input_overrun_error);
-	}
-
-	// Ensure that memory will remain untouched while parsing
-	if (*last == '\n' || *last == '\r') {
-		_write(0, "\n", 1);
-		add_task(parse);
-	} else {
-		HAL_UARTEx_ReceiveToIdle_DMA(huart, base + Size, space_remains);
-	}	
 }
