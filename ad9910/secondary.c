@@ -4,9 +4,13 @@
 #include "ad9910/registers.h"
 #include "ad9910/secondary.h"
 
-// Установить общую частоту при использовании оперативной памяти
+//
+// Вторичные источники параметров сигнала
+//
+
+// Установить вторичный источник частоты
 // Действует когда RAM Playback Destination = Phase или Amplitude
-void ad_set_ram_freq(uint32_t ftw) {
+void ad_set_secondary_freq(uint32_t ftw) {
 	uint8_t* view = (uint8_t*)&ftw;
 
 	r07[3] = view[0];
@@ -15,19 +19,19 @@ void ad_set_ram_freq(uint32_t ftw) {
 	r07[0] = view[3];
 }
 
-// Установить общий сдвиг фазы при использовании оперативной памяти
+// Установить вторичный источник фазы
 // Действует когда RAM Playback Destination = Frequency или Amplitude
-void ad_set_ram_phase(uint16_t pow) {
+void ad_set_secondary_phase(uint16_t pow) {
 	uint8_t* view = (uint8_t*)&pow;
 
 	r08[1] = view[0];
 	r08[0] = view[1];
 }
 
-// Установить общую амплитуду при использовании оперативной памяти
+// Установить вторичный источник амплитуды
 // Не действует, пока выставлен бит Enable amplitude scale from single tone profiles
 // Формат несколько отличается от того, что в регистрах профилей
-void ad_set_ram_amplitude(uint16_t asf) {
+void ad_set_secondary_amplitude(uint16_t asf) {
 	assert(asf <= 0x3FFF);
 
 	r09[3] = (asf << 2) & 0xFF;

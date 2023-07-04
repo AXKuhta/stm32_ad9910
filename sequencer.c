@@ -185,9 +185,9 @@ void spi_write_entry(seq_entry_t entry) {
 			ad_set_ram_profile(i, entry.ram_profiles[i].rate, entry.ram_profiles[i].start, entry.ram_profiles[i].end, entry.ram_profiles[i].mode);
 
 		ad_set_ram_destination(entry.ram_destination);
-		ad_set_ram_freq(entry.ram_secondary_params.ftw);
-		ad_set_ram_amplitude(entry.ram_secondary_params.asf);
-		ad_set_ram_phase(entry.ram_secondary_params.pow);
+		ad_set_secondary_freq(entry.ram_secondary_params.ftw);
+		ad_set_secondary_amplitude(entry.ram_secondary_params.asf);
+		ad_set_secondary_phase(entry.ram_secondary_params.pow);
 		ad_enable_ram();
 	} else {
 		for (int i = 0; i < 8; i++) {
