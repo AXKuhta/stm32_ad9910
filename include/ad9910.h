@@ -18,13 +18,6 @@ void ad_set_ram_freq(uint32_t ftw);
 void ad_set_ram_phase(uint16_t pow);
 void ad_set_ram_amplitude(uint16_t asf);
 
-// DRG
-void ad_enable_ramp();
-void ad_disable_ramp();
-void ad_set_ramp_limits(uint32_t lower_hz, uint32_t upper_hz);
-void ad_set_ramp_step(uint32_t decrement, uint32_t increment);
-void ad_set_ramp_rate(uint16_t down_rate, uint16_t up_rate);
-
 // RAM
 #define AD_RAM_DESTINATION_FREQ 		0
 #define AD_RAM_DESTINATION_PHASE 		1 // Не будет работать, пока выставлен бит Enable amplitude scale from single tone profiles (так как амплитуда будет нулевая)
@@ -57,3 +50,5 @@ ad_ramp_t ad_calc_ramp(uint32_t f1_hz, uint32_t f2_hz, uint32_t time_ns);
 double ad_backconvert_ftw(uint32_t ftw);
 double ad_backconvert_pow(uint16_t pow);
 double ad_backconvert_asf(uint16_t asf);
+
+#include "ad9910/drg.h"

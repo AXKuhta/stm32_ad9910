@@ -27,29 +27,29 @@ static uint32_t ad_system_clock = 0;
 
 // Регистры AD9910
 // Состояние после сброса
-static uint8_t r00[4] = {0x00, 0x00, 0x00, 0x00}; // CFR1
-static uint8_t r01[4] = {0x00, 0x40, 0x08, 0x20}; // CFR2
-static uint8_t r02[4] = {0x1F, 0x3F, 0x40, 0x00}; // CFR3
-static uint8_t r03[4] = {0x00, 0x00, 0x7F, 0x7F}; // Aux DAC control
-static uint8_t r04[4] = {0xFF, 0xFF, 0xFF, 0xFF}; // I/O Update Rate
-static uint8_t r05[6] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // ???
-static uint8_t r06[6] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // ???
-static uint8_t r07[4] = {0x00, 0x00, 0x00, 0x00}; // FTW
-static uint8_t r08[2] = {0x00, 0x00}; // POW
-static uint8_t r09[4] = {0x00, 0x00, 0x00, 0x00}; // ASF
-static uint8_t r0A[4] = {0x00, 0x00, 0x00, 0x00}; // Multichip Sync
-static uint8_t r0B[8] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // Digital Ramp Limit
-static uint8_t r0C[8] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // Digital Ramp Step
-static uint8_t r0D[4] = {0x00, 0x00, 0x00, 0x00}; // Digital Ramp Rate
-static uint8_t r0E[8] = {0x08, 0xB5, 0x00, 0x00, 0x0C, 0xCC, 0xCC, 0xCD}; // Profile 0
-static uint8_t r0F[8] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // Profile 1
-static uint8_t r10[8] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // Profile 2
-static uint8_t r11[8] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // Profile 3
-static uint8_t r12[8] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // Profile 4
-static uint8_t r13[8] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // Profile 5
-static uint8_t r14[8] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // Profile 6
-static uint8_t r15[8] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // Profile 7
-static uint8_t r16[4] = {0x00, 0x00, 0x00, 0x00}; // RAM
+uint8_t r00[4] = {0x00, 0x00, 0x00, 0x00}; // CFR1
+uint8_t r01[4] = {0x00, 0x40, 0x08, 0x20}; // CFR2
+uint8_t r02[4] = {0x1F, 0x3F, 0x40, 0x00}; // CFR3
+uint8_t r03[4] = {0x00, 0x00, 0x7F, 0x7F}; // Aux DAC control
+uint8_t r04[4] = {0xFF, 0xFF, 0xFF, 0xFF}; // I/O Update Rate
+uint8_t r05[6] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // ???
+uint8_t r06[6] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // ???
+uint8_t r07[4] = {0x00, 0x00, 0x00, 0x00}; // FTW
+uint8_t r08[2] = {0x00, 0x00}; // POW
+uint8_t r09[4] = {0x00, 0x00, 0x00, 0x00}; // ASF
+uint8_t r0A[4] = {0x00, 0x00, 0x00, 0x00}; // Multichip Sync
+uint8_t r0B[8] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // Digital Ramp Limit
+uint8_t r0C[8] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // Digital Ramp Step
+uint8_t r0D[4] = {0x00, 0x00, 0x00, 0x00}; // Digital Ramp Rate
+uint8_t r0E[8] = {0x08, 0xB5, 0x00, 0x00, 0x0C, 0xCC, 0xCC, 0xCD}; // Profile 0
+uint8_t r0F[8] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // Profile 1
+uint8_t r10[8] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // Profile 2
+uint8_t r11[8] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // Profile 3
+uint8_t r12[8] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // Profile 4
+uint8_t r13[8] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // Profile 5
+uint8_t r14[8] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // Profile 6
+uint8_t r15[8] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // Profile 7
+uint8_t r16[4] = {0x00, 0x00, 0x00, 0x00}; // RAM
 
 static uint8_t* regmap[23] = {
 	r00,
@@ -422,87 +422,6 @@ void ad_set_ram_amplitude(uint16_t asf) {
 
 	r09[3] = (asf << 2) & 0xFF;
 	r09[2] = (asf >> 5) & 0xFF;
-}
-
-//
-// Digital ramp
-//
-
-// Включить Digital Ramp Generator в режиме частоты
-// Частота в профилях перестанет иметь эффект (Но амплитуда всё ещё продолжит применяться в соответствии с профилем)
-void ad_enable_ramp() {
-	r01[1] &= ~0b00111110; // Занулить все связанные с DRG биты
-	r01[1] |=  0b00001000; // Включить в режиме частоты
-
-	r00[2] &= ~0b11000100; // Занулить все связанные с DRG биты
-	r00[2] |=  0b01000000; // Автосброс таймера (На нижний лимит)
-}
-
-// Выключить Digital Ramp Generator
-void ad_disable_ramp() {
-	r01[1] &= ~0b00111110; // Занулить все связанные с DRG биты
-}
-
-// Установка начальной и конечной частоты
-void ad_set_ramp_limits(uint32_t f1_hz, uint32_t f2_hz) {
-	uint32_t lower;
-	uint32_t upper;
-
-	// Если конечная частота выше начальной частоты, то всё нормально
-	// Если же конечная частота НИЖЕ начальной частоты, то нужно использовать "зеркальные" значения частоты
-	// В даташите это называется "aliased image"
-	if (f2_hz > f1_hz) {
-		lower = ad_calc_ftw(f1_hz);
-		upper = ad_calc_ftw(f2_hz);
-	} else {
-		lower = ad_calc_ftw(1000*1000*1000 - f1_hz);
-		upper = ad_calc_ftw(1000*1000*1000 - f2_hz);
-	}
-
-	uint8_t* view_u = (uint8_t*)&upper;
-	uint8_t* view_l = (uint8_t*)&lower;
-
-	r0B[0] = view_u[3];
-	r0B[1] = view_u[2];
-	r0B[2] = view_u[1];
-	r0B[3] = view_u[0];
-
-	r0B[4] = view_l[3];
-	r0B[5] = view_l[2];
-	r0B[6] = view_l[1];
-	r0B[7] = view_l[0];
-}
-
-// Установка шага
-// Подойдут значения от ad_calc_ftw(), либо 1 1 для максимальной плавности
-void ad_set_ramp_step(uint32_t decrement, uint32_t increment) {
-	uint8_t* view_d = (uint8_t*)&decrement;
-	uint8_t* view_i = (uint8_t*)&increment;
-
-	r0C[0] = view_d[3];
-	r0C[1] = view_d[2];
-	r0C[2] = view_d[1];
-	r0C[3] = view_d[0];
-
-	r0C[4] = view_i[3];
-	r0C[5] = view_i[2];
-	r0C[6] = view_i[1];
-	r0C[7] = view_i[0];
-}
-
-// Установка задержки между шагами
-// Формула для вычисления разрешения: 1s / SYSCLK/4
-// Если выставить 0 0, то задержка между шагами будет нулевой и счётчик... никуда не пойдёт
-// Для получения максимально быстрого шага нужно выставить значения 1 1
-void ad_set_ramp_rate(uint16_t down_rate, uint16_t up_rate) {
-	uint8_t* view_d = (uint8_t*)&down_rate;
-	uint8_t* view_u = (uint8_t*)&up_rate;
-
-	r0D[0] = view_d[1];
-	r0D[1] = view_d[0];
-
-	r0D[2] = view_u[1];
-	r0D[3] = view_u[0];
 }
 
 //

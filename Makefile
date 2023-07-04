@@ -15,7 +15,7 @@ HAL_HEADER = $(wildcard $(HAL_SUBDIR)/Inc/*.h)
 HAL_SOURCE = $(wildcard $(HAL_SUBDIR)/Src/*.c)
 HAL_OBJS = $(HAL_SOURCE:c=o)
 
-APP_SOURCE = $(wildcard *.c)
+APP_SOURCE = $(wildcard *.c) $(wildcard ad9910/*.c)
 APP_OBJS = $(APP_SOURCE:c=o)
 
 OBJS = $(STARTUP_OBJ) $(HAL_OBJS) $(APP_OBJS)
