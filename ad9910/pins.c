@@ -85,7 +85,6 @@ void set_ramp_direction(uint8_t direction) {
 	HAL_GPIO_WritePin(DR_CTL, direction ? GPIO_PIN_SET : GPIO_PIN_RESET);
 }
 
-
 void my_delay(uint32_t delay) {
 	for (uint32_t i=0; i<delay; i++) {
 		__NOP(); __NOP(); __NOP(); __NOP();
