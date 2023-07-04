@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <assert.h>
 
 #include "ad9910/registers.h"
 #include "ad9910/pins.h"
@@ -6,6 +7,36 @@
 // Текущая тактовая частота AD9910
 // Используется при вычислении FTW
 uint32_t ad_system_clock = 0;
+
+static struct { uint32_t min, max; } vco_ranges[] = {
+	{ .min = 420000000, .max = 485000000 },
+	{ .min = 482000000, .max = 562000000 },
+	{ .min = 562000000, .max = 656000000 },
+	{ .min = 656000000, .max = 832000000 },
+	{ .min = 832000000, .max = 920000000 },
+	{ .min = 920000000, .max = 1080000000 },
+};
+
+static int select_vco(uint32_t sysclk) {
+	for (int i = 0; i < 6; i++) {
+		if (sysclk >= vco_ranges[i].min && sysclk <= vco_ranges[i].max)
+			return i;
+	}
+
+	assert(0);
+}
+
+static void ad_enable_pll(uint32_t refclk, uint8_t multiplier) {
+	uint32_t sysclk = refclk * multiplier;
+	int vco = select_vco(sysclk);
+
+	r02[0] = 0b00001000 + vco; // XTAL out disable + VCO
+	r02[1] = 0x3F; // Charge pump current
+	r02[2] = 0xC1; // Divider disable + PLL enable
+	r02[3] = multiplier << 1;
+
+	ad_system_clock = sysclk;
+}
 
 void ad_init() {
 	ad_init_gpio();
@@ -17,15 +48,7 @@ void ad_init() {
 	// SDIO Input Only
 	r00[3] = 0x02;
 
-	// PLL
-	r02[0] = 0x0D; // VCO + XTAL out enable/disable
-	r02[1] = 0x3F; // Charge pump current
-	r02[2] = 0xC1; // Divider disable + PLL enable
-	r02[3] = 0x64; // x50 multiplier
-
-	//r02[2] = 0xC0; // Divider disable + PLL disable
-	
-	ad_system_clock = 1000*1000*1000;
+	ad_enable_pll(20*1000*1000, 50);
 	
 	r01[0] = 0b00000001; // Enable amplitude scale from single tone profiles
 	r00[2] = 0b00001000; // Phase static reset
