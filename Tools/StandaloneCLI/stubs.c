@@ -9,7 +9,7 @@ char* readline(const char* prompt);
 void using_history();
 void add_history (const char *string);
 
-extern uint32_t ad_system_clock;
+uint32_t ad_system_clock = 1000*1000*1000;
 
 int scan_and_run() {
 	char* cmd = readline("> ");
@@ -24,8 +24,6 @@ int scan_and_run() {
 }
 
 int main() {
-    ad_system_clock = 1000*1000*1000;
-
     using_history();
     sequencer_init();
 
