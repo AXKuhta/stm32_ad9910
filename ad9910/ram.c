@@ -7,6 +7,7 @@
 #include "ad9910/registers.h"
 #include "ad9910/ram.h"
 #include "vt100.h"
+#include "spi.h"
 
 //
 // AD9910 RAM

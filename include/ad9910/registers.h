@@ -22,3 +22,8 @@ extern uint8_t r13[8]; // Profile 5
 extern uint8_t r14[8]; // Profile 6
 extern uint8_t r15[8]; // Profile 7
 extern uint8_t r16[4]; // RAM
+
+// SPI
+void ad_readback_all();
+void ad_write_all();
+
