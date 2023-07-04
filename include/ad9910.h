@@ -1,6 +1,4 @@
 
-void ad_init();
-
 #include "ad9910/registers.h"
 #include "ad9910/profiles.h"
 #include "ad9910/secondary.h"
@@ -9,3 +7,4 @@ void ad_init();
 #include "ad9910/units.h"
 #include "ad9910/ram.h"
 #include "ad9910/misc.h"
+#include "ad9910/init.h"

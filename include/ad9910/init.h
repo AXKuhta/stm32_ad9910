@@ -1,0 +1,2 @@
+
+void ad_init();

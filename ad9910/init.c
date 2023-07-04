@@ -1,10 +1,7 @@
+#include <stdint.h>
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <assert.h>
-
-#include "ad9910.h"
-#include "vt100.h"
+#include "ad9910/registers.h"
+#include "ad9910/pins.h"
 
 // Текущая тактовая частота AD9910
 // Используется при вычислении FTW
