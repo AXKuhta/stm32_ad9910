@@ -2,6 +2,7 @@
 #include <stdio.h>
 
 #include "ad9910/registers.h"
+#include "ad9910/pins.h"
 #include "vt100.h"
 #include "spi.h"
 
