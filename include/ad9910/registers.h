@@ -23,6 +23,7 @@ extern uint8_t r14[8]; // Profile 6
 extern uint8_t r15[8]; // Profile 7
 extern uint8_t r16[4]; // RAM
 
+extern uint8_t* regmap[23];
 
 void ad_write(uint8_t reg_addr, uint8_t* buffer, uint16_t size);
 void ad_readback_all();
