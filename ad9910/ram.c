@@ -5,6 +5,7 @@
 #include <stdio.h>
 
 #include "ad9910/registers.h"
+#include "ad9910/profiles.h"
 #include "ad9910/pins.h"
 #include "ad9910/ram.h"
 #include "vt100.h"
