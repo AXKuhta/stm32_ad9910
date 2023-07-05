@@ -28,11 +28,14 @@ static int select_vco(uint32_t sysclk) {
 
 static void ad_enable_pll(uint32_t refclk, uint8_t multiplier) {
 	uint32_t sysclk = refclk * multiplier;
-	int vco = select_vco(sysclk);
+	uint8_t vco = select_vco(sysclk);
+	uint8_t icp = 7;
 
-	r02[0] = 0b00001000 + vco; // XTAL out disable + VCO
-	r02[1] = 0x3F; // Charge pump current
-	r02[2] = 0xC1; // Divider disable + PLL enable
+	assert(icp < 8);
+
+	r02[0] = 0b00001000 + vco; 	// XTAL out disable + VCO
+	r02[1] = icp << 3; 			// Charge pump current
+	r02[2] = 0b11000001; 		// Divider disable + PLL enable
 	r02[3] = multiplier << 1;
 
 	ad_system_clock = sysclk;
