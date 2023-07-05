@@ -10,6 +10,7 @@
 #include "units.h"
 #include "timer.h"
 #include "sequencer.h"
+#include "algos.h"
 #include "vec.h"
 
 // =============================================================================
@@ -442,16 +443,14 @@ void sequencer_add_sweep_cmd(const char* str) {
 	char d_unit[4] = {0};
 	char f1_unit[4] = {0};
 	char f2_unit[4] = {0};
-	char fstep_unit[4] = {0};
 	double offset;
 	double duration;
 	double f1;
 	double f2;
-	double fstep;
 
-	int rc = sscanf(str, "%*s %*s %lf %3s %lf %3s %lf %3s %lf %3s %lf %3s", &offset, o_unit, &duration, d_unit, &f1, f1_unit, &f2, f2_unit, &fstep, fstep_unit);
+	int rc = sscanf(str, "%*s %*s %lf %3s %lf %3s %lf %3s %lf %3s", &offset, o_unit, &duration, d_unit, &f1, f1_unit, &f2, f2_unit);
 
-	if (rc != 8 && rc != 10) {
+	if (rc != 8) {
 		printf("Invalid arguments\n");
 		printf("Usage: seq sweep delay unit duration unit f1 unit f2 unit [fstep unit]\n");
 		printf("Example: seq sweep 100 us 250 us 150 MHz 50 MHz\n");
@@ -462,37 +461,16 @@ void sequencer_add_sweep_cmd(const char* str) {
 	uint32_t f2_hz 			= parse_freq(f2, f2_unit);
 	uint32_t offset_ns 		= parse_time(offset, o_unit);
 	uint32_t duration_ns 	= parse_time(duration, d_unit);
-	uint32_t fstep_hz 		= 0;
-
-	if (rc == 10)
-		fstep_hz = parse_freq(fstep, fstep_unit);
 	
 	char* verif_f1 			= freq_unit(f1_hz);
 	char* verif_f2 			= freq_unit(f2_hz);
-	char* verif_fstep 		= freq_unit(fstep_hz);
 	char* verif_offset 		= time_unit(offset_ns / 1000.0 / 1000.0 / 1000.0);
 	char* verif_duration 	= time_unit(duration_ns / 1000.0 / 1000.0 / 1000.0);
 
-	printf("Sequence sweep at %s -> %s step %s, offset %s, duration %s\n", verif_f1, verif_f2, rc == 12 ? verif_fstep : "AUTO", verif_offset, verif_duration);
-
-	ad_ramp_t ramp;
-
-	if (rc == 10) {
-		ramp = (ad_ramp_t){
-			.fstep_ftw = ad_calc_ftw(fstep_hz),
-			.tstep_mul = 1
-		};
-	} else {
-		ramp = ad_calc_ramp(f1_hz, f2_hz, duration_ns);
-	}
+	printf("Sequence sweep at %s -> %s, offset %s, duration %s\n", verif_f1, verif_f2, verif_offset, verif_duration);
 
 	seq_entry_t pulse = {
-		.sweep = {
-			.f1 = f1_hz,
-			.f2 = f2_hz,
-			.fstep = ramp.fstep_ftw,
-			.tstep = ramp.tstep_mul
-		},
+		.sweep = calculate_sweep(f1_hz, f2_hz, duration_ns),
 		.t1 = timer_mu(offset_ns),
 		.t2 = timer_mu(offset_ns + duration_ns),
 		.profiles[0] = { .asf = 0 },
@@ -503,8 +481,7 @@ void sequencer_add_sweep_cmd(const char* str) {
 
 	free(verif_f1);
 	free(verif_f2);
-	free(verif_fstep);
-	free(verif_fstep);
+	free(verif_offset);
 	free(verif_duration);
 }
 

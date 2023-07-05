@@ -12,14 +12,18 @@ typedef struct ram_profile_t {
 	uint8_t mode;
 } ram_profile_t;
 
+typedef struct sweep_t {
+	uint32_t prologue_hold;
+	uint32_t lower_ftw;
+	uint32_t upper_ftw;
+	uint32_t fstep_ftw;
+	uint16_t tstep;
+} sweep_t;
+
 typedef struct seq_entry_t {
-	struct sweep_t {
-		uint32_t prologue_hold;
-		uint32_t f1;
-		uint32_t f2;
-		uint32_t fstep;
-		uint16_t tstep;
-	} sweep;
+	uint32_t t1;
+	uint32_t t2;
+	sweep_t sweep;
 	struct {
 		uint8_t* buffer;
 		size_t size;
@@ -31,8 +35,6 @@ typedef struct seq_entry_t {
 	} ram_image;
 	uint8_t ram_destination;
 	profile_t ram_secondary_params;
-	uint32_t t1;
-	uint32_t t2;
 	union {
 		profile_t profiles[8];
 		ram_profile_t ram_profiles[8];

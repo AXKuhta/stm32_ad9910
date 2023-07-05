@@ -12,6 +12,7 @@
 #include "ad9910.h"
 #include "sequencer.h"
 #include "units.h"
+#include "algos.h"
 #include "vec.h"
 
 // "Приватные" глобальные переменные
@@ -29,14 +30,14 @@ void sequencer_reset() {
 static void print_sweep(seq_entry_t* entry) {
 	printf(" Sweep:\n");
 
-	char* f1 = freq_unit(ad_backconvert_ftw(entry->sweep.f1));
-	char* f2 = freq_unit(ad_backconvert_ftw(entry->sweep.f2));
-	char* fstep = freq_unit(ad_backconvert_ftw(entry->sweep.fstep));
+	char* f1 = freq_unit(ad_backconvert_ftw(entry->sweep.lower_ftw));
+	char* f2 = freq_unit(ad_backconvert_ftw(entry->sweep.upper_ftw));
+	char* fstep = freq_unit(ad_backconvert_ftw(entry->sweep.fstep_ftw));
 	char* tstep = time_unit(ad_backconvert_step_time(entry->sweep.tstep));
 
-	printf("\tf1 ftw 0x%08lX (%s)\n", entry->sweep.f1, f1);
-	printf("\tf2 ftw 0x%08lX (%s)\n", entry->sweep.f2, f2);
-	printf("\tfstep ftw 0x%08lX (%s)\n", entry->sweep.fstep, fstep);
+	printf("\tf1 ftw 0x%08lX (%s)\n", entry->sweep.lower_ftw, f1);
+	printf("\tf2 ftw 0x%08lX (%s)\n", entry->sweep.upper_ftw, f2);
+	printf("\tfstep ftw 0x%08lX (%s)\n", entry->sweep.fstep_ftw, fstep);
 	printf("\ttstep val 0x%04X (%s)\n", entry->sweep.tstep, tstep);
 
 	free(f1);
@@ -85,7 +86,7 @@ static void debug_print_entry(seq_entry_t* entry) {
 	free(t1_str);
 	free(t2_str);
 
-	if (entry->sweep.f1 || entry->sweep.f2)
+	if (entry->sweep.fstep_ftw > 0)
 		print_sweep(entry);
 
 	if (entry->ram_image.size > 0) {
@@ -192,11 +193,11 @@ void sequencer_run() {
 }
 
 void spi_write_entry(seq_entry_t entry) {
-	if (entry.sweep.fstep > 0) {
+	if (entry.sweep.fstep_ftw > 0) {
 		ad_enable_ramp();
 
-		ad_set_ramp_limits(entry.sweep.f1, entry.sweep.f2);
-		ad_set_ramp_step(0, entry.sweep.fstep);
+		ad_set_ramp_limits(entry.sweep.lower_ftw, entry.sweep.upper_ftw);
+		ad_set_ramp_step(0, entry.sweep.fstep_ftw);
 		ad_set_ramp_rate(entry.sweep.tstep, entry.sweep.tstep);
 	} else {
 		ad_disable_ramp();
@@ -280,15 +281,8 @@ void enter_basic_sweep_mode(uint32_t offset_ns, uint32_t duration_ns, uint32_t f
 	sequencer_stop();
 	sequencer_reset();
 
-	ad_ramp_t ramp = ad_calc_ramp(f1_hz, f2_hz, duration_ns);
-
 	seq_entry_t pulse = {
-		.sweep = {
-			.f1 = f1_hz,
-			.f2 = f2_hz,
-			.fstep = ramp.fstep_ftw,
-			.tstep = ramp.tstep_mul
-		},
+		.sweep = calculate_sweep(f1_hz, f2_hz, duration_ns),
 		.t1 = timer_mu(offset_ns),
 		.t2 = timer_mu(offset_ns + duration_ns),
 		.profiles[0] = { .asf = 0 },
