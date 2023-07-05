@@ -452,7 +452,7 @@ void sequencer_add_sweep_cmd(const char* str) {
 
 	if (rc != 8) {
 		printf("Invalid arguments\n");
-		printf("Usage: seq sweep delay unit duration unit f1 unit f2 unit [fstep unit]\n");
+		printf("Usage: seq sweep delay unit duration unit f1 unit f2 unit\n");
 		printf("Example: seq sweep 100 us 250 us 150 MHz 50 MHz\n");
 		return;
 	}
