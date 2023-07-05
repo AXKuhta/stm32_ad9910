@@ -26,6 +26,25 @@ void sequencer_reset() {
 	clear_vec(sequence);
 }
 
+static void print_sweep(seq_entry_t* entry) {
+	printf(" Sweep:\n");
+
+	char* f1 = freq_unit(ad_backconvert_ftw(entry->sweep.f1));
+	char* f2 = freq_unit(ad_backconvert_ftw(entry->sweep.f2));
+	char* fstep = freq_unit(ad_backconvert_ftw(entry->sweep.fstep));
+	char* tstep = time_unit(ad_backconvert_step_time(entry->sweep.tstep));
+
+	printf("\tf1 ftw 0x%08lX (%s)\n", entry->sweep.f1, f1);
+	printf("\tf2 ftw 0x%08lX (%s)\n", entry->sweep.f2, f2);
+	printf("\tfstep ftw 0x%08lX (%s)\n", entry->sweep.fstep, fstep);
+	printf("\ttstep val 0x%04X (%s)\n", entry->sweep.tstep, tstep);
+
+	free(f1);
+	free(f2);
+	free(fstep);
+	free(tstep);
+}
+
 static void print_profile(profile_t profile) {
 	char* freq = freq_unit(ad_backconvert_ftw(profile.ftw));
 
@@ -65,6 +84,9 @@ static void debug_print_entry(seq_entry_t* entry) {
 
 	free(t1_str);
 	free(t2_str);
+
+	if (entry->sweep.f1 || entry->sweep.f2)
+		print_sweep(entry);
 
 	if (entry->ram_image.size > 0) {
 		printf(" Profiles [RAM]:\n");

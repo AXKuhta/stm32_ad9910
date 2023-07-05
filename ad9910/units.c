@@ -69,3 +69,8 @@ ad_ramp_t ad_calc_ramp(uint32_t f1_hz, uint32_t f2_hz, uint32_t time_ns) {
 		.tstep_mul = (uint32_t)(req_tstep / tstep_ns)
 	};
 }
+
+double ad_backconvert_step_time(uint16_t step_time) {
+	double tstep = 1.0 / (ad_system_clock / 4.0);
+	return step_time * tstep;
+}

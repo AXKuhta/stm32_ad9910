@@ -18,7 +18,7 @@ typedef struct seq_entry_t {
 		uint32_t f1;
 		uint32_t f2;
 		uint32_t fstep;
-		uint32_t tstep;
+		uint16_t tstep;
 	} sweep;
 	struct {
 		uint8_t* buffer;
