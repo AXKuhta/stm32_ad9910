@@ -9,8 +9,6 @@
 #define AD_RAM_PROFILE_MODE_ZEROCROSSING	0b00001000 // Если включен zero-crossing, то режим обязательно direct switch
 #define AD_RAM_PROFILE_MODE_RAMPUP			0b00000001
 
-void ad_enable_ram();
-void ad_disable_ram();
 void ad_set_ram_destination(uint8_t destination);
 void ad_write_ram(uint32_t* buffer, size_t count);
 void ad_read_ram(uint32_t* buffer, size_t count);

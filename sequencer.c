@@ -158,8 +158,7 @@ void pulse_complete_callback() {
 	HAL_DMA_Abort(&dma_timer8_up);
 
 	spi_write_entry(entry);
-	if (entry.ram_image.size > 0) ad_enable_ram();
-	ad_drop_phase_static_reset();
+	ad_safety_off(entry.ram_image.size > 0);
 
 	// Если t1 == 0, то TIM2 CH3 не сможет сгенерировать событие для запуска таймера модуляции
 	// Пересесть на TIM2 RESET в таких ситуациях
@@ -223,8 +222,6 @@ void spi_write_entry(seq_entry_t entry) {
 			ad_set_profile_amplitude(i, entry.profiles[i].asf);
 			ad_set_profile_phase(i, entry.profiles[i].pow);
 		}
-
-		ad_disable_ram();
 	}
 
 	ad_write_all();
@@ -258,7 +255,7 @@ void enter_test_tone_mode(uint32_t freq_hz) {
 	ad_set_profile_freq(1, ad_calc_ftw(freq_hz));
 	ad_set_profile_amplitude(1, 0x3FFF);
 	ad_write_all();
-	ad_drop_phase_static_reset();
+	ad_safety_off(0);
 	set_profile(1);
 }
 

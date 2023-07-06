@@ -15,14 +15,6 @@
 // AD9910 RAM
 //
 
-void ad_enable_ram() {
-	r00[0] |=  0b10000000;
-}
-
-void ad_disable_ram() {
-	r00[0] &= ~0b10000000;
-}
-
 void ad_set_ram_destination(uint8_t destination) {
 	r00[0] &= ~0b01100000;
 	r00[0] |= destination << 5;
@@ -34,7 +26,6 @@ void ad_write_ram(uint32_t* buffer, size_t count) {
 	assert(count <= 1024);
 
 	ad_set_ram_profile(0, 0, 0, count - 1, AD_RAM_PROFILE_MODE_DIRECTSWITCH);
-	ad_disable_ram();
 	ad_write_all();
 	ad_pulse_io_update();
 	set_profile(0);
@@ -53,7 +44,6 @@ void ad_read_ram(uint32_t* buffer, size_t count) {
 	assert(count <= 1024);
 
 	ad_set_ram_profile(0, 0, 0, count - 1, AD_RAM_PROFILE_MODE_DIRECTSWITCH);
-	ad_disable_ram();
 	ad_write_all();
 	ad_pulse_io_update();
 	set_profile(0);
