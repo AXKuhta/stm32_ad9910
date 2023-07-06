@@ -1,5 +1,5 @@
 FLAGS = -O2 -D"STANDALONE_CLI_APP" -I"../../include/"
-OBJS = sequencer.o uart_cli.o units.o ad9910/units.o performance.o stubs.o
+OBJS = sequencer.o uart_cli.o units.o ad9910/units.o performance.o algos.o stubs.o
 
 standalone_cli.elf: $(OBJS)
 	@echo " [LD]" $@
