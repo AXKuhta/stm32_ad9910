@@ -397,11 +397,6 @@ void xmitdata_ram_psk_cmd(const char* str) {
 	vec_t(uint8_t)* vec = scan_uint8_data(str + data_offset);
 	size_t element_count = vec->size;
 
-	vec_push(ram, 0x00);
-	vec_push(ram, 0x00);
-	vec_push(ram, 0x00);
-	vec_push(ram, 0x00);
-
 	for (size_t i = 0; i < element_count; i++) {
 		if (vec->elements[i] == 0) {
 			vec_push(ram, 0x00);
@@ -415,6 +410,11 @@ void xmitdata_ram_psk_cmd(const char* str) {
 			vec_push(ram, 0xFC);
 		}
 	}
+
+	vec_push(ram, 0x00);
+	vec_push(ram, 0x00);
+	vec_push(ram, 0x00);
+	vec_push(ram, 0x00);
 
 	free_vec(vec);
 
@@ -449,9 +449,19 @@ void xmitdata_ram_psk_cmd(const char* str) {
 	seq_entry_t pulse = {
 		.t1 = timer_mu(offset_ns),
 		.t2 = timer_mu(offset_ns + duration_ns),
-		.ram_profiles[0] = { .start = 0, .end = 0, .rate = 0, .mode = AD_RAM_PROFILE_MODE_DIRECTSWITCH },
-		.ram_profiles[1] = { .start = 1, .end = element_count, .rate = tstep_ns / 4, .mode = AD_RAM_PROFILE_MODE_RAMPUP },
-		.ram_image = { .buffer = (uint32_t*)ram->elements, .size = 1 + element_count },
+		.ram_profiles[0] = {
+			.start = element_count,
+			.end = element_count,
+			.rate = 0,
+			.mode = AD_RAM_PROFILE_MODE_DIRECTSWITCH
+		},
+		.ram_profiles[1] = {
+			.start = 0,
+			.end = element_count,
+			.rate = tstep_ns / 4,
+			.mode = AD_RAM_PROFILE_MODE_RAMPUP
+		},
+		.ram_image = { .buffer = (uint32_t*)ram->elements, .size = element_count + 1 },
 		.ram_destination = AD_RAM_DESTINATION_POLAR,
 		.ram_secondary_params = { .ftw =  ftw }
 	};
