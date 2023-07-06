@@ -158,6 +158,7 @@ void pulse_complete_callback() {
 	HAL_DMA_Abort(&dma_timer8_up);
 
 	spi_write_entry(entry);
+	if (entry.ram_image.size > 0) ad_enable_ram();
 	ad_drop_phase_static_reset();
 
 	// Если t1 == 0, то TIM2 CH3 не сможет сгенерировать событие для запуска таймера модуляции
@@ -216,7 +217,6 @@ void spi_write_entry(seq_entry_t entry) {
 		ad_set_secondary_freq(entry.ram_secondary_params.ftw);
 		ad_set_secondary_amplitude(entry.ram_secondary_params.asf);
 		ad_set_secondary_phase(entry.ram_secondary_params.pow);
-		ad_enable_ram();
 	} else {
 		for (int i = 0; i < 8; i++) {
 			ad_set_profile_freq(i, entry.profiles[i].ftw);
