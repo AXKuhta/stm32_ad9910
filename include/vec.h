@@ -1,5 +1,5 @@
 
-#define vec_t(type) struct type##_vec_t { \
+#define vec_t(type) struct { \
 	size_t size; \
 	size_t capacity; \
 	size_t element_size; \
@@ -38,7 +38,7 @@ unused static void _double_capacity(void_vec_t* vec) {
 	assert(vec->elements != NULL);
 }
 
-#define init_vec(type) (struct type##_vec_t*)_init_vec(sizeof(type));
+#define init_vec(type) (void*)_init_vec(sizeof(type));
 #define vec_push(vec, value) (vec->size == vec->capacity ? _double_capacity((void_vec_t*)vec) : 0, vec->elements[vec->size++] = value)
 #define free_vec(vec) _free_vec((void_vec_t*)vec)
 #define clear_vec(vec) _clear_vec((void_vec_t*)vec)
