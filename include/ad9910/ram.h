@@ -5,8 +5,9 @@
 #define AD_RAM_DESTINATION_AMPLITUDE 	2
 #define AD_RAM_DESTINATION_POLAR 		3
 
-#define AD_RAM_PROFILE_MODE_DIRECTSWITCH 0b00000000
-#define AD_RAM_PROFILE_MODE_ZEROCROSSING 0b00001000 // Если включен zero-crossing, то режим обязательно direct switch
+#define AD_RAM_PROFILE_MODE_DIRECTSWITCH	0b00000000
+#define AD_RAM_PROFILE_MODE_ZEROCROSSING	0b00001000 // Если включен zero-crossing, то режим обязательно direct switch
+#define AD_RAM_PROFILE_MODE_RAMPUP			0b00000001
 
 void ad_enable_ram();
 void ad_disable_ram();

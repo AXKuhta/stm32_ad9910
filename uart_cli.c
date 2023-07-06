@@ -375,6 +375,91 @@ void xmitdata_zc_psk_cmd(const char* str) {
 	sequencer_run();
 }
 
+void xmitdata_ram_psk_cmd(const char* str) {
+	char o_unit[4] = {0};
+	char f_unit[4] = {0};
+	char ts_unit[4] = {0};
+	double offset;
+	double freq;
+	double tstep;
+	int data_offset;
+
+	int rc = sscanf(str, "%*s %*s %lf %3s %lf %3s %lf %3s %n", &offset, o_unit, &freq, f_unit, &tstep, ts_unit, &data_offset);
+
+	if (rc != 6) {
+		printf("Invalid arguments: %d\n", rc);
+		printf("Usage: basic_xmitdata ram_psk offset unit freq unit tstep unit data data data ...\n");
+		printf("Example: basic_xmitdata ram_psk 0 us 151.10 MHz 10 us 1 1 0 1 ...\n");
+		return;
+	}
+
+	vec_t(uint8_t)* ram = init_vec(uint8_t);
+	vec_t(uint8_t)* vec = scan_uint8_data(str + data_offset);
+	size_t element_count = vec->size;
+
+	vec_push(ram, 0x00);
+	vec_push(ram, 0x00);
+	vec_push(ram, 0x00);
+	vec_push(ram, 0x00);
+
+	for (size_t i = 0; i < element_count; i++) {
+		if (vec->elements[i] == 0) {
+			vec_push(ram, 0x00);
+			vec_push(ram, 0x00);
+			vec_push(ram, 0xFF);
+			vec_push(ram, 0xFC);
+		} else {
+			vec_push(ram, 0x7F);
+			vec_push(ram, 0xFF);
+			vec_push(ram, 0xFF);
+			vec_push(ram, 0xFC);
+		}
+	}
+
+	free_vec(vec);
+
+	uint32_t freq_hz = parse_freq(freq, f_unit);
+	uint32_t offset_ns = parse_time(offset, o_unit);
+	uint32_t tstep_ns = parse_time(tstep, ts_unit);
+	uint32_t duration_ns = tstep_ns * element_count;
+
+	if (freq_hz == 0) {
+		return;
+	}
+
+	assert(tstep_ns % 4 == 0);
+
+	char* verif_freq = freq_unit(freq_hz);
+	char* verif_offset = time_unit(offset_ns / 1000.0 / 1000.0 / 1000.0);
+	char* verif_tstep = time_unit(tstep_ns / 1000.0 / 1000.0 / 1000.0);
+	char* verif_duration = time_unit(duration_ns / 1000.0 / 1000.0 / 1000.0);
+
+	printf("Basic PSK at %s, offset %s, %u * %s elements = %s total duration\n", verif_freq, verif_offset, element_count, verif_tstep, verif_duration);
+
+	free(verif_freq);
+	free(verif_offset);
+	free(verif_tstep);
+	free(verif_duration);
+
+	uint32_t ftw = ad_calc_ftw(freq_hz);
+
+	sequencer_stop();
+	sequencer_reset();
+
+	seq_entry_t pulse = {
+		.t1 = timer_mu(offset_ns),
+		.t2 = timer_mu(offset_ns + duration_ns),
+		.ram_profiles[0] = { .start = 0, .end = 0, .rate = 0, .mode = AD_RAM_PROFILE_MODE_DIRECTSWITCH },
+		.ram_profiles[1] = { .start = 1, .end = element_count, .rate = tstep_ns / 4, .mode = AD_RAM_PROFILE_MODE_RAMPUP },
+		.ram_image = { .buffer = (uint32_t*)ram->elements, .size = 1 + element_count },
+		.ram_destination = AD_RAM_DESTINATION_POLAR,
+		.ram_secondary_params = { .ftw =  ftw }
+	};
+
+	sequencer_add(pulse);
+	sequencer_run();
+}
+
 void basic_xmitdata_cmd(const char* str) {
 	char cmd[32] = {0};
 
@@ -389,6 +474,7 @@ void basic_xmitdata_cmd(const char* str) {
 	if (strcmp(cmd, "fsk") == 0) return xmitdata_fsk_cmd(str);
 	if (strcmp(cmd, "psk") == 0) return xmitdata_psk_cmd(str);
 	if (strcmp(cmd, "zc_psk") == 0) return xmitdata_zc_psk_cmd(str);
+	if (strcmp(cmd, "ram_psk") == 0) return xmitdata_ram_psk_cmd(str);
 
 	printf("Unknown xmitdata mode: [%s]\n", cmd);
 }
