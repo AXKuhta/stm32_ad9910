@@ -95,13 +95,13 @@ void my_delay(uint32_t delay) {
 // Без неё импульса вообще не возникнет
 void ad_pulse_io_reset() {
 	HAL_GPIO_WritePin(IO_RESET, GPIO_PIN_SET);
-	HAL_Delay(1);
+	//HAL_Delay(1);
 	HAL_GPIO_WritePin(IO_RESET, GPIO_PIN_RESET);
-	HAL_Delay(1);
+	//HAL_Delay(1);
 }	
 
 void ad_pulse_io_update() {
 	HAL_GPIO_WritePin(IO_UPDATE, GPIO_PIN_SET);
-	HAL_Delay(1);
+	//HAL_Delay(1);
 	HAL_GPIO_WritePin(IO_UPDATE, GPIO_PIN_RESET);
 }
