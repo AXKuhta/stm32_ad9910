@@ -7,7 +7,7 @@ LDSCRIPT_SUBDIR = STM32CubeF7/Projects/STM32F746ZG-Nucleo/Templates/SW4STM32/STM
 LDSCRIPT = $(LDSCRIPT_SUBDIR)/STM32F746ZGTx_FLASH.ld
 
 FREERTOS_SUBDIR = FreeRTOS-Kernel
-FREERTOS_SOURCE = $(wildcard $(FREERTOS_SUBDIR)/*.c) $(wildcard $(FREERTOS_SUBDIR)/portable/GCC/ARM_CM7/r0p1/*.c)
+FREERTOS_SOURCE = $(wildcard $(FREERTOS_SUBDIR)/*.c) $(wildcard $(FREERTOS_SUBDIR)/portable/GCC/ARM_CM7/r0p1/*.c) $(wildcard freertos/*.c)
 FREERTOS_OBJS = $(FREERTOS_SOURCE:c=o)
 
 CMSIS_SUBDIR = STM32CubeF7/Drivers/CMSIS
@@ -29,7 +29,7 @@ OBJS = $(STARTUP_OBJ) $(HAL_OBJS) $(APP_OBJS) $(FREERTOS_OBJS)
 # COMPILER FLAGS
 ################################################################################
 DEFINES = -D"USE_HAL_DRIVER" -D"STM32F746xx" -D"USE_STM32F7XX_NUCLEO_144"
-INCLUDE = -I"include/" -I"$(CMSIS_SUBDIR)/Core/Include" -I"$(CMSIS_DEVICE_SUBDIR)/Include" -I"$(HAL_SUBDIR)/Inc" -I"$(FREERTOS_SUBDIR)/include" -I"$(FREERTOS_SUBDIR)/portable/GCC/ARM_CM7/r0p1"
+INCLUDE = -I"include/" -I"$(CMSIS_SUBDIR)/Core/Include" -I"$(CMSIS_DEVICE_SUBDIR)/Include" -I"$(HAL_SUBDIR)/Inc" -I"$(FREERTOS_SUBDIR)/include" -I"$(FREERTOS_SUBDIR)/portable/GCC/ARM_CM7/r0p1" -I"freertos/"
 
 # https://github.com/MayaPosch/Nodate/blob/master/arch/stm32/Makefile
 MCU_FLAGS := -mcpu=cortex-m7 -mfpu=fpv4-sp-d16 -mfloat-abi=hard
@@ -63,6 +63,9 @@ syscalls.o: syscalls.c
 # Silence some warnings found in STM32 HAL code
 %/stm32f7xx_hal_pwr.o: FLAGS += -Wno-unused-parameter
 %/stm32f7xx_ll_utils.o: FLAGS += -Wno-unused-parameter
+
+# Newlib malloc/free adapter needs a constant defined
+%/heap_useNewlib_ST.o: FLAGS += -D"configISR_STACK_SIZE_WORDS=32"
 
 # Startup
 %.o: %.s
