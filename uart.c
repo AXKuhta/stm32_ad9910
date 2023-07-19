@@ -2,10 +2,10 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "freertos/deferred.h"
 #include "stm32f7xx_hal.h"
 #include "pin_init.h"
 #include "syscalls.h"
-#include "tasks.h"
 #include "uart_cli.h"
 
 #define USART3_TX 	GPIOD, GPIO_PIN_8
@@ -137,13 +137,13 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size) {
 	}
 
 	if (space_remains == 0) {
-		return add_task(input_overrun_error);
+		return run_later(input_overrun_error);
 	}
 
 	// Ensure that memory will remain untouched while parsing
 	if (*last == '\n' || *last == '\r') {
 		_write(0, "\n", 1);
-		add_task(parse);
+		run_later(parse);
 	} else {
 		HAL_UARTEx_ReceiveToIdle_DMA(huart, base + Size, space_remains);
 	}	

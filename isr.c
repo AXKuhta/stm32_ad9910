@@ -1,9 +1,9 @@
 #include <stdio.h>
 #include <assert.h>
 
+#include "freertos/deferred.h"
 #include "stm32f7xx_hal.h"
 #include "ad9910.h"
-#include "tasks.h"
 
 // =============================================================================
 // INTERRUPT PROFILER
@@ -155,7 +155,7 @@ void TIM2_IRQHandler() {
 	TIM8->CR1 &= ~(TIM_CR1_CEN);						// 2. Поставить таймер на паузу -- почему-то просто __HAL_TIM_DISABLE(&timer8) не рабоает
 	TIM8->CNT = 0;										// 3. И занулить его, чтобы он случайно не застрял на значении выше CCR1
 	set_profile(parking_profile);						// 4. Выставить нулевой профиль принудительно
-	add_task(pulse_complete_callback);					// 5. Запланировать запись параметров следующего импульса
+	run_later(pulse_complete_callback);					// 5. Запланировать запись параметров следующего импульса
 
 	HAL_TIM_IRQHandler(&timer2);
 	RECORD_INTERRUPT();

@@ -4,13 +4,13 @@
 #include "queue.h"
 #include "task.h"
 
-QueueHandle_t deferred_fn_calls = NULL;
+static QueueHandle_t deferred_fn_calls = NULL;
 
-void init_deferred_fn_call_infra() {
+void init_deferred_daemon() {
 	deferred_fn_calls = xQueueCreate( 32, sizeof(void*) );
 }
 
-void run_all_deferred_fn() {
+void deferred_daemon_run_all() {
 	void (*f)();
 
 	while (xQueueReceive( deferred_fn_calls, &f, 1000 ) == pdPASS) {
@@ -18,6 +18,7 @@ void run_all_deferred_fn() {
 	}
 }
 
-void add_task(void f()) {
+// Запланировать вызов некоторой функции после выхода из прерывания
+void run_later(void f()) {
 	xQueueSendFromISR(deferred_fn_calls, &f, NULL);
 }
