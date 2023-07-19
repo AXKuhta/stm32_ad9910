@@ -53,7 +53,7 @@ firmware.elf: $(OBJS)
 # All .c files
 %.o: %.c
 	@echo " [CC]" $<
-	@$(CC) $(FLAGS) -o $@ $<
+	@$(CC) $(FLAGS) -flto -o $@ $<
 
 # Except syscalls without LTO
 syscalls.o: syscalls.c
