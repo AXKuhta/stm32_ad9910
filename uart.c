@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "freertos/deferred.h"
+#include "freertos_extras/deferred.h"
 #include "stm32f7xx_hal.h"
 #include "pin_init.h"
 #include "syscalls.h"

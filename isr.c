@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <assert.h>
 
-#include "freertos/deferred.h"
+#include "freertos_extras/deferred.h"
 #include "stm32f7xx_hal.h"
 #include "ad9910.h"
 
