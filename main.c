@@ -37,9 +37,9 @@ static void run_commands_task(void* params) {
 int main(void) {
 	system_init();
 
-	xTaskCreate( aaa_task, "AAA", configMINIMAL_STACK_SIZE, NULL, 4, NULL);
-	xTaskCreate( bbb_task, "BBB", configMINIMAL_STACK_SIZE, NULL, 4, NULL);
-	xTaskCreate( run_commands_task, "CLI", configMINIMAL_STACK_SIZE, NULL, 4, NULL);
+	xTaskCreate( aaa_task, "AAA", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
+	xTaskCreate( bbb_task, "BBB", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
+	xTaskCreate( run_commands_task, "CLI", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
 
 	printf("Task create\n");
 
