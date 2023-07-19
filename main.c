@@ -9,40 +9,28 @@
 #include "FreeRTOS.h"
 #include "task.h"
 
-static void aaa_task(void* params) {
-	(void)params;
-
-	while (1) {
-		_write(0, "AAA", 3);
-		vTaskDelay(1000);
-	}
-}
-
-static void bbb_task(void* params) {
-	(void)params;
-
-	while (1) {
-		_write(0, "BBB", 3);
-		vTaskDelay(1000);
-	}
-}
-
 static void run_commands_task(void* params) {
+	(void)params;
+
 	while (1) {
 		isr_recorder_sync();
 		run_all_tasks();
 	}
 }
 
-int main(void) {
+static void init_task(void* params) {
+	(void)params;
+
 	system_init();
 
-	xTaskCreate( aaa_task, "AAA", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
-	xTaskCreate( bbb_task, "BBB", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
-	xTaskCreate( run_commands_task, "CLI", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
+	xTaskCreate( run_commands_task, "CLI", configMINIMAL_STACK_SIZE*8, NULL, 1, NULL);
 
-	printf("Task create\n");
+	while (1) {
+	}
+}
 
+int main(void) {
+	xTaskCreate( init_task, "init", configMINIMAL_STACK_SIZE*8, NULL, 1, NULL);
 	vTaskStartScheduler();
 
 	printf("Kernel exited\n");
