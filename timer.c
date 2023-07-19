@@ -102,7 +102,7 @@ void timer2_init() {
 	
 	HAL_TIM_SlaveConfigSynchronization(&timer2, &slave_config);
 	
-	HAL_NVIC_SetPriority(TIM2_IRQn, 0, 0);
+	HAL_NVIC_SetPriority(TIM2_IRQn, 7, 0);
 	HAL_NVIC_EnableIRQ(TIM2_IRQn);
 	
 	// Запуск требуется даже при настроенном триггере

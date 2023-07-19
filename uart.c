@@ -48,7 +48,7 @@ void usart3_init() {
 	}
 
 	// This interrupt may be used to clear UART error flags
-	HAL_NVIC_SetPriority(USART3_IRQn, 1, 0);
+	HAL_NVIC_SetPriority(USART3_IRQn, 8, 0);
 	HAL_NVIC_EnableIRQ(USART3_IRQn);
 }
 

@@ -36,7 +36,7 @@ MCU_FLAGS := -mcpu=cortex-m7 -mfpu=fpv4-sp-d16 -mfloat-abi=hard
 
 CC	 = arm-none-eabi-gcc
 FLAGS	 = $(MCU_FLAGS) $(DEFINES) $(INCLUDE) -g -c -O2 -Wall -Wextra
-LFLAGS	 = $(MCU_FLAGS) -T $(LDSCRIPT) -Wl,--print-memory-usage -Wl,--gc-sections -Wl,-Map=firmware.map,--cref --specs=nosys.specs --specs=nano.specs -u _printf_float -u _scanf_float
+LFLAGS	 = $(MCU_FLAGS) -T $(LDSCRIPT) -Wl,--print-memory-usage -Wl,--gc-sections -Wl,--wrap=malloc -Wl,--wrap=_malloc_r -Wl,-Map=firmware.map,--cref --specs=nosys.specs --specs=nano.specs -u _printf_float -u _scanf_float
 ################################################################################
 
 
@@ -53,7 +53,7 @@ firmware.elf: $(OBJS)
 # All .c files
 %.o: %.c
 	@echo " [CC]" $<
-	@$(CC) $(FLAGS) -flto -o $@ $<
+	@$(CC) $(FLAGS) -o $@ $<
 
 # Except syscalls without LTO
 syscalls.o: syscalls.c

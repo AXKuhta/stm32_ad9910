@@ -9,12 +9,12 @@
 #include "FreeRTOS.h"
 #include "task.h"
 
-static void run_commands_task(void* params) {
+static void workloop(void* params) {
 	(void)params;
 
 	while (1) {
 		isr_recorder_sync();
-		run_all_tasks();
+		run_all_deferred_fn();
 	}
 }
 
@@ -22,10 +22,12 @@ static void init_task(void* params) {
 	(void)params;
 
 	system_init();
+	init_deferred_fn_call_infra();
 
-	xTaskCreate( run_commands_task, "CLI", configMINIMAL_STACK_SIZE*8, NULL, 1, NULL);
+	xTaskCreate( workloop, "work", configMINIMAL_STACK_SIZE*8, NULL, 1, NULL);
 
 	while (1) {
+		// ... Использование блокирования в этом месте провоцирует зависание??
 	}
 }
 
