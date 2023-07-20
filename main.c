@@ -9,25 +9,15 @@
 #include "FreeRTOS.h"
 #include "task.h"
 
-static void workloop(void* params) {
-	(void)params;
-
-	while (1) {
-		isr_recorder_sync();
-		deferred_daemon_run_all();
-	}
-}
-
 static void init_task(void* params) {
 	(void)params;
 
 	system_init();
 	init_deferred_daemon();
 
-	xTaskCreate( workloop, "work", configMINIMAL_STACK_SIZE*8, NULL, 1, NULL);
-
 	while (1) {
-		// ... Использование блокирования в этом месте провоцирует зависание??
+		isr_recorder_sync();
+		deferred_daemon_run_all();
 	}
 }
 
