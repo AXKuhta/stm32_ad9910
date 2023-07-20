@@ -10,13 +10,13 @@ uint32_t perf_spi4_bytes_tx = 0;
 uint32_t perf_wakeups = 0;
 
 void print_perf() {
-	printf("Performance counters:\n");
+	printf("%10s %s\n", "COUNT", "PERFORMANCE COUNTER");
 	
-	printf("usart3 bytes rx: %ld\n", perf_usart3_bytes_rx);
-	printf("usart3 bytes tx: %ld\n", perf_usart3_bytes_tx);
+	printf("%10ld %s\n", perf_usart3_bytes_rx, "usart3 bytes rx");
+	printf("%10ld %s\n", perf_usart3_bytes_tx, "usart3 bytes tx");
 
-	printf("spi4 bytes rx: %ld\n", perf_spi4_bytes_rx);
-	printf("spi4 bytes tx: %ld\n", perf_spi4_bytes_tx);
+	printf("%10ld %s\n", perf_spi4_bytes_rx, "spi4 bytes rx");
+	printf("%10ld %s\n", perf_spi4_bytes_tx, "spi4 bytes tx");
 
-	printf("wakeups: %ld\n", perf_wakeups);
+	printf("%10ld %s\n", perf_wakeups, "wakeups");
 }
