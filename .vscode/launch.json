@@ -1,0 +1,17 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Cortex Debug",
+            "cwd": "${workspaceFolder}",
+            "executable": "./firmware.elf",
+            "request": "launch",
+            "type": "cortex-debug",
+            "runToEntryPoint": "main",
+            "servertype": "openocd",
+            "serverpath": "C:/msys64/mingw64/bin/openocd.exe",
+            "configFiles": ["board/st_nucleo_f7.cfg"],
+            "gdbPath": "C:/msys64/mingw64/bin/gdb-multiarch.exe"
+        }
+    ]
+}
