@@ -65,7 +65,7 @@ syscalls.o: syscalls.c
 %/stm32f7xx_ll_utils.o: FLAGS += -Wno-unused-parameter
 
 # Newlib malloc/free adapter needs a constant defined and a warning silenced
-%/heap_useNewlib_ST.o: FLAGS += -D"configISR_STACK_SIZE_WORDS=32" -Wno-unused-parameter
+%/heap_useNewlib_ST.o: FLAGS += -D"configISR_STACK_SIZE_WORDS=128" -Wno-unused-parameter
 
 # Startup
 %.o: %.s
