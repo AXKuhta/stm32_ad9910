@@ -10,6 +10,10 @@ FREERTOS_SUBDIR = FreeRTOS-Kernel
 FREERTOS_SOURCE = $(wildcard $(FREERTOS_SUBDIR)/*.c) $(wildcard $(FREERTOS_SUBDIR)/portable/GCC/ARM_CM7/r0p1/*.c) $(wildcard freertos_extras/*.c)
 FREERTOS_OBJS = $(FREERTOS_SOURCE:c=o)
 
+FREERTOS_PLUS_TCP_SUBDIR = FreeRTOS-Plus-TCP
+FREERTOS_PLUS_TCP_SOURCE = $(wildcard $(FREERTOS_PLUS_TCP_SUBDIR)/source/*.c) $(wildcard $(FREERTOS_PLUS_TCP_SUBDIR)/source/portable/NetworkInterface/STM32Fxx/*.c)
+FREERTOS_PLUS_TCP_OBJS = $(FREERTOS_PLUS_TCP_SOURCE:c=o)
+
 CMSIS_SUBDIR = STM32CubeF7/Drivers/CMSIS
 CMSIS_DEVICE_SUBDIR = $(CMSIS_SUBDIR)/Device/ST/STM32F7xx
 STARTUP_OBJ = $(CMSIS_DEVICE_SUBDIR)/Source/Templates/gcc/startup_stm32f746xx.o
@@ -21,15 +25,15 @@ HAL_OBJS = $(HAL_SOURCE:c=o)
 APP_SOURCE = $(wildcard *.c) $(wildcard ad9910/*.c)
 APP_OBJS = $(APP_SOURCE:c=o)
 
-OBJS = $(STARTUP_OBJ) $(HAL_OBJS) $(APP_OBJS) $(FREERTOS_OBJS)
+OBJS = $(STARTUP_OBJ) $(HAL_OBJS) $(APP_OBJS) $(FREERTOS_OBJS) $(FREERTOS_PLUS_TCP_OBJS)
 ################################################################################
 
 
 ################################################################################
 # COMPILER FLAGS
 ################################################################################
-DEFINES = -D"USE_HAL_DRIVER" -D"STM32F746xx" -D"USE_STM32F7XX_NUCLEO_144"
-INCLUDE = -I"include/" -I"$(CMSIS_SUBDIR)/Core/Include" -I"$(CMSIS_DEVICE_SUBDIR)/Include" -I"$(HAL_SUBDIR)/Inc" -I"$(FREERTOS_SUBDIR)/include" -I"$(FREERTOS_SUBDIR)/portable/GCC/ARM_CM7/r0p1"
+DEFINES = -D"USE_HAL_DRIVER" -D"STM32F746xx" -D"USE_STM32F7XX_NUCLEO_144" -D"STM32F7xx=1"
+INCLUDE = -I"include/" -I"$(CMSIS_SUBDIR)/Core/Include" -I"$(CMSIS_DEVICE_SUBDIR)/Include" -I"$(HAL_SUBDIR)/Inc" -I"$(FREERTOS_SUBDIR)/include" -I"$(FREERTOS_SUBDIR)/portable/GCC/ARM_CM7/r0p1" -I"$(FREERTOS_PLUS_TCP_SUBDIR)/source/include" -I"$(FREERTOS_PLUS_TCP_SUBDIR)/source/portable/Compiler/GCC/" -I"$(FREERTOS_PLUS_TCP_SUBDIR)/source/portable/NetworkInterface/include/" -I"$(FREERTOS_PLUS_TCP_SUBDIR)/source/portable/NetworkInterface/STM32Fxx/"
 
 # https://github.com/MayaPosch/Nodate/blob/master/arch/stm32/Makefile
 MCU_FLAGS := -mcpu=cortex-m7 -mfpu=fpv4-sp-d16 -mfloat-abi=hard
