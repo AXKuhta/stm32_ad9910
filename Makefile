@@ -11,7 +11,7 @@ FREERTOS_SOURCE = $(wildcard $(FREERTOS_SUBDIR)/*.c) $(wildcard $(FREERTOS_SUBDI
 FREERTOS_OBJS = $(FREERTOS_SOURCE:c=o)
 
 FREERTOS_PLUS_TCP_SUBDIR = FreeRTOS-Plus-TCP
-FREERTOS_PLUS_TCP_SOURCE = $(wildcard $(FREERTOS_PLUS_TCP_SUBDIR)/source/*.c) $(wildcard $(FREERTOS_PLUS_TCP_SUBDIR)/source/portable/NetworkInterface/STM32Fxx/*.c)
+FREERTOS_PLUS_TCP_SOURCE = $(wildcard $(FREERTOS_PLUS_TCP_SUBDIR)/source/*.c) $(wildcard $(FREERTOS_PLUS_TCP_SUBDIR)/source/portable/NetworkInterface/Common/*.c) $(wildcard $(FREERTOS_PLUS_TCP_SUBDIR)/source/portable/NetworkInterface/STM32Fxx/*.c) $(FREERTOS_PLUS_TCP_SUBDIR)/source/portable/BufferManagement/BufferAllocation_1.c
 FREERTOS_PLUS_TCP_OBJS = $(FREERTOS_PLUS_TCP_SOURCE:c=o)
 
 CMSIS_SUBDIR = STM32CubeF7/Drivers/CMSIS

@@ -7,6 +7,7 @@
 #include "spi.h"
 #include "timer.h"
 #include "ad9910.h"
+#include "ethernet.h"
 #include "sequencer.h"
 
 /**

@@ -45,10 +45,10 @@ extern void vLoggingPrintf( const char * pcFormatString,
 #define ipconfigUSE_IPv4                    ( 1 )
 
 /* Set to 1 to enable IPv6. */
-#define ipconfigUSE_IPv6                    ( 1 )
+#define ipconfigUSE_IPv6                    ( 0 )
 
 /* Set to 0 to disable backward compatible. */
-#define ipconfigIPv4_BACKWARD_COMPATIBLE    0
+#define ipconfigIPv4_BACKWARD_COMPATIBLE    1
 
 /* Set to 0 to disable compatible for multiple end-points/interfaces.
  * Only one interface/end-point is allowed to use when ipconfigCOMPATIBLE_WITH_SINGLE
@@ -60,7 +60,7 @@ extern void vLoggingPrintf( const char * pcFormatString,
  * out the debugging messages. */
 #define ipconfigHAS_DEBUG_PRINTF            1
 #if ( ipconfigHAS_DEBUG_PRINTF == 1 )
-    #define FreeRTOS_debug_printf( X )    vLoggingPrintf X
+    #define FreeRTOS_debug_printf( X )    printf X
 #endif
 
 /* Set to 1 to print out non debugging messages, for example the output of the
