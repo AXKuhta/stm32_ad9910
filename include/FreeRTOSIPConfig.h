@@ -330,4 +330,6 @@ extern UBaseType_t uxRand();
 #define ipconfigUSE_LINKED_RX_MESSAGES                1
 #define ipconfigSUPPORT_NETWORK_DOWN_EVENT            1
 
+#define ipconfigUSE_RMII    1
+
 #endif /* FREERTOS_IP_CONFIG_H */
