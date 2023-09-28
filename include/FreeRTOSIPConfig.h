@@ -80,6 +80,7 @@ extern void vLoggingPrintf( const char * pcFormatString,
  * then set ipconfigDRIVER_INCLUDED_RX_IP_CHECKSUM to 1 to prevent the software
  * stack repeating the checksum calculations. */
 #define ipconfigDRIVER_INCLUDED_RX_IP_CHECKSUM     1
+#define ipconfigDRIVER_INCLUDED_TX_IP_CHECKSUM     1
 
 /* Several API's will block until the result is known, or the action has been
  * performed, for example FreeRTOS_send() and FreeRTOS_recv(). The timeouts can be
@@ -322,5 +323,11 @@ extern UBaseType_t uxRand();
 #if INTPTR_MAX == INT64_MAX
     #define ipconfigBUFFER_PADDING    ( 14U )
 #endif /* INTPTR_MAX == INT64_MAX */
+
+// https://github.com/FreeRTOS/FreeRTOS-Plus-TCP/blob/main/source/portable/NetworkInterface/STM32Fxx/readme.md
+#define ipconfigZERO_COPY_RX_DRIVER                   1
+#define ipconfigZERO_COPY_TX_DRIVER                   1
+#define ipconfigUSE_LINKED_RX_MESSAGES                1
+#define ipconfigSUPPORT_NETWORK_DOWN_EVENT            1
 
 #endif /* FREERTOS_IP_CONFIG_H */
