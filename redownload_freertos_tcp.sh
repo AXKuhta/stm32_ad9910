@@ -4,7 +4,7 @@ git clone https://github.com/FreeRTOS/FreeRTOS-Plus-TCP --branch=V4.0.0 --depth=
 cd FreeRTOS-Plus-TCP
 
 # :(glob)source/*.c означает восстановление файлов в source/, но не глубже, т.е. не уходит в поддиректории
-git checkout origin/V4.0.0 ":(glob)source/*.c" source/include source/portable/NetworkInterface/Common/ source/portable/NetworkInterface/STM32Fxx/ source/portable/NetworkInterface/include/ source/portable/BufferManagement/BufferAllocation_1.c
+git checkout origin/V4.0.0 ":(glob)source/*.c" source/include source/portable/NetworkInterface/Common/ source/portable/NetworkInterface/STM32Fxx/ source/portable/NetworkInterface/include/ source/portable/BufferManagement/BufferAllocation_1.c source/portable/Compiler/GCC/
 
 cd ..
 
