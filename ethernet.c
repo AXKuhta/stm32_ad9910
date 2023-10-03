@@ -1,6 +1,3 @@
-#include <assert.h>
-#include <stdio.h>
-
 #include "stm32f7xx_hal.h"
 #include "FreeRTOSConfig.h"
 
@@ -31,8 +28,6 @@
 #define RMII_TXD1			GPIOB, GPIO_PIN_13
 
 static void ethernet_init() {
-	printf("Eth init >>>\n");
-
 	__HAL_RCC_ETHMAC_CLK_ENABLE();
 	__HAL_RCC_ETHMACTX_CLK_ENABLE();
 	__HAL_RCC_ETHMACRX_CLK_ENABLE();
@@ -54,8 +49,6 @@ static void ethernet_init() {
 
 	HAL_NVIC_SetPriority(ETH_IRQn, configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY, 0);
 	HAL_NVIC_EnableIRQ(ETH_IRQn);
-
-	printf("Eth init <<<\n");
 }
 
 void HAL_ETH_MspInit(ETH_HandleTypeDef* xETH_Handle) {

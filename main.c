@@ -65,7 +65,7 @@ static void init_task(void* params) {
 
 	while (1) {
 		isr_recorder_sync();
-		deferred_daemon_run_all();
+		//deferred_daemon_run_all();
 	}
 }
 
