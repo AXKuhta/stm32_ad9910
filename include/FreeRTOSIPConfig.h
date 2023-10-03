@@ -67,9 +67,9 @@ extern void vLoggingPrintf( const char * pcFormatString,
  * FreeRTOS_netstat() command, and ping replies. If ipconfigHAS_PRINTF is set to 1
  * then FreeRTOS_printf should be set to the function used to print out the
  * messages. */
-#define ipconfigHAS_PRINTF    0
+#define ipconfigHAS_PRINTF    1
 #if ( ipconfigHAS_PRINTF == 1 )
-    #define FreeRTOS_printf( X )    vLoggingPrintf X
+    #define FreeRTOS_printf( X )    printf X
 #endif
 
 /* Define the byte order of the target MCU (the MCU FreeRTOS+TCP is executing
@@ -91,10 +91,10 @@ extern void vLoggingPrintf( const char * pcFormatString,
 
 /* Include support for LLMNR: Link-local Multicast Name Resolution
  * (non-Microsoft) */
-#define ipconfigUSE_LLMNR                          ( 1 )
+#define ipconfigUSE_LLMNR                          ( 0 )
 
 /* Include support for NBNS: NetBIOS Name Service (Microsoft) */
-#define ipconfigUSE_NBNS                           ( 1 )
+#define ipconfigUSE_NBNS                           ( 0 )
 
 /* Include support for DNS caching. For TCP, having a small DNS cache is very
  * useful. When a cache is present, ipconfigDNS_REQUEST_ATTEMPTS can be kept low
@@ -161,7 +161,7 @@ extern UBaseType_t uxRand();
  * set to 1 if a valid configuration cannot be obtained from a DHCP server for any
  * reason. The static configuration used is that passed into the stack by the
  * FreeRTOS_IPInit() function call. */
-#define ipconfigUSE_DHCP                               1
+#define ipconfigUSE_DHCP                               0
 
 /* When ipconfigUSE_DHCP is set to 1, DHCP requests will be sent out at
  * increasing time intervals until either a reply is received from a DHCP server
@@ -252,7 +252,7 @@ extern UBaseType_t uxRand();
 
 /* Set ipconfigUSE_DNS to 1 to include a basic DNS client/resolver. DNS is used
  * through the FreeRTOS_gethostbyname() API function. */
-#define ipconfigUSE_DNS                                1
+#define ipconfigUSE_DNS                                0
 
 /* If ipconfigREPLY_TO_INCOMING_PINGS is set to 1 then the IP stack will
  * generate replies to incoming ICMP echo (ping) requests. */
