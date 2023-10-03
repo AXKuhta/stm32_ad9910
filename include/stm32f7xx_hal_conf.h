@@ -197,10 +197,10 @@
 #define MAC_ADDR5   0U
 
 /* Definition of the Ethernet driver buffers size and count */   
-#define ETH_RX_BUF_SIZE                1528U    /* ETH Max buffer size for receive               */
-#define ETH_TX_BUF_SIZE                1528U    /* ETH Max buffer size for transmit              */
-#define ETH_RXBUFNB                    5U       /* 5 Rx buffers of size ETH_RX_BUF_SIZE  */
-#define ETH_TXBUFNB                    5U       /* 5 Tx buffers of size ETH_TX_BUF_SIZE  */
+#define ETH_RX_BUF_SIZE                1536U    /* ETH Max buffer size for receive               */
+#define ETH_TX_BUF_SIZE                1536U    /* ETH Max buffer size for transmit              */
+#define ETH_RXBUFNB                    4U       /* 4 Rx buffers of size ETH_RX_BUF_SIZE  */
+#define ETH_TXBUFNB                    4U       /* 4 Tx buffers of size ETH_TX_BUF_SIZE  */
 
 /* Section 2: PHY configuration section */
 /* LAN8742A PHY Address*/
