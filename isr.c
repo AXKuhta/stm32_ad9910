@@ -91,24 +91,24 @@ void UsageFault_Handler(void) {
 }
 
 // FreeRTOS scheduler
-void vPortSVCHandler();
-void xPortPendSVHandler();
+//void vPortSVCHandler();
+//void xPortPendSVHandler();
 void xPortSysTickHandler();
 
-void SVC_Handler(void) {
-	vPortSVCHandler();
+// void SVC_Handler(void) {
+// 	vPortSVCHandler();
 
-	RECORD_INTERRUPT();
-}
+// 	RECORD_INTERRUPT();
+// }
 
 void DebugMon_Handler(void) {
 }
 
-void PendSV_Handler(void) {
-	xPortPendSVHandler();
+// void PendSV_Handler(void) {
+// 	xPortPendSVHandler();
 
-	RECORD_INTERRUPT();
-}
+// 	RECORD_INTERRUPT();
+// }
 
 void SysTick_Handler(void) {
 	HAL_IncTick();
