@@ -51,7 +51,7 @@ void print_it() {
 
 void isr_recorder_sync() {
 	if (isr_recorder_collision) {
-		printf("Interrupt recorder index collision");
+		printf("Interrupt recorder index collision\n");
 		while (1) {};
 	}
 }
