@@ -7,7 +7,7 @@ LDSCRIPT_SUBDIR = STM32CubeF7/Projects/STM32F746ZG-Nucleo/Templates/SW4STM32/STM
 LDSCRIPT = $(LDSCRIPT_SUBDIR)/STM32F746ZGTx_FLASH.ld
 
 FREERTOS_SUBDIR = FreeRTOS-Kernel
-FREERTOS_SOURCE = $(wildcard $(FREERTOS_SUBDIR)/*.c) $(wildcard $(FREERTOS_SUBDIR)/portable/GCC/ARM_CM7/r0p1/*.c) $(wildcard freertos_extras/*.c)
+FREERTOS_SOURCE = $(wildcard $(FREERTOS_SUBDIR)/*.c) $(wildcard $(FREERTOS_SUBDIR)/portable/GCC/ARM_CM7/r0p1/*.c) $(wildcard $(FREERTOS_SUBDIR)/portable/MemMang/*.c) $(wildcard freertos_extras/*.c)
 FREERTOS_OBJS = $(FREERTOS_SOURCE:c=o)
 
 FREERTOS_PLUS_TCP_SUBDIR = FreeRTOS-Plus-TCP
@@ -40,7 +40,7 @@ MCU_FLAGS := -mcpu=cortex-m7 -mfpu=fpv4-sp-d16 -mfloat-abi=hard
 
 CC	 = arm-none-eabi-gcc
 FLAGS	 = $(MCU_FLAGS) $(DEFINES) $(INCLUDE) -g -c -O2 -Wall -Wextra
-LFLAGS	 = $(MCU_FLAGS) -T $(LDSCRIPT) -Wl,--print-memory-usage -Wl,--gc-sections -Wl,--wrap=malloc -Wl,--wrap=_malloc_r -Wl,-Map=firmware.map,--cref --specs=nosys.specs --specs=nano.specs -u _printf_float -u _scanf_float
+LFLAGS	 = $(MCU_FLAGS) -T $(LDSCRIPT) -Wl,--print-memory-usage -Wl,--gc-sections -Wl,-Map=firmware.map,--cref --specs=nosys.specs --specs=nano.specs -u _printf_float -u _scanf_float
 ################################################################################
 
 
@@ -72,9 +72,6 @@ FreeRTOS-Plus-TCP/%.o: FreeRTOS-Plus-TCP/%.c
 # Silence some warnings found in STM32 HAL code
 %/stm32f7xx_hal_pwr.o: FLAGS += -Wno-unused-parameter
 %/stm32f7xx_ll_utils.o: FLAGS += -Wno-unused-parameter
-
-# Newlib malloc/free adapter needs a constant defined and a warning silenced
-%/heap_useNewlib_ST.o: FLAGS += -D"configISR_STACK_SIZE_WORDS=128" -Wno-unused-parameter
 
 # Startup
 %.o: %.s
