@@ -8,8 +8,7 @@
 // =============================================================================
 // INTERRUPT PROFILER
 // =============================================================================
-#define LIST_SIZE 64
-#define REC_SLOTS 16
+#define LIST_SIZE 48
 
 typedef struct interrupt_t {
 	const char* title;
