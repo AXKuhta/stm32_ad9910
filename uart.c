@@ -93,7 +93,7 @@ void parse() {
 	do {
 		run(buf);
 		buf = get_next_str(buf);
-	} while (*buf != 0);
+	} while (buf);
 
 	restart_rx();
 }
