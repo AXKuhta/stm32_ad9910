@@ -103,6 +103,10 @@ void input_overrun_error() {
 	while (1) {};
 }
 
+void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
+	run_later(input_overrun_error);
+}
+
 // This function is called when the line goes idle
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size) {
 	uint16_t space_remains = huart->RxXferCount;

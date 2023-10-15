@@ -37,7 +37,9 @@ void usart3_rx_dma_init() {
 
 	__HAL_LINKDMA(&usart3, hdmarx, dma_usart3_rx);
 
-	HAL_NVIC_SetPriority(DMA1_Stream1_IRQn, 1, 0);
+	// Это прерывание может вызывать HAL_UART_ErrorCallback, который, в свою очередь, может взаимодействовать с очередями FreeRTOS
+	// Так что оставить здесь низкий приоритет
+	HAL_NVIC_SetPriority(DMA1_Stream1_IRQn, 7, 0);
 	HAL_NVIC_EnableIRQ(DMA1_Stream1_IRQn);
 }
 
