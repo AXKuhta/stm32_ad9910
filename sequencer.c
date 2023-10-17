@@ -138,7 +138,6 @@ uint8_t tone_profile = GPIO_PIN_13 >> 8;
 extern DMA_HandleTypeDef dma_timer8_up;
 extern TIM_HandleTypeDef timer8;
 extern TIM_HandleTypeDef timer2;
-extern uint16_t dma_buf[];
 
 void pulse_complete_callback() {
 	seq_entry_t entry = sequence->elements[seq_index++ % sequence->size];
@@ -169,7 +168,7 @@ void pulse_complete_callback() {
 	}
 
 	// Можно производить запись только в верхнюю часть регистра ODR, сдвинув адрес на 1
-	// DMA работает в режиме DMA_CIRCULAR, модуляция будет идти по кругу
+	// Если DMA был настроен в режим DMA_CIRCULAR, то модуляция будет идти по кругу
 	HAL_DMA_Start(&dma_timer8_up, (uint32_t)profile_mod_buffer, (uint32_t)&GPIOD->ODR + 1, profile_mod_size);
 	__HAL_TIM_ENABLE_DMA(&timer8, TIM_DMA_UPDATE);
 
