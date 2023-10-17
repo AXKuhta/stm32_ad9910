@@ -65,7 +65,7 @@ void usart3_deinit() {
 // INPUT HANDLING
 // =============================================================================
 #define INPUT_BUFFER_SIZE 1024
-uint8_t input_buffer[INPUT_BUFFER_SIZE] = {0};
+uint8_t input_buffer[INPUT_BUFFER_SIZE] __ALIGNED(32) = {0};
 
 void restart_rx() {
 	memset(input_buffer, 0, INPUT_BUFFER_SIZE);
@@ -112,6 +112,10 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size) {
 	uint16_t space_remains = huart->RxXferCount;
 	uint8_t* base = huart->pRxBuffPtr;
 	uint8_t* last = base - 1 + Size;
+
+	// Must do this or it will look to ARM like the memory is still 0
+	// ...Except when input_buffer is in the first 64KB of SRAM which is uncached
+	SCB_InvalidateDCache_by_Addr(input_buffer, INPUT_BUFFER_SIZE);
 
 	// Performance
 	extern uint32_t perf_usart3_bytes_rx;
