@@ -3,6 +3,7 @@
 
 #include "freertos_extras/deferred.h"
 #include "stm32f7xx_hal.h"
+#include "server.h"
 #include "init.h"
 #include "isr.h"
 
@@ -62,6 +63,8 @@ static void init_task(void* params) {
 	init_deferred_daemon();
 
 	FreeRTOS_IPInit(IP, Mask, Gateway, DNSServer, MAC);
+
+	xTaskCreate( server_task, "srv", configMINIMAL_STACK_SIZE*4, NULL, 1, NULL);
 
 	while (1) {
 		isr_recorder_sync();
