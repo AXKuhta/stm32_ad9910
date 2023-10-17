@@ -1,6 +1,8 @@
 #include <stdint.h>
 #include <stdio.h>
 
+#include "FreeRTOS.h"
+
 uint32_t perf_usart3_bytes_rx = 0;
 uint32_t perf_usart3_bytes_tx = 0;
 
@@ -19,4 +21,6 @@ void print_perf() {
 	printf("%10ld %s\n", perf_spi4_bytes_tx, "spi4 bytes tx");
 
 	printf("%10ld %s\n", perf_wakeups, "wakeups");
+
+	printf("%10u %s\n", xPortGetFreeHeapSize(), "heap bytes unused");
 }
