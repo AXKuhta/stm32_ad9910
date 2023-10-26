@@ -3,6 +3,46 @@
 
 #include "FreeRTOS_IP.h"
 
+// Прочитать HTTP запрос + заголовки + тело
+static void read_request(Socket_t client) {
+	char buffer[128] = {0}; // Буффер строки
+	size_t last = 0;
+
+	BaseType_t status;
+
+	while (1) {
+		size_t avail = 128 - last;
+
+		assert(avail >= 1);
+
+		status = FreeRTOS_recv(client, buffer + last, avail, 0);
+
+		if (status < 0)
+			return;
+
+		last += status;
+
+		// Поиск \r\n
+		for (size_t i = 0; i < last; i++) {
+			int found = (memcmp(buffer + i, "\r\n", 2) == 0);
+
+			if (found) {
+				buffer[i] = 0;
+				printf("Header: %s\n", buffer);
+				memmove(buffer, buffer + i + 2, 128 - i - 2);
+
+				// Нашёлся \r\n\r\n - заголовки кончились
+				if (i == 0) {
+					printf("Headers ended; should read body now\n");
+					return;
+				}
+
+				break;
+			}
+		}
+	}
+}
+
 // Отправить большой буффер
 static void send_all(Socket_t client, char* data, size_t size) {
 	size_t pending = size;
@@ -62,6 +102,8 @@ void server_task(void* params) {
 			continue;
 
 		printf("Client connected\n");
+
+		read_request(client);
 
 		char* response = 	"HTTP/1.0 200 OK\r\n\r\n"
 							"<!DOCTYPE html>"
