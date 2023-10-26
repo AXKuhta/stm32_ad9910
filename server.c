@@ -126,10 +126,14 @@ void server_task(void* params) {
 		BaseType_t shut_status;
 
 		// Wait for it to shut down
-		do {
+		for (int i = 0; i < 2; i++) {
 			shut_status = FreeRTOS_recv(client, shut_buf, 8, 0);
-			printf("Shut status: %lu\n", shut_status);
-		} while (shut_status >= 0);
+
+			if (shut_status < 0)
+				break;
+
+			printf("....waiting for FIN\n");
+		}
 
 		printf("Client disconnected\n");
 
