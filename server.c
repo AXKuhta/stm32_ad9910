@@ -22,8 +22,10 @@ static void read_request(Socket_t client) {
 
 		last += status;
 
+		size_t i = 0;
+
 		// Поиск \r\n
-		for (size_t i = 0; i < last; i++) {
+		while (last >= 2) {
 			int found = (memcmp(buffer + i, "\r\n", 2) == 0);
 
 			if (found) {
@@ -37,7 +39,10 @@ static void read_request(Socket_t client) {
 					return;
 				}
 
-				break;
+				last -= i + 2;
+				i = 0;
+			} else {
+				i++;
 			}
 		}
 	}
