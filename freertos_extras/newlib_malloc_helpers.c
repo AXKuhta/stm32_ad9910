@@ -21,8 +21,8 @@ static uint8_t* currentHeapPos = &_heapStart;
 
 size_t xPortGetFreeHeapSize( void )
 {
-   struct mallinfo info = mallinfo();
-   return ( info.fordblks + (size_t)(&_heapEnd - currentHeapPos) );
+	struct mallinfo info = mallinfo();
+	return ( info.fordblks + (size_t)(&_heapEnd - currentHeapPos) );
 }
 
 //      The application may choose to override this function.  Note that
@@ -33,7 +33,8 @@ size_t xPortGetFreeHeapSize( void )
 //
 __attribute__((weak)) void sbrkFailedHook( ptrdiff_t size )
 {
-   configASSERT(0);
+	(void) size;
+	configASSERT(0);
 }
 
 //      The implementation of _sbrk_r() included in some builds of newlib
@@ -41,22 +42,22 @@ __attribute__((weak)) void sbrkFailedHook( ptrdiff_t size )
 //
 void* _sbrk_r(struct _reent *reent, ptrdiff_t size)
 {
-   void* returnValue;
+	void* returnValue;
 
-   if (currentHeapPos + size > &_heapEnd)
-   {
-      sbrkFailedHook(size);
+	if (currentHeapPos + size > &_heapEnd)
+	{
+		sbrkFailedHook(size);
 
-      reent->_errno = ENOMEM;
-      returnValue = (void*)-1;
-   }
-   else
-   {
-      returnValue = (void*)currentHeapPos;
-      currentHeapPos += size;
-   }
+		reent->_errno = ENOMEM;
+		returnValue = (void*)-1;
+	}
+	else
+	{
+		returnValue = (void*)currentHeapPos;
+		currentHeapPos += size;
+	}
 
-   return (returnValue);
+	return (returnValue);
 }
 
 //      In the pre-emptive multitasking environment provided by FreeRTOS,
@@ -69,10 +70,12 @@ void* _sbrk_r(struct _reent *reent, ptrdiff_t size)
 //
 void __malloc_lock(struct _reent *r)
 {
-   vTaskSuspendAll();
+	(void)r;
+	vTaskSuspendAll();
 }
 
 void __malloc_unlock(struct _reent *r)
 {
-   xTaskResumeAll();
+	(void)r;
+	xTaskResumeAll();
 }

@@ -104,6 +104,8 @@ void input_overrun_error() {
 }
 
 void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
+	(void)huart;
+
 	run_later(input_overrun_error);
 }
 
@@ -115,7 +117,7 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size) {
 
 	// Must do this or it will look to ARM like the memory is still 0
 	// ...Except when input_buffer is in the first 64KB of SRAM which is uncached
-	SCB_InvalidateDCache_by_Addr(input_buffer, INPUT_BUFFER_SIZE);
+	SCB_InvalidateDCache_by_Addr((uint32_t*)input_buffer, INPUT_BUFFER_SIZE);
 
 	// Performance
 	extern uint32_t perf_usart3_bytes_rx;
