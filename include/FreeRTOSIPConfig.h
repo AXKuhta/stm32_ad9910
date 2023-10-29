@@ -332,4 +332,13 @@ extern UBaseType_t uxRand();
 
 #define ipconfigUSE_RMII    1
 
+// Performance counters
+extern uint32_t perf_eth_frames_rx;
+extern uint32_t perf_eth_frames_tx;
+extern uint32_t perf_eth_bytes_rx;
+extern uint32_t perf_eth_bytes_tx;
+
+#define iptraceNETWORK_INTERFACE_INPUT( uxDataLength, pucEthernetBuffer ) perf_eth_bytes_rx += uxDataLength, perf_eth_frames_rx++
+#define iptraceNETWORK_INTERFACE_OUTPUT( uxDataLength, pucEthernetBuffer ) perf_eth_bytes_tx += uxDataLength, perf_eth_frames_tx++
+
 #endif /* FREERTOS_IP_CONFIG_H */
