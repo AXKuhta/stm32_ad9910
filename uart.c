@@ -69,7 +69,7 @@ uint8_t input_buffer[INPUT_BUFFER_SIZE] __ALIGNED(32) = {0};
 
 void restart_rx() {
 	memset(input_buffer, 0, INPUT_BUFFER_SIZE);
-	_write(0, "\r> ", 3);
+	_write(1, "\r> ", 3);
 	assert(HAL_UARTEx_ReceiveToIdle_DMA(&usart3, input_buffer, INPUT_BUFFER_SIZE - 1) == HAL_OK);
 }
 
@@ -124,13 +124,13 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size) {
 	perf_usart3_bytes_rx += Size;
 
 	// Echo keypresses
-	_write(0, (char*)base, Size);
+	_write(1, (char*)base, Size);
 
 	// Backspace handling
 	// Different terminals may send different backspace codes
 	// Handle both types
 	if (*last == 127) {
-		_write(0, (char[]){8, ' ', 8}, 3);
+		_write(1, (char[]){8, ' ', 8}, 3);
 		*last = 8;
 	}
 
@@ -152,7 +152,7 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size) {
 
 	// Ensure that memory will remain untouched while parsing
 	if (*last == '\n' || *last == '\r') {
-		_write(0, "\n", 1);
+		_write(1, "\n", 1);
 		run_later(parse);
 	} else {
 		HAL_UARTEx_ReceiveToIdle_DMA(huart, base + Size, space_remains);
