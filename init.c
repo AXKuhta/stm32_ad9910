@@ -154,8 +154,8 @@ void system_init() {
 	/* Configure the MPU attributes */
 	MPU_Config();
 
-	/* Enable the CPU Cache */
-	CPU_CACHE_Enable();
+	// Leave the cache disabled
+	//CPU_CACHE_Enable();
 	
 	/* STM32F7xx HAL library initialization:
 			 - Configure the Flash ART accelerator
