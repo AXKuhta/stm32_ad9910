@@ -70,6 +70,55 @@ static void send_all(Socket_t client, char* data, size_t size) {
 	}
 }
 
+static void client_task(void* params) {
+	Socket_t client = params;
+
+	read_request(client);
+
+	char* response = 	"HTTP/1.0 200 OK\r\n\r\n"
+						"<!DOCTYPE html>"
+						"Hello!!!!!!!";
+
+	send_all(client, response, strlen(response));
+
+	printf("All data sent\n");
+
+	FreeRTOS_shutdown(client, FREERTOS_SHUT_RDWR);
+
+	printf("Shutdown signalled\n");
+
+	char shut_buf[8];
+	BaseType_t shut_status;
+
+	// Wait for it to shut down
+	for (int i = 0; i < 2; i++) {
+		shut_status = FreeRTOS_recv(client, shut_buf, 8, 0);
+
+		if (shut_status < 0)
+			break;
+
+		printf("....waiting for FIN\n");
+	}
+
+	printf("Client disconnected\n");
+
+	printf("Close socket: %lu\n", FreeRTOS_closesocket(client));
+
+	// https://forums.freertos.org/t/making-sure-a-deleted-tasks-os-clib-resources-have-been-freed/11132/29
+	if (stdout) {
+		fclose(stdout);
+	}
+	if (stderr) {
+		fclose(stderr);
+	}
+	if (stdin) {
+		fclose(stdin);
+	}
+
+	// Nothing to return to, must delete self instead
+	vTaskDelete(NULL);
+}
+
 void server_task(void* params) {
 	(void) params;
 
@@ -108,35 +157,6 @@ void server_task(void* params) {
 
 		printf("Client connected\n");
 
-		read_request(client);
-
-		char* response = 	"HTTP/1.0 200 OK\r\n\r\n"
-							"<!DOCTYPE html>"
-							"Hello!!!!!!!";
-
-		send_all(client, response, strlen(response));
-
-		printf("All data sent\n");
-
-		FreeRTOS_shutdown(client, FREERTOS_SHUT_RDWR);
-
-		printf("Shutdown signalled\n");
-
-		char shut_buf[8];
-		BaseType_t shut_status;
-
-		// Wait for it to shut down
-		for (int i = 0; i < 2; i++) {
-			shut_status = FreeRTOS_recv(client, shut_buf, 8, 0);
-
-			if (shut_status < 0)
-				break;
-
-			printf("....waiting for FIN\n");
-		}
-
-		printf("Client disconnected\n");
-
-		printf("Close socket: %lu\n", FreeRTOS_closesocket(client));
+		xTaskCreate( client_task, "srvclient", configMINIMAL_STACK_SIZE*4, client, 1, NULL);
 	}
 }
