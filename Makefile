@@ -68,6 +68,11 @@ syscalls.o: syscalls.c
 %/stm32f7xx_hal_pwr.o: FLAGS += -Wno-unused-parameter
 %/stm32f7xx_ll_utils.o: FLAGS += -Wno-unused-parameter
 
+# Silence some warnings found in FreeRTOS-Plus-TCP
+%/FreeRTOS_IPv4.o: FLAGS += -Wno-format
+%/FreeRTOS_Routing.o: FLAGS += -Wno-unused-but-set-variable
+%/NetworkInterface.o: FLAGS += -Wno-sign-compare
+
 # Startup
 %.o: %.s
 	@echo " [AS]" $<
