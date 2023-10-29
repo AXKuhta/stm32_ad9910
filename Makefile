@@ -64,11 +64,6 @@ syscalls.o: syscalls.c
 	@echo " [CC]" $<
 	@$(CC) $(FLAGS) -o $@ $<
 
-# Except FreeRTOS-Plus-TCP without LTO
-FreeRTOS-Plus-TCP/%.o: FreeRTOS-Plus-TCP/%.c
-	@echo " [CC NO LTO]" $<
-	@$(CC) $(FLAGS) -o $@ $<
-
 # Silence some warnings found in STM32 HAL code
 %/stm32f7xx_hal_pwr.o: FLAGS += -Wno-unused-parameter
 %/stm32f7xx_ll_utils.o: FLAGS += -Wno-unused-parameter
