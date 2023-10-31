@@ -2,51 +2,7 @@
 #include <assert.h>
 
 #include "FreeRTOS_IP.h"
-
-// Прочитать HTTP запрос + заголовки + тело
-static void read_request(Socket_t client) {
-	char buffer[128] = {0}; // Буффер строки
-	size_t last = 0;
-
-	BaseType_t status;
-
-	while (1) {
-		size_t avail = 128 - last;
-
-		assert(avail >= 1);
-
-		status = FreeRTOS_recv(client, buffer + last, avail, 0);
-
-		if (status < 0)
-			return;
-
-		last += status;
-
-		size_t i = 0;
-
-		// Поиск \r\n
-		while (last >= 2) {
-			int found = (memcmp(buffer + i, "\r\n", 2) == 0);
-
-			if (found) {
-				buffer[i] = 0;
-				printf("Header: %s\n", buffer);
-				memmove(buffer, buffer + i + 2, 128 - i - 2);
-
-				// Нашёлся \r\n\r\n - заголовки кончились
-				if (i == 0) {
-					printf("Headers ended; should read body now\n");
-					return;
-				}
-
-				last -= i + 2;
-				i = 0;
-			} else {
-				i++;
-			}
-		}
-	}
-}
+#include "uart_cli.h"
 
 // Отправить большой буффер
 static void send_all(Socket_t client, char* data, size_t size) {
@@ -70,18 +26,54 @@ static void send_all(Socket_t client, char* data, size_t size) {
 	}
 }
 
+static void read_lines(Socket_t client) {
+	char buffer[128] = {0}; // Буффер строки
+	size_t last = 0;
+
+	BaseType_t status;
+
+	while (1) {
+		size_t avail = 128 - last;
+
+		assert(avail >= 1);
+
+		status = FreeRTOS_recv(client, buffer + last, avail, 0);
+
+		if (status < 0)
+			return;
+
+		last += status;
+
+		size_t i = 0;
+
+		// Поиск \r\n
+		while (last >= 1) {
+			int found = (memcmp(buffer + i, "\n", 1) == 0);
+
+			if (found) {
+				buffer[i] = 0;
+				printf("Line: %s\n", buffer);
+				run(buffer);
+				send_all(client, "> ", 2);
+				memmove(buffer, buffer + i + 1, 128 - i - 1);
+
+				last -= i + 1;
+				i = 0;
+			} else {
+				i++;
+			}
+		}
+	}
+}
+
 static void client_task(void* params) {
 	Socket_t client = params;
 
-	read_request(client);
+	send_all(client, "Hello!\n> ", 9);
 
-	char* response = 	"HTTP/1.0 200 OK\r\n\r\n"
-						"<!DOCTYPE html>"
-						"Hello!!!!!!!";
+	read_lines(client);
 
-	send_all(client, response, strlen(response));
-
-	printf("All data sent\n");
+	printf("End of data\n");
 
 	FreeRTOS_shutdown(client, FREERTOS_SHUT_RDWR);
 
