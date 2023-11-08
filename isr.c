@@ -165,12 +165,10 @@ void TIM8_UP_TIM13_IRQHandler() {
 	RECORD_INTERRUPT();
 }
 
-extern ETH_HandleTypeDef xETH;
+void ETH_IRQHandler_real(void);
 
-void ETH_IRQHandler( void )
-{
-    HAL_ETH_IRQHandler( &xETH );
-
+void ETH_IRQHandler() {
+	ETH_IRQHandler_real();
 	RECORD_INTERRUPT();
 }
 

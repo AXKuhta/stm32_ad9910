@@ -341,4 +341,10 @@ extern uint32_t perf_eth_bytes_tx;
 #define iptraceNETWORK_INTERFACE_INPUT( uxDataLength, pucEthernetBuffer ) perf_eth_bytes_rx += uxDataLength, perf_eth_frames_rx++
 #define iptraceNETWORK_INTERFACE_OUTPUT( uxDataLength, pucEthernetBuffer ) perf_eth_bytes_tx += uxDataLength, perf_eth_frames_tx++
 
+// STM32F7's NetworkInterface.c defines its own ETH_IRQHandler() but we want to wrap it for the interrupt counter
+#define ETH_IRQHandler ETH_IRQHandler_real
+
+// Unimplemented
+#define xPortGetMinimumEverFreeHeapSize() 0
+
 #endif /* FREERTOS_IP_CONFIG_H */
