@@ -3,9 +3,6 @@
 ################################################################################
 # SOURCE FILES
 ################################################################################
-LDSCRIPT_SUBDIR = STM32CubeF7/Projects/STM32F746ZG-Nucleo/Templates/SW4STM32/STM32F746ZG_Nucleo_ITCM-FLASH
-LDSCRIPT = $(LDSCRIPT_SUBDIR)/STM32F746ZGTx_FLASH.ld
-
 FREERTOS_SUBDIR = FreeRTOS-Kernel
 FREERTOS_SOURCE = $(wildcard $(FREERTOS_SUBDIR)/*.c) $(wildcard $(FREERTOS_SUBDIR)/portable/GCC/ARM_CM7/r0p1/*.c) $(wildcard $(FREERTOS_SUBDIR)/portable/MemMang/*.c) $(wildcard freertos_extras/*.c)
 FREERTOS_OBJS = $(FREERTOS_SOURCE:c=o)
@@ -26,6 +23,8 @@ APP_SOURCE = $(wildcard *.c) $(wildcard ad9910/*.c)
 APP_OBJS = $(APP_SOURCE:c=o)
 
 OBJS = $(STARTUP_OBJ) $(HAL_OBJS) $(APP_OBJS) $(FREERTOS_OBJS) $(FREERTOS_PLUS_TCP_OBJS)
+
+LDSCRIPT = STM32F746ZGTx_FLASH.ld
 ################################################################################
 
 
