@@ -73,6 +73,8 @@ static void init_task(void* params) {
 }
 
 int main(void) {
+	init_allocator();
+
 	xTaskCreate( init_task, "init", configMINIMAL_STACK_SIZE*8, NULL, 1, NULL);
 	vTaskStartScheduler();
 
