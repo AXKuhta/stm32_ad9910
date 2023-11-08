@@ -21,8 +21,9 @@ static uint8_t* currentHeapPos = &_heapStart;
 
 size_t xPortGetFreeHeapSize( void )
 {
-	struct mallinfo info = mallinfo();
-	return ( info.fordblks + (size_t)(&_heapEnd - currentHeapPos) );
+	return 0;
+//	struct mallinfo info = mallinfo();
+//	return ( info.fordblks + (size_t)(&_heapEnd - currentHeapPos) );
 }
 
 //      The application may choose to override this function.  Note that

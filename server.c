@@ -96,17 +96,6 @@ static void client_task(void* params) {
 
 	printf("Close socket: %lu\n", FreeRTOS_closesocket(client));
 
-	// https://forums.freertos.org/t/making-sure-a-deleted-tasks-os-clib-resources-have-been-freed/11132/29
-	if (stdout) {
-		fclose(stdout);
-	}
-	if (stderr) {
-		fclose(stderr);
-	}
-	if (stdin) {
-		fclose(stdin);
-	}
-
 	// Nothing to return to, must delete self instead
 	vTaskDelete(NULL);
 }
