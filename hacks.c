@@ -19,30 +19,6 @@ void* realloc(void* ptr, size_t size) {
 	return 0;
 }
 
-void* memset(void* ptr, int pattern, size_t size) {
-	return 0;
-}
-
-int memcmp(const void* s1, const void* s2, size_t n) {
-	return 0;
-}
-
-void* memmove(void* dst, const void* src, size_t n) {
-	return 0;
-}
-
-void* memcpy(void* restrict dst, const void* restrict src, size_t n) {
-	return 0;
-}
-
-int strcasecmp(const char *s1, const char *s2) {
-	return 0;
-}
-
-int strcmp(const char *s1, const char *s2) {
-	return 0;
-}
-
 int sscanf(const char *restrict str, const char *restrict format, ...) {
 	return 0;
 }
@@ -52,9 +28,5 @@ int snprintf(char* restrict str, size_t size, const char *restrict format, ...) 
 }
 
 int asprintf(char **restrict strp, const char *restrict fmt, ...) {
-	return 0;
-}
-
-unsigned long strtoul(const char *restrict nptr, char **restrict endptr, int base) {
 	return 0;
 }

@@ -51,7 +51,7 @@ all: firmware.elf
 
 firmware.elf: $(OBJS)
 	@echo " [LD] firmware.elf"
-	@$(CC) -g $^ -o firmware.elf $(LFLAGS)
+	@$(CC) -g $^ libc.a -o firmware.elf $(LFLAGS)
 
 # All .c files
 %.o: %.c
