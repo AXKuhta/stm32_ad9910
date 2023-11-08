@@ -1,5 +1,8 @@
 #include "stm32f7xx_hal.h"
 
+// Placed here because this file is built without LTO
+void* stdout = NULL;
+
 extern UART_HandleTypeDef usart3;
 
 int _write(int handle, char* data, int size) {

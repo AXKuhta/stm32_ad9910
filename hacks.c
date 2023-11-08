@@ -1,32 +1,48 @@
-#include <stddef.h>
+#include <string.h>
+#include <stdarg.h>
+#include <stdlib.h>
+#include <stdio.h>
 
-void __libc_init_array(void) {
-}
+#include "syscalls.h"
 
-int puts(const char* str) {
-	return 0;
-}
-
-int printf(const char *restrict format, ...) {
+void* realloc(void* ptr, size_t size) {
+	(void)ptr;
+	(void)size;
+	while (1) {}
 	return 0;
 }
 
 void __assert_func (const char * file, int line, const char * func, const char * msg) {
+	printf("%s:%d %s(): %s\n", file, line, func, msg);
 	while (1) {}
 }
 
-void* realloc(void* ptr, size_t size) {
-	return 0;
+int puts(const char* str) {
+	return _write(1, str, strlen(str));
+}
+
+int printf(const char *restrict fmt, ...) {
+	va_list ap;
+	int i;
+
+	char* buf = malloc(128);
+
+	va_start(ap, fmt);
+	i = vsnprintf(buf, 128, fmt, ap);
+	va_end(ap);
+
+	puts(buf);
+	free(buf);
+
+	return i;
+}
+
+/*
+void __libc_init_array(void) {
 }
 
 int sscanf(const char *restrict str, const char *restrict format, ...) {
 	return 0;
 }
+*/
 
-int snprintf(char* restrict str, size_t size, const char *restrict format, ...) {
-	return 0;
-}
-
-int asprintf(char **restrict strp, const char *restrict fmt, ...) {
-	return 0;
-}
