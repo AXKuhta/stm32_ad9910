@@ -54,3 +54,7 @@ int snprintf(char* restrict str, size_t size, const char *restrict format, ...) 
 int asprintf(char **restrict strp, const char *restrict fmt, ...) {
 	return 0;
 }
+
+unsigned long strtoul(const char *restrict nptr, char **restrict endptr, int base) {
+	return 0;
+}
