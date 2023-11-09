@@ -55,7 +55,7 @@ static void read_lines(Socket_t client) {
 
 			if (found) {
 				buffer[i] = 0;
-				printf("Line: %s\n", buffer);
+
 				run(buffer);
 				send_all(client, "> ", 2);
 				memmove(buffer, buffer + i + 1, 128 - i - 1);
@@ -76,6 +76,8 @@ static void client_task(void* params) {
 	send_all(client, "Hello!\n> ", 9);
 
 	read_lines(client);
+
+	vTaskSetThreadLocalStoragePointer(NULL, 0, 0);
 
 	printf("End of data\n");
 
