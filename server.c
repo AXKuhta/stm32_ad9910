@@ -1,11 +1,14 @@
 
 #include <assert.h>
 
+#include "FreeRTOS.h"
+#include "task.h"
+
 #include "FreeRTOS_IP.h"
 #include "uart_cli.h"
 
 // Отправить большой буффер
-static void send_all(Socket_t client, char* data, size_t size) {
+void send_all(Socket_t client, char* data, size_t size) {
 	size_t pending = size;
 
 	while (pending > 0) {
@@ -67,6 +70,7 @@ static void read_lines(Socket_t client) {
 }
 
 static void client_task(void* params) {
+	vTaskSetThreadLocalStoragePointer(NULL, 0, params);
 	Socket_t client = params;
 
 	send_all(client, "Hello!\n> ", 9);
