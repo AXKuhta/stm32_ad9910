@@ -5,13 +5,6 @@
 
 #include "syscalls.h"
 
-void* realloc(void* ptr, size_t size) {
-	(void)ptr;
-	(void)size;
-	while (1) {}
-	return 0;
-}
-
 void __assert_func (const char * file, int line, const char * func, const char * msg) {
 	printf("%s:%d %s(): %s\n", file, line, func, msg);
 	while (1) {}

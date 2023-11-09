@@ -610,3 +610,51 @@ void vPortGetHeapStats( HeapStats_t * pxHeapStats )
     taskEXIT_CRITICAL();
 }
 /*-----------------------------------------------------------*/
+
+// https://ru.stackoverflow.com/questions/693925/%D0%A0%D0%B5%D0%B0%D0%BB%D0%B8%D0%B7%D0%B0%D1%86%D0%B8%D1%8F-realloc
+void *pvPortRealloc(void *ptr, size_t s)
+{
+uint8_t *puc = ( uint8_t * ) ptr;
+BlockLink_t *pxLink;
+void *newBlock;
+size_t blockSize;
+
+    if (ptr == NULL)
+    {
+        newBlock = pvPortMalloc(s);
+    }
+    else
+    {
+        puc -= xHeapStructSize;
+        pxLink = (void*) puc;
+        blockSize = pxLink->xBlockSize - xHeapStructSize;
+        if (s == 0)
+        {
+            newBlock = NULL;
+        }
+        else if (s > blockSize)
+        {
+            vTaskSuspendAll();
+            {
+                newBlock = pvPortMalloc(s);
+                if (newBlock != NULL)
+                {
+                    memcpy(newBlock, ptr, blockSize);
+                    vPortFree(ptr);         
+                }
+            }
+            xTaskResumeAll();
+
+        }
+        else //s < blockSize
+        {
+            // shrinkage not supported
+            return ptr;
+        }
+    }
+    return newBlock;
+}
+
+void* realloc(void* ptr, size_t size) {
+	return pvPortRealloc(ptr, size);
+}
