@@ -11,7 +11,9 @@ void __assert_func (const char * file, int line, const char * func, const char *
 }
 
 int puts(const char* str) {
-	return _write(1, str, strlen(str));
+	_write(1, str, strlen(str));
+	_write(1, "\n", 1);
+	return 1;
 }
 
 int printf(const char *restrict fmt, ...) {
@@ -24,7 +26,7 @@ int printf(const char *restrict fmt, ...) {
 	i = vsnprintf(buf, 128, fmt, ap);
 	va_end(ap);
 
-	puts(buf);
+	_write(1, buf, strlen(buf));
 	free(buf);
 
 	return i;
