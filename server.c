@@ -8,7 +8,7 @@
 #include "uart_cli.h"
 
 // Отправить большой буффер
-void send_all(Socket_t client, char* data, size_t size) {
+void send_all(void* client, const char* data, size_t size) {
 	size_t pending = size;
 
 	while (pending > 0) {

@@ -6,6 +6,7 @@
 #include <stdio.h>
 
 #include "syscalls.h"
+#include "server.h"
 
 #include "FreeRTOS.h"
 #include "task.h"

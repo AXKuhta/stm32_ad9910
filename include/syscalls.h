@@ -1,2 +1,2 @@
 
-int _write(int handle, char* data, int size);
+int _write(int handle, const char* data, int size);
