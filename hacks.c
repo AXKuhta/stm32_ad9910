@@ -36,9 +36,12 @@ int printf(const char *restrict fmt, ...) {
 
 	char* buf = NULL;
 
-	// Для небольших строк vaprintf() будет делать два вызова realloc():
+	// Для небольших строк vasprintf() будет делать два вызова realloc():
 	// realloc(NULL, 32) для начального буфера
 	// realloc(ptr, 6) для уменьшения буфера, когда строка готова
+	//
+	// Для больших строк, vasprintf() будет удваивать буфер с 32 по мере необходимости
+	//
 
 	va_start(ap, fmt);
 	i = vasprintf(&buf, fmt, ap);
