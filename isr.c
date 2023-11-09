@@ -8,7 +8,7 @@
 // =============================================================================
 // INTERRUPT PROFILER
 // =============================================================================
-#define LIST_SIZE 48
+#define LIST_SIZE 32
 
 typedef struct interrupt_t {
 	const char* title;
@@ -20,7 +20,7 @@ int isr_recorder_collision = 0;
 
 static void record_it(const char* title) {
 	size_t ptr = (size_t)title;
-	size_t idx = ptr % LIST_SIZE;
+	size_t idx = (ptr >> 2) % LIST_SIZE;
 
 	interrupt_t* it = &it_list[idx];
 
