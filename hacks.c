@@ -1,3 +1,5 @@
+#define _GNU_SOURCE // Нужно для появления прототипа vasprintf()
+
 #include <string.h>
 #include <stdarg.h>
 #include <stdlib.h>
@@ -27,18 +29,26 @@ int puts(const char* str) {
 	return 1;
 }
 
+// Перенаправляемый printf
 int printf(const char *restrict fmt, ...) {
 	va_list ap;
 	int i;
 
-	char* buf = malloc(128);
+	char* buf = NULL;
+
+	// Для небольших строк vaprintf() будет делать два вызова realloc():
+	// realloc(NULL, 32) для начального буфера
+	// realloc(ptr, 6) для уменьшения буфера, когда строка готова
 
 	va_start(ap, fmt);
-	i = vsnprintf(buf, 128, fmt, ap);
+	i = vasprintf(&buf, fmt, ap);
 	va_end(ap);
 
+	// Достать указатель на сокет (или NULL)
 	void* sock = pvTaskGetThreadLocalStoragePointer(NULL, 0);
 
+	// NULL = выводим в последовательный порт
+	// Не NULL = отправляем в сокет
 	if (sock) {
 		send_all(sock, buf, strlen(buf));
 	} else {
