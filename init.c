@@ -193,4 +193,5 @@ void system_init() {
 	usart3_rx_dma_init();
 	timer8_up_dma_init();
 	uart_cli_init();
+	network_init();
 }
