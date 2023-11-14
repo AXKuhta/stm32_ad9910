@@ -18,8 +18,8 @@
 
 |Команда|Jitter отступа|Jitter длительности|
 |---|---|---|
-|basic_sweep 0 us 900 us 152 MHz 154 MHz|5 нс|25 нс|
-|basic_sweep 1100 us 900 us 152 MHz 154 MHz|10 нс|25 нс|
+|basic_sweep 0 us 900 us 152 MHz 154 MHz|5 нс|~1 нс?|
+|basic_sweep 1100 us 900 us 152 MHz 154 MHz|10 нс|~1 нс?|
 
 ## PSK
 
