@@ -83,16 +83,16 @@ void basic_pulse_cmd(const char* str) {
 }
 
 void basic_sweep_cmd(const char* str) {
-	char t1_unit[4] = {0};
-	char t2_unit[4] = {0};
+	char o_unit[4] = {0};
+	char d_unit[4] = {0};
 	char f1_unit[4] = {0};
 	char f2_unit[4] = {0};
-	double t1;
-	double t2;
+	double offset;
+	double duration;
 	double f1;
 	double f2;
 
-	int rc = sscanf(str, "%*s %lf %3s %lf %3s %lf %3s %lf %3s", &t1, t1_unit, &t2, t2_unit, &f1, f1_unit, &f2, f2_unit);
+	int rc = sscanf(str, "%*s %lf %3s %lf %3s %lf %3s %lf %3s", &offset, o_unit, &duration, d_unit, &f1, f1_unit, &f2, f2_unit);
 
 	if (rc != 8) {
 		printf("Invalid arguments\n");
@@ -103,8 +103,8 @@ void basic_sweep_cmd(const char* str) {
 
 	uint32_t f1_hz = parse_freq(f1, f1_unit);
 	uint32_t f2_hz = parse_freq(f2, f2_unit);
-	uint32_t t1_ns = parse_time(t1, t1_unit);
-	uint32_t t2_ns = parse_time(t2, t2_unit);
+	uint32_t offset_ns = parse_time(offset, o_unit);
+	uint32_t duration_ns = parse_time(duration, d_unit);
 
 	if (f1_hz == 0 || f2_hz == 0) {
 		return;
@@ -112,17 +112,62 @@ void basic_sweep_cmd(const char* str) {
 
 	char* verif_f1 = freq_unit(f1_hz);
 	char* verif_f2 = freq_unit(f2_hz);
-	char* verif_t1 = time_unit(t1_ns / 1000.0 / 1000.0 / 1000.0);
-	char* verif_t2 = time_unit(t2_ns / 1000.0 / 1000.0 / 1000.0);
+	char* verif_offset = time_unit(offset_ns / 1000.0 / 1000.0 / 1000.0);
+	char* verif_duration = time_unit(duration_ns / 1000.0 / 1000.0 / 1000.0);
 
-	printf("Basic sweep from %s to %s, offset %s, duration %s\n", verif_f1, verif_f2, verif_t1, verif_t2);
+	printf("Basic sweep from %s to %s, offset %s, duration %s\n", verif_f1, verif_f2, verif_offset, verif_duration);
 
 	free(verif_f1);
 	free(verif_f2);
-	free(verif_t1);
-	free(verif_t2);
+	free(verif_offset);
+	free(verif_duration);
 
-	enter_basic_sweep_mode(t1_ns, t2_ns, f1_hz, f2_hz);
+	uint16_t rate = fit_time(duration_ns);
+
+	if (rate == 0)
+		return;
+
+	uint16_t element_count = (duration_ns / 4) / rate;
+
+	vec_t(uint8_t)* ram = init_vec(uint8_t);
+
+	for (size_t i = 0; i < element_count; i++) {
+		vec_push(ram, 0x00);
+		vec_push(ram, 0x00);
+		vec_push(ram, 0xFF);
+		vec_push(ram, 0xFC);
+	}
+
+	vec_push(ram, 0x00);
+	vec_push(ram, 0x00);
+	vec_push(ram, 0x00);
+	vec_push(ram, 0x00);
+
+	sequencer_stop();
+	sequencer_reset();
+
+	seq_entry_t pulse = {
+		.sweep = calculate_sweep(f1_hz, f2_hz, duration_ns),
+		.t1 = timer_mu(offset_ns),
+		.t2 = timer_mu(offset_ns + duration_ns),
+		.ram_profiles[0] = {
+			.start = element_count,
+			.end = element_count,
+			.rate = 0,
+			.mode = AD_RAM_PROFILE_MODE_DIRECTSWITCH
+		},
+		.ram_profiles[1] = {
+			.start = 0,
+			.end = element_count,
+			.rate = rate,
+			.mode = AD_RAM_PROFILE_MODE_RAMPUP
+		},
+		.ram_image = { .buffer = (uint32_t*)ram->elements, .size = element_count + 1 },
+		.ram_destination = AD_RAM_DESTINATION_POLAR
+	};
+
+	sequencer_add(pulse);
+	sequencer_run();
 }
 
 // The compiler can't tell that two different vec_t(uint8_t)* are actually the same type

@@ -66,3 +66,28 @@ sweep_t calculate_sweep(uint32_t f1_hz, uint32_t f2_hz, uint32_t time_ns) {
 		.tstep = (uint32_t)(req_tstep / tstep_ns)
 	};
 }
+
+// Представить некоторое время в наносекундах используя интервал шага * некоторое количество шагов оперативной памяти AD9910
+uint16_t fit_time(uint32_t time_ns) {
+	uint32_t clocks = time_ns / 4;
+	uint32_t overhead = 1;
+
+	if (time_ns % 4) {
+		printf("Not a factor of 4, unable to fit\n");
+		return 0;
+	}
+
+	while(clocks/overhead > 0xFFFF || time_ns % (4*overhead) > 0) {
+		overhead++;
+
+		if (overhead > 1023) {
+			printf("Unable to get an exact fit\n");
+			return 0;
+		}
+	}
+
+	printf("Overhead: %lu\n", overhead);
+	printf("Step: %lu\n", clocks/overhead);
+
+	return clocks/overhead;
+}
