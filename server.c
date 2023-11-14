@@ -12,7 +12,7 @@ void send_all(void* client, const char* data, size_t size) {
 	size_t pending = size;
 
 	while (pending > 0) {
-		BaseType_t result = FreeRTOS_send(client, data, pending, 0);
+		BaseType_t result = FreeRTOS_send(client, data, pending, FREERTOS_MSG_DONTWAIT);
 
 		if (result < 0) {
 			printf("Send error: %ld\n", result);
