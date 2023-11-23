@@ -273,20 +273,4 @@ void enter_basic_pulse_mode(uint32_t offset_ns, uint32_t duration_ns, uint32_t f
 	sequencer_run();
 }
 
-void enter_basic_sweep_mode(uint32_t offset_ns, uint32_t duration_ns, uint32_t f1_hz, uint32_t f2_hz) {
-	sequencer_stop();
-	sequencer_reset();
-
-	seq_entry_t pulse = {
-		.sweep = calculate_sweep(f1_hz, f2_hz, duration_ns),
-		.t1 = timer_mu(offset_ns),
-		.t2 = timer_mu(offset_ns + duration_ns),
-		.profiles[0] = { .asf = 0 },
-		.profiles[1] = { .asf = 0x3FFF }
-	};
-
-	sequencer_add(pulse);
-	sequencer_run();
-}
-
 #endif
