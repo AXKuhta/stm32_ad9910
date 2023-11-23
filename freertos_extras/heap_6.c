@@ -627,7 +627,7 @@ size_t blockSize;
     {
         puc -= xHeapStructSize;
         pxLink = (void*) puc;
-        blockSize = pxLink->xBlockSize - xHeapStructSize;
+        blockSize = (pxLink->xBlockSize & ~heapBLOCK_ALLOCATED_BITMASK) - xHeapStructSize;
         if (s == 0)
         {
             newBlock = NULL;
