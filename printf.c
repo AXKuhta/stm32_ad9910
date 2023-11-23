@@ -16,7 +16,7 @@ int printf(const char *restrict fmt, ...) {
 	va_list ap;
 	int i;
 
-	char* buf = malloc(128);
+	char* buf = NULL;
 
 	// Для небольших строк vasprintf() будет делать два вызова realloc():
 	// realloc(NULL, 32) для начального буфера
@@ -26,7 +26,7 @@ int printf(const char *restrict fmt, ...) {
 	//
 
 	va_start(ap, fmt);
-	i = vsnprintf(buf, 128, fmt, ap);
+	i = vasprintf(&buf, fmt, ap);
 	va_end(ap);
 
 	// Достать указатель на сокет (или NULL)
