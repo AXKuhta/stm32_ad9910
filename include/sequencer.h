@@ -43,7 +43,6 @@ typedef struct seq_entry_t {
 
 void enter_rfkill_mode();
 void enter_test_tone_mode(uint32_t freq_hz);
-void enter_basic_pulse_mode(uint32_t offset_ns, uint32_t duration_ns, uint32_t freq_hz);
 void sequencer_init();
 void sequencer_reset();
 void sequencer_show();

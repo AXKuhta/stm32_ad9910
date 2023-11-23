@@ -258,19 +258,4 @@ void enter_test_tone_mode(uint32_t freq_hz) {
 	set_profile(1);
 }
 
-void enter_basic_pulse_mode(uint32_t offset_ns, uint32_t duration_ns, uint32_t freq_hz) {
-	sequencer_stop();
-	sequencer_reset();
-
-	seq_entry_t pulse = {
-		.t1 = timer_mu(offset_ns),
-		.t2 = timer_mu(offset_ns + duration_ns),
-		.profiles[0] = { .ftw = 0, .asf = 0 },
-		.profiles[1] = { .ftw = ad_calc_ftw(freq_hz), .asf = 0x3FFF }
-	};
-
-	sequencer_add(pulse);
-	sequencer_run();
-}
-
 #endif

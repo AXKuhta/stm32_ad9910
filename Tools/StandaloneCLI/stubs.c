@@ -34,7 +34,6 @@ int main() {
 void profile_to_gpio_states() {}
 void enter_rfkill_mode() {}
 void enter_test_tone_mode(uint32_t freq_hz) {}
-void enter_basic_pulse_mode(uint32_t offset_ns, uint32_t duration_ns, uint32_t freq_hz) {}
 void ad_write_all() {}
 void ad_readback_all() {}
 void ad_ram_test() {}
