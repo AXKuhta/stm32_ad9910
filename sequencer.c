@@ -208,8 +208,14 @@ void spi_write_entry(seq_entry_t entry) {
 		// Портит профили, должно быть выполнено до записи профилей
 		ad_write_ram(entry.ram_image.buffer, entry.ram_image.size); 
 
-		for (int i = 0; i < 8; i++)
+		for (int i = 0; i < 8; i++) {
 			ad_set_ram_profile(i, entry.ram_profiles[i].rate, entry.ram_profiles[i].start, entry.ram_profiles[i].end, entry.ram_profiles[i].mode);
+
+			// Биты амплитуды в регистрах профилей не задействованы при использовании RAM, во всяком случае так написано в даташите...
+			// ...на самом деле они всё-таки применятся на первые 20нс при запуске, так что нужно занулить их
+			// Побочный эффект от pipeline?
+			ad_set_profile_amplitude(i, 0);
+		}
 
 		ad_set_ram_destination(entry.ram_destination);
 		ad_set_secondary_freq(entry.ram_secondary_params.ftw);
