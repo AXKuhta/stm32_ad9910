@@ -173,12 +173,33 @@ void basic_sweep_cmd(const char* str) {
 		return;
 
 	uint16_t element_count = (duration_ns / 4) / rate;
+	uint32_t ftw = ad_calc_ftw(f1_hz);
+
+	// We are using RAM and DRG at the same time and that causes a problem:
+	// Even with matched latency enabled, they have different pipeline delays
+	// DRG Frequency arrives at the DDS core faster than RAM Phase + Amplitude
+	// Thus we get a signal with an unexpected start phase
+	// 
+	// Datasheet says 12 clocks of delay but through measurements it seems it is actually 20
+	// Without compensation:
+	// 200 MHz	0 deg start phase
+	// 100 MHz	0 deg start phase
+	// 50 MHz	0 deg start phase
+	// 25 MHz	180 deg start phase => 20 clocks of delay
+	//
+	// Knowing it's 20 clocks of delay, we can compensate for it
+	//
+	uint32_t start_phase = ftw * 20;
+	uint16_t start_phase_16bit = start_phase >> 16;
+	uint16_t compensation = 0xFFFF - start_phase_16bit;
+
+	printf("Start POW: %d\n", start_phase_16bit);
 
 	vec_t(uint8_t)* ram = init_vec(uint8_t);
 
 	for (size_t i = 0; i < element_count; i++) {
-		vec_push(ram, 0x00);
-		vec_push(ram, 0x00);
+		vec_push(ram, compensation >> 8);
+		vec_push(ram, compensation & 0xFF);
 		vec_push(ram, 0xFF);
 		vec_push(ram, 0xFC);
 	}
