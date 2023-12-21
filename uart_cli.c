@@ -193,6 +193,10 @@ void basic_sweep_cmd(const char* str) {
 	uint16_t start_phase_16bit = start_phase >> 16;
 	uint16_t compensation = 0xFFFF - start_phase_16bit;
 
+	if (f1_hz > f2_hz) {
+		compensation = start_phase_16bit;
+	}
+
 	printf("Start POW: %d\n", start_phase_16bit);
 
 	vec_t(uint8_t)* ram = init_vec(uint8_t);
