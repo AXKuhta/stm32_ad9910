@@ -194,7 +194,7 @@ void basic_sweep_cmd(const char* str) {
 	uint16_t compensation = 0xFFFF - start_phase_16bit;
 
 	if (f1_hz > f2_hz) {
-		compensation = start_phase_16bit;
+		compensation = start_phase_16bit + 0x7FFF;
 	}
 
 	printf("Start POW: %d\n", start_phase_16bit);
