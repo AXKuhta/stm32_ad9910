@@ -1,0 +1,96 @@
+<mxfile host="app.diagrams.net" modified="2024-01-21T12:49:19.562Z" agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36" etag="akqmG4twR0dyqaNC7ItB" version="22.1.21" type="device">
+  <diagram name="Page-1" id="a9-rrz3fW7aQYh7XYW_a">
+    <mxGraphModel dx="811" dy="227" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="600" pageHeight="337" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="GmUQW74l0LE2CPmm961G-1" value="" style="rounded=0;whiteSpace=wrap;html=1;dashed=1;" parent="1" vertex="1">
+          <mxGeometry x="120" y="410" width="410" height="250" as="geometry" />
+        </mxCell>
+        <mxCell id="7maLEqiS_soe_jhM0fCU-4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=classic;startFill=1;endArrow=none;endFill=0;" parent="1" source="7maLEqiS_soe_jhM0fCU-2" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="590" y="370" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="450" y="370" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="7maLEqiS_soe_jhM0fCU-15" value="Опорная тактовая частота" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" parent="7maLEqiS_soe_jhM0fCU-4" vertex="1" connectable="0">
+          <mxGeometry x="0.4082" y="-1" relative="1" as="geometry">
+            <mxPoint x="30" y="-11" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="7maLEqiS_soe_jhM0fCU-16" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="1" source="7maLEqiS_soe_jhM0fCU-2" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="580" y="600" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="7maLEqiS_soe_jhM0fCU-17" value="Сигналы" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" parent="7maLEqiS_soe_jhM0fCU-16" vertex="1" connectable="0">
+          <mxGeometry x="-0.0615" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="7maLEqiS_soe_jhM0fCU-2" value="AD9910 PCBZ" style="rounded=0;whiteSpace=wrap;html=1;align=right;verticalAlign=bottom;spacing=4;" parent="1" vertex="1">
+          <mxGeometry x="360" y="570" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="7maLEqiS_soe_jhM0fCU-7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=classic;startFill=1;endArrow=none;endFill=0;exitX=0;exitY=0.75;exitDx=0;exitDy=0;" parent="1" source="7maLEqiS_soe_jhM0fCU-5" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="20" y="505" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="7maLEqiS_soe_jhM0fCU-8" value="Питание +5V" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" parent="7maLEqiS_soe_jhM0fCU-7" vertex="1" connectable="0">
+          <mxGeometry x="0.6807" y="-1" relative="1" as="geometry">
+            <mxPoint x="31" y="-9" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="6ak60_m9Tixykozr6kx4-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=classic;startFill=1;endArrow=none;endFill=0;" edge="1" parent="1" source="7maLEqiS_soe_jhM0fCU-5">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="290" y="370" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="220" y="370" />
+              <mxPoint x="280" y="370" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="6ak60_m9Tixykozr6kx4-2" value="Триггер" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="6ak60_m9Tixykozr6kx4-1">
+          <mxGeometry x="0.4601" y="1" relative="1" as="geometry">
+            <mxPoint y="-9" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="7maLEqiS_soe_jhM0fCU-5" value="Мезонин" style="rounded=0;whiteSpace=wrap;html=1;align=right;verticalAlign=bottom;spacing=4;" parent="1" vertex="1">
+          <mxGeometry x="140" y="430" width="160" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="7maLEqiS_soe_jhM0fCU-6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.25;entryY=0;entryDx=0;entryDy=0;" parent="1" source="7maLEqiS_soe_jhM0fCU-1" target="7maLEqiS_soe_jhM0fCU-2" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="6ak60_m9Tixykozr6kx4-3" value="SPI&lt;br style=&quot;font-size: 11px;&quot;&gt;+&lt;br style=&quot;font-size: 11px;&quot;&gt;Управляющие сигналы" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=11;labelBackgroundColor=default;labelBorderColor=none;" vertex="1" connectable="0" parent="7maLEqiS_soe_jhM0fCU-6">
+          <mxGeometry x="0.0198" y="-2" relative="1" as="geometry">
+            <mxPoint x="-22" y="-26" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="7maLEqiS_soe_jhM0fCU-9" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=classic;startFill=1;" parent="1" source="7maLEqiS_soe_jhM0fCU-1" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="20" y="476" as="targetPoint" />
+            <Array as="points" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="7maLEqiS_soe_jhM0fCU-12" value="Ethernet&lt;br&gt;или&lt;br&gt;USB" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" parent="7maLEqiS_soe_jhM0fCU-9" vertex="1" connectable="0">
+          <mxGeometry x="-0.0929" y="2" relative="1" as="geometry">
+            <mxPoint x="-26" y="-32" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="7maLEqiS_soe_jhM0fCU-1" value="Nucleo F746ZG" style="rounded=0;whiteSpace=wrap;html=1;align=right;verticalAlign=bottom;spacing=4;" parent="1" vertex="1">
+          <mxGeometry x="160" y="446" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="7maLEqiS_soe_jhM0fCU-13" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" parent="1" source="7maLEqiS_soe_jhM0fCU-5" target="7maLEqiS_soe_jhM0fCU-2" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="7maLEqiS_soe_jhM0fCU-14" value="Питание +1.8V, +3.3V" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" parent="7maLEqiS_soe_jhM0fCU-13" vertex="1" connectable="0">
+          <mxGeometry x="-0.6811" y="1" relative="1" as="geometry">
+            <mxPoint x="59" y="27" as="offset" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
