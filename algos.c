@@ -143,7 +143,7 @@ sweep_t calculate_sweep_v2(uint32_t f1_hz, uint32_t f2_hz, uint32_t time_ns) {
 	return (sweep_t){
 		.lower_ftw = lower_ftw,
 		.upper_ftw = upper_ftw,
-		.fstep_ftw = ad_calc_ftw(delta_hz / steps),
+		.fstep_ftw = ad_calc_ftw((delta_hz + 0.0) / steps),
 		.tstep = interval
 	};
 }

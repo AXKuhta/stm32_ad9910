@@ -8,10 +8,7 @@ extern uint32_t ad_system_clock;
 // Вычислить значение FTW для указанной частоты
 // Если частота превышает SYSCLK/2, то на выходе получится противоположная частота, т.е. f_настоящая = SYSCLK - f_указанная
 uint32_t ad_calc_ftw(double freq_hz) {
-	double ratio = freq_hz / (double)ad_system_clock;
-	uint32_t ftw = (uint32_t)(4294967296.0 * ratio + 0.5);
-	
-	return ftw;
+	return freq_hz/ad_system_clock * (1ull << 32) + 0.5;
 }
 
 double ad_backconvert_ftw(uint32_t ftw) {
