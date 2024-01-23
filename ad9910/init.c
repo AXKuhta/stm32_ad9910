@@ -51,7 +51,7 @@ void ad_init() {
 	// SDIO Input Only
 	r00[3] = 0x02;
 
-	ad_enable_pll(20*1000*1000, 50);
+	ad_enable_pll(25*1000*1000, 40);
 	
 	r01[0] = 0b00000001; // Enable amplitude scale from single tone profiles
 	r00[2] = 0b00001000; // Phase static reset
