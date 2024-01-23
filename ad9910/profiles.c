@@ -41,6 +41,11 @@ void ad_set_ram_profile(int profile_id, uint16_t step_rate, uint16_t start, uint
 	uint8_t* profile = regmap[14 + profile_id];
 	uint8_t* view_step_rate = (uint8_t*)&step_rate;
 
+	// Биты амплитуды в регистрах профилей не задействованы при использовании RAM, во всяком случае так написано в даташите...
+	// ...на самом деле они всё-таки применятся на первые 20нс при запуске, так что нужно занулить их
+	// Побочный эффект от pipeline?
+	profile[0] = 0;
+
 	profile[2] = view_step_rate[0];
 	profile[1] = view_step_rate[1];
 
