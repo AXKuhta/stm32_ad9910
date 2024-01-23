@@ -217,7 +217,7 @@ void basic_sweep_cmd(const char* str) {
 	sequencer_reset();
 
 	seq_entry_t pulse = {
-		.sweep = calculate_sweep(f1_hz, f2_hz, duration_ns),
+		.sweep = calculate_sweep_v2(f1_hz, f2_hz, duration_ns),
 		.t1 = timer_mu(offset_ns),
 		.t2 = timer_mu(offset_ns + duration_ns),
 		.ram_profiles[0] = {
@@ -681,7 +681,7 @@ void sequencer_add_sweep_cmd(const char* str) {
 	printf("Sequence sweep at %s -> %s, offset %s, duration %s\n", verif_f1, verif_f2, verif_offset, verif_duration);
 
 	seq_entry_t pulse = {
-		.sweep = calculate_sweep(f1_hz, f2_hz, duration_ns),
+		.sweep = calculate_sweep_v2(f1_hz, f2_hz, duration_ns),
 		.t1 = timer_mu(offset_ns),
 		.t2 = timer_mu(offset_ns + duration_ns),
 		.profiles[0] = { .asf = 0 },
