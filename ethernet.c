@@ -96,9 +96,26 @@ eDHCPCallbackAnswer_t xApplicationDHCPHook( eDHCPCallbackPhase_t eDHCPPhase, uin
 	return eDHCPContinue;
 }
 
+static eIPCallbackEvent_t network_state = eNetworkDown;
+
 void vApplicationIPNetworkEventHook( eIPCallbackEvent_t eNetworkEvent ) {
-	printf("Network event\n");
-	(void) eNetworkEvent;
+	switch (eNetworkEvent) {
+		case eNetworkDown:
+			if (network_state != eNetworkDown)
+				printf("Network is down\n");
+			
+			network_state = eNetworkDown;
+			break;
+		case eNetworkUp:
+			if (network_state != eNetworkUp)
+				printf("Network is up\n");
+			
+			network_state = eNetworkUp;
+			break;
+		default:
+			printf("Unknown network event\n");
+			break;
+	}
 }
 
 void network_init() {
