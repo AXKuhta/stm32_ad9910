@@ -80,7 +80,14 @@ void uart_cli_init() {
 
 const char* get_next_str(const char* buf) {
 	while (*buf) {
-		if (*buf == '\n' || *buf == '\r') return buf + 1;
+		// CRLF
+		if (*buf == '\r' && *(buf + 1) == '\n')
+			return buf + 1;
+
+		// LF
+		if (*buf == '\n')
+			return buf + 1;
+
 		buf++;
 	}
 
