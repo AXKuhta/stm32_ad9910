@@ -139,13 +139,14 @@ void basic_sweep_cmd(const char* str) {
 	double duration;
 	double fc;
 	int index;
+	int interval;
 
-	int rc = sscanf(str, "%*s %lf %3s %lf %3s %lf %3s %d", &offset, o_unit, &duration, d_unit, &fc, fc_unit, &index);
+	int rc = sscanf(str, "%*s %lf %3s %lf %3s %lf %3s %d %d", &offset, o_unit, &duration, d_unit, &fc, fc_unit, &index, &interval);
 
-	if (rc != 7) {
+	if (rc != 8) {
 		printf("Invalid arguments\n");
-		printf("Usage: basic_sweep delay unit duration unit freq_center unit freq_end unit\n");
-		printf("Example: basic_sweep 100 us 250 us 140 MHz 1\n");
+		printf("Usage: basic_sweep delay unit duration unit freq_center unit index interval\n");
+		printf("Example: basic_sweep 100 us 250 us 140 MHz 1 1\n");
 		return;
 	}
 
@@ -160,7 +161,7 @@ void basic_sweep_cmd(const char* str) {
 	// Sweep calculations below always use step interval of 1 for smoothest possible slope
 	// FIXME: Assuming 1 GHz ad_system_clock
 	double fstep = ad_system_clock / ((1ull << 32) + 0.0);
-	uint32_t steps = duration_ns / 4;
+	uint32_t steps = duration_ns / (4 * interval);
 
 	double span_hz = fstep * steps * index;
 	double f1_hz = fc_hz - span_hz/2;
@@ -245,7 +246,7 @@ void basic_sweep_cmd(const char* str) {
 	seq_entry_t pulse = {
 		.sweep = {
 			.fstep_ftw = ABS(index),
-			.tstep = 1,
+			.tstep = interval,
 			.lower_ftw = lower_ftw,
 			.upper_ftw = upper_ftw
 		},
