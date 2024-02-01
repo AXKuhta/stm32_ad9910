@@ -13,6 +13,10 @@
 #include "algos.h"
 #include "vec.h"
 
+extern uint32_t ad_system_clock;
+
+#define ABS(x) (x < 0 ? -x : x)
+
 // =============================================================================
 // CLI COMMANDS
 // =============================================================================
@@ -130,40 +134,52 @@ void basic_pulse_cmd(const char* str) {
 void basic_sweep_cmd(const char* str) {
 	char o_unit[4] = {0};
 	char d_unit[4] = {0};
-	char f1_unit[4] = {0};
-	char f2_unit[4] = {0};
+	char fc_unit[4] = {0};
 	double offset;
 	double duration;
-	double f1;
-	double f2;
+	double fc;
+	int index;
 
-	int rc = sscanf(str, "%*s %lf %3s %lf %3s %lf %3s %lf %3s", &offset, o_unit, &duration, d_unit, &f1, f1_unit, &f2, f2_unit);
+	int rc = sscanf(str, "%*s %lf %3s %lf %3s %lf %3s %d", &offset, o_unit, &duration, d_unit, &fc, fc_unit, &index);
 
-	if (rc != 8) {
+	if (rc != 7) {
 		printf("Invalid arguments\n");
-		printf("Usage: basic_sweep delay unit duration unit freq_start unit freq_end unit\n");
-		printf("Example: basic_sweep 100 us 250 us 140 MHz 160 MHz\n");
+		printf("Usage: basic_sweep delay unit duration unit freq_center unit freq_end unit\n");
+		printf("Example: basic_sweep 100 us 250 us 140 MHz 1\n");
 		return;
 	}
 
-	uint32_t f1_hz = parse_freq(f1, f1_unit);
-	uint32_t f2_hz = parse_freq(f2, f2_unit);
+	uint32_t fc_hz = parse_freq(fc, fc_unit);
 	uint32_t offset_ns = parse_time(offset, o_unit);
 	uint32_t duration_ns = parse_time(duration, d_unit);
 
-	if (f1_hz == 0 || f2_hz == 0) {
+	if (fc_hz == 0) {
 		return;
 	}
 
+	// Sweep calculations below always use step interval of 1 for smoothest possible slope
+	// FIXME: Assuming 1 GHz ad_system_clock
+	double fstep = ad_system_clock / ((1ull << 32) + 0.0);
+	uint32_t steps = duration_ns / 4;
+
+	double span_hz = fstep * steps * index;
+	double f1_hz = fc_hz - span_hz/2;
+	double f2_hz = f1_hz + span_hz;
+
 	char* verif_f1 = freq_unit(f1_hz);
 	char* verif_f2 = freq_unit(f2_hz);
+	char* verif_fc = freq_unit(fc_hz);
+	char* verif_span = freq_unit( ABS(span_hz) );
 	char* verif_offset = time_unit(offset_ns / 1000.0 / 1000.0 / 1000.0);
 	char* verif_duration = time_unit(duration_ns / 1000.0 / 1000.0 / 1000.0);
 
-	printf("Basic sweep from %s to %s, offset %s, duration %s\n", verif_f1, verif_f2, verif_offset, verif_duration);
+	printf("Basic sweep center frequency %s span %s, offset %s, duration %s\n", verif_fc, verif_span, verif_offset, verif_duration);
+	printf("f1: %s, f2: %s\n", verif_f1, verif_f2);
 
 	free(verif_f1);
 	free(verif_f2);
+	free(verif_fc);
+	free(verif_span);
 	free(verif_offset);
 	free(verif_duration);
 
@@ -216,8 +232,23 @@ void basic_sweep_cmd(const char* str) {
 	sequencer_stop();
 	sequencer_reset();
 
+	uint32_t lower_ftw = ftw;
+	uint32_t upper_ftw = ftw + steps*index;
+
+	// We can only reset DRG to lower_ftw, therefore lower_ftw must always be lower than upper_ftw
+	// Use mirrored FTWs for f1 > f2 sweeps
+	if (index < 0) {
+		lower_ftw = (1ull << 32) - lower_ftw;
+		upper_ftw = (1ull << 32) - upper_ftw;
+	}
+
 	seq_entry_t pulse = {
-		.sweep = calculate_sweep_v2(f1_hz, f2_hz, duration_ns),
+		.sweep = {
+			.fstep_ftw = ABS(index),
+			.tstep = 1,
+			.lower_ftw = lower_ftw,
+			.upper_ftw = upper_ftw
+		},
 		.t1 = timer_mu(offset_ns),
 		.t2 = timer_mu(offset_ns + duration_ns),
 		.ram_profiles[0] = {
