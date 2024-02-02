@@ -706,7 +706,7 @@ void sequencer_cmd(const char* str) {
 		printf("Usage: seq reset\n");
 		printf("Usage: seq show\n");
 		printf("Usage: seq pulse delay unit duration unit freq unit\n");
-		printf("Usage: seq sweep delay unit duration unit f1 unit f2 unit\n");
+		printf("Usage: seq sweep delay unit duration unit center_freq unit a b\n");
 		printf("Usage: seq run\n");
 		printf("Usage: seq stop\n");
 		return;
