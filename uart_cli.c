@@ -131,7 +131,7 @@ void basic_pulse_cmd(const char* str) {
 	sequencer_run();
 }
 
-void basic_sweep_cmd(const char* str) {
+static void sequencer_add_sweep_internal(const char* str, const char* fstr, const char* caller, int run) {
 	char o_unit[4] = {0};
 	char d_unit[4] = {0};
 	char fc_unit[4] = {0};
@@ -141,15 +141,15 @@ void basic_sweep_cmd(const char* str) {
 	int a;
 	int b;
 
-	int rc = sscanf(str, "%*s %lf %3s %lf %3s %lf %3s %d %d", &offset, o_unit, &duration, d_unit, &fc, fc_unit, &a, &b);
+	int rc = sscanf(str, fstr, &offset, o_unit, &duration, d_unit, &fc, fc_unit, &a, &b);
 
 	if (rc != 8) {
 		printf("Invalid arguments\n");
-		printf("Usage: basic_sweep delay unit duration unit center_freq unit a b\n");
+		printf("Usage: %s delay unit duration unit center_freq unit a b\n", caller);
 		printf("Sweep width is determined by: (duration / 4 ns) * (1 GHz / 2^32) * (a/b)\n");
 		printf("When a is positive, sweep goes from fc - width/2 to fc + width/2\n");
 		printf("When a is negative, sweep goes from fc + width/2 to fc - width/2\n");
-		printf("Example: basic_sweep 100 us 250 us 140 MHz 1 1\n");
+		printf("Example: %s 100 us 250 us 140 MHz 1 1\n", caller);
 		return;
 	}
 
@@ -162,7 +162,6 @@ void basic_sweep_cmd(const char* str) {
 		return;
 	}
 
-	// Sweep calculations below always use step interval of 1 for smoothest possible slope
 	// FIXME: Assuming 1 GHz ad_system_clock
 	double fstep = ad_system_clock / ((1ull << 32) + 0.0);
 	uint32_t steps = duration_ns / (4 * b);
@@ -178,7 +177,7 @@ void basic_sweep_cmd(const char* str) {
 	char* verif_offset = time_unit(offset_ns / 1000.0 / 1000.0 / 1000.0);
 	char* verif_duration = time_unit(duration_ns / 1000.0 / 1000.0 / 1000.0);
 
-	printf("Basic sweep center frequency %s span %s, offset %s, duration %s\n", verif_fc, verif_span, verif_offset, verif_duration);
+	printf("Sweep center frequency %s span %s, offset %s, duration %s\n", verif_fc, verif_span, verif_offset, verif_duration);
 	printf("f1: %s, f2: %s\n", verif_f1, verif_f2);
 
 	free(verif_f1);
@@ -234,9 +233,6 @@ void basic_sweep_cmd(const char* str) {
 	vec_push(ram, 0x00);
 	vec_push(ram, 0x00);
 
-	sequencer_stop();
-	sequencer_reset();
-
 	uint32_t lower_ftw = ftw;
 	uint32_t upper_ftw = ftw + steps*a;
 
@@ -272,8 +268,23 @@ void basic_sweep_cmd(const char* str) {
 		.ram_destination = AD_RAM_DESTINATION_POLAR
 	};
 
+	if (run) {
+		sequencer_stop();
+		sequencer_reset();
+	}
+
 	sequencer_add(pulse);
-	sequencer_run();
+
+	if (run)
+		sequencer_run();
+}
+
+void sequencer_add_sweep_cmd(const char* str) {
+	sequencer_add_sweep_internal(str, "%*s %*s %lf %3s %lf %3s %lf %3s %d %d", "seq sweep", 0);
+}
+
+void basic_sweep_cmd(const char* str) {
+	sequencer_add_sweep_internal(str, "%*s %lf %3s %lf %3s %lf %3s %d %d", "basic_sweep", 1);
 }
 
 // The compiler can't tell that two different vec_t(uint8_t)* are actually the same type
@@ -681,53 +692,6 @@ void sequencer_add_pulse_cmd(const char* str) {
 	sequencer_add(pulse);
 
 	free(verif_freq);
-	free(verif_offset);
-	free(verif_duration);
-}
-
-void sequencer_add_sweep_cmd(const char* str) {
-	char o_unit[4] = {0};
-	char d_unit[4] = {0};
-	char f1_unit[4] = {0};
-	char f2_unit[4] = {0};
-	double offset;
-	double duration;
-	double f1;
-	double f2;
-
-	int rc = sscanf(str, "%*s %*s %lf %3s %lf %3s %lf %3s %lf %3s", &offset, o_unit, &duration, d_unit, &f1, f1_unit, &f2, f2_unit);
-
-	if (rc != 8) {
-		printf("Invalid arguments\n");
-		printf("Usage: seq sweep delay unit duration unit f1 unit f2 unit\n");
-		printf("Example: seq sweep 100 us 250 us 150 MHz 50 MHz\n");
-		return;
-	}
-
-	uint32_t f1_hz 			= parse_freq(f1, f1_unit);
-	uint32_t f2_hz 			= parse_freq(f2, f2_unit);
-	uint32_t offset_ns 		= parse_time(offset, o_unit);
-	uint32_t duration_ns 	= parse_time(duration, d_unit);
-	
-	char* verif_f1 			= freq_unit(f1_hz);
-	char* verif_f2 			= freq_unit(f2_hz);
-	char* verif_offset 		= time_unit(offset_ns / 1000.0 / 1000.0 / 1000.0);
-	char* verif_duration 	= time_unit(duration_ns / 1000.0 / 1000.0 / 1000.0);
-
-	printf("Sequence sweep at %s -> %s, offset %s, duration %s\n", verif_f1, verif_f2, verif_offset, verif_duration);
-
-	seq_entry_t pulse = {
-		.sweep = calculate_sweep_v2(f1_hz, f2_hz, duration_ns),
-		.t1 = timer_mu(offset_ns),
-		.t2 = timer_mu(offset_ns + duration_ns),
-		.profiles[0] = { .asf = 0 },
-		.profiles[1] = { .asf = 0x3FFF }
-	};
-
-	sequencer_add(pulse);
-
-	free(verif_f1);
-	free(verif_f2);
 	free(verif_offset);
 	free(verif_duration);
 }
