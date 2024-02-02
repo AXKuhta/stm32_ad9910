@@ -138,14 +138,17 @@ void basic_sweep_cmd(const char* str) {
 	double offset;
 	double duration;
 	double fc;
-	int index;
-	int interval;
+	int a;
+	int b;
 
-	int rc = sscanf(str, "%*s %lf %3s %lf %3s %lf %3s %d %d", &offset, o_unit, &duration, d_unit, &fc, fc_unit, &index, &interval);
+	int rc = sscanf(str, "%*s %lf %3s %lf %3s %lf %3s %d %d", &offset, o_unit, &duration, d_unit, &fc, fc_unit, &a, &b);
 
 	if (rc != 8) {
 		printf("Invalid arguments\n");
-		printf("Usage: basic_sweep delay unit duration unit freq_center unit index interval\n");
+		printf("Usage: basic_sweep delay unit duration unit center_freq unit a b\n");
+		printf("Sweep width is determined by: (duration / 4 ns) * (1 GHz / 2^32) * (a/b)\n");
+		printf("When a is positive, sweep goes from fc - width/2 to fc + width/2\n");
+		printf("When a is negative, sweep goes from fc + width/2 to fc - width/2\n");
 		printf("Example: basic_sweep 100 us 250 us 140 MHz 1 1\n");
 		return;
 	}
@@ -154,16 +157,17 @@ void basic_sweep_cmd(const char* str) {
 	uint32_t offset_ns = parse_time(offset, o_unit);
 	uint32_t duration_ns = parse_time(duration, d_unit);
 
-	if (fc_hz == 0) {
+	if (b < 1) {
+		printf("Invalid b; must be greater than 0\n");
 		return;
 	}
 
 	// Sweep calculations below always use step interval of 1 for smoothest possible slope
 	// FIXME: Assuming 1 GHz ad_system_clock
 	double fstep = ad_system_clock / ((1ull << 32) + 0.0);
-	uint32_t steps = duration_ns / (4 * interval);
+	uint32_t steps = duration_ns / (4 * b);
 
-	double span_hz = fstep * steps * index;
+	double span_hz = fstep * steps * a;
 	double f1_hz = fc_hz - span_hz/2;
 	double f2_hz = f1_hz + span_hz;
 
@@ -234,19 +238,19 @@ void basic_sweep_cmd(const char* str) {
 	sequencer_reset();
 
 	uint32_t lower_ftw = ftw;
-	uint32_t upper_ftw = ftw + steps*index;
+	uint32_t upper_ftw = ftw + steps*a;
 
 	// We can only reset DRG to lower_ftw, therefore lower_ftw must always be lower than upper_ftw
 	// Use mirrored FTWs for f1 > f2 sweeps
-	if (index < 0) {
+	if (a < 0) {
 		lower_ftw = (1ull << 32) - lower_ftw;
 		upper_ftw = (1ull << 32) - upper_ftw;
 	}
 
 	seq_entry_t pulse = {
 		.sweep = {
-			.fstep_ftw = ABS(index),
-			.tstep = interval,
+			.fstep_ftw = ABS(a),
+			.tstep = b,
 			.lower_ftw = lower_ftw,
 			.upper_ftw = upper_ftw
 		},
