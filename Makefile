@@ -19,7 +19,7 @@ HAL_SUBDIR = STM32CubeF7/Drivers/STM32F7xx_HAL_Driver
 HAL_SOURCE = $(wildcard $(HAL_SUBDIR)/Src/*.c)
 HAL_OBJS = $(HAL_SOURCE:c=o)
 
-APP_SOURCE = $(wildcard *.c) $(wildcard ad9910/*.c)
+APP_SOURCE = $(wildcard ad9910/*.c) $(wildcard timer/*.c) $(wildcard *.c)
 APP_OBJS = $(APP_SOURCE:c=o)
 
 OBJS = $(STARTUP_OBJ) $(HAL_OBJS) $(APP_OBJS) $(FREERTOS_OBJS) $(FREERTOS_PLUS_TCP_OBJS)

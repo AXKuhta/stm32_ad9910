@@ -8,6 +8,7 @@
 #include "stm32f7xx_hal.h"
 #endif
 
+#include "timer/sequencing.h"
 #include "timer.h"
 #include "ad9910.h"
 #include "sequencer.h"

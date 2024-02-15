@@ -5,6 +5,7 @@
 #include "uart_cli.h"
 #include "dma.h"
 #include "spi.h"
+#include "timer/emulator.h"
 #include "timer.h"
 #include "ad9910.h"
 #include "ethernet.h"
@@ -184,7 +185,7 @@ void system_init() {
 
 	print_startup_info();
 
-	radar_emulator_start();
+	radar_emulator_start(25, 12.0 / 1000.0 / 1000.0);
 	spi4_init();
 	ad_init();
 
