@@ -529,28 +529,24 @@ void xmitdata_zc_psk_cmd(const char* str) {
 	free(verif_tstep);
 	free(verif_duration);
 
-	/*
-	int highest_bit = 0;
-
-	while (tstep_ns >> highest_bit)
-		highest_bit++;
-
-	highest_bit -= 4;
-
-	uint32_t keep_mask = ~(0xFFFFFFFF >> highest_bit);
-	uint32_t ftw = ad_calc_ftw(freq_hz) & keep_mask;
-
-	printf("Keep mask: 0x%08lX\n", keep_mask);
-	*/
-
 	uint32_t ftw = ad_calc_ftw(freq_hz) & 0xFFFC0000;
 
-	uint8_t bpsk_ram_image[] = {
-		0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, (ad_default_asf >> 6) & 0xFF, (ad_default_asf << 2) & 0xFF,
-		0x7F, 0xFF, (ad_default_asf >> 6) & 0xFF, (ad_default_asf << 2) & 0xFF
-	};
+	vec_t(uint8_t)* ram = init_vec(uint8_t);
+	
+	vec_push(ram, 0x00);
+	vec_push(ram, 0x00);
+	vec_push(ram, 0x00);
+	vec_push(ram, 0x00);
+
+	vec_push(ram, 0x00);
+	vec_push(ram, 0x00);
+	vec_push(ram, (ad_default_asf >> 6));
+	vec_push(ram, (ad_default_asf << 2) & 0xFF);
+
+	vec_push(ram, 0x7F);
+	vec_push(ram, 0xFF);
+	vec_push(ram, (ad_default_asf >> 6));
+	vec_push(ram, (ad_default_asf << 2) & 0xFF);
 
 	sequencer_stop();
 	sequencer_reset();
@@ -559,10 +555,10 @@ void xmitdata_zc_psk_cmd(const char* str) {
 		.t1 = timer_mu(offset_ns),
 		.t2 = timer_mu(offset_ns + duration_ns),
 		.ram_profiles[0] = { .start = 0, .end = 0, .rate = 0, .mode = AD_RAM_PROFILE_MODE_ZEROCROSSING },
-		.ram_profiles[2] = { .start = 2, .end = 2, .rate = 0, .mode = AD_RAM_PROFILE_MODE_ZEROCROSSING },
-		.ram_profiles[3] = { .start = 3, .end = 3, .rate = 0, .mode = AD_RAM_PROFILE_MODE_ZEROCROSSING },
+		.ram_profiles[2] = { .start = 1, .end = 1, .rate = 0, .mode = AD_RAM_PROFILE_MODE_ZEROCROSSING },
+		.ram_profiles[3] = { .start = 2, .end = 2, .rate = 0, .mode = AD_RAM_PROFILE_MODE_ZEROCROSSING },
 		.profile_modulation = { .buffer = vec->elements, .size = vec->size, .tstep = timer_mu(tstep_ns) },
-		.ram_image = { .buffer = (uint32_t*)bpsk_ram_image, .size = 4 },
+		.ram_image = { .buffer = (uint32_t*)ram, .size = 4 },
 		.ram_destination = AD_RAM_DESTINATION_POLAR,
 		.ram_secondary_params = { .ftw =  ftw }
 	};
