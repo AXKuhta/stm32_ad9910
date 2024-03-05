@@ -334,7 +334,15 @@ void* scan_uint8_data(const char* str) {
 	return vec;
 }
 
-void prepare_for_dma(uint8_t* ptr) {
+static void map_to_profiles(uint8_t* ptr) {
+	if (*ptr) {
+		*ptr = 3;
+	} else {
+		*ptr = 2;
+	}
+}
+
+static void prepare_for_dma(uint8_t* ptr) {
 	*ptr = profile_to_gpio_states(*ptr) >> 8;
 }
 
@@ -359,6 +367,7 @@ void xmitdata_fsk_cmd(const char* str) {
 	}
 
 	vec_t(uint8_t)* vec = scan_uint8_data(str + data_offset);
+	for_every_entry(vec, map_to_profiles);
 	for_every_entry(vec, prepare_for_dma);
 
 	uint32_t f1_hz = parse_freq(f1, f1_unit);
@@ -425,6 +434,7 @@ void xmitdata_psk_cmd(const char* str) {
 	}
 
 	vec_t(uint8_t)* vec = scan_uint8_data(str + data_offset);
+	for_every_entry(vec, map_to_profiles);
 	for_every_entry(vec, prepare_for_dma);
 
 	uint32_t freq_hz = parse_freq(freq, f_unit);
@@ -490,6 +500,7 @@ void xmitdata_zc_psk_cmd(const char* str) {
 	}
 
 	vec_t(uint8_t)* vec = scan_uint8_data(str + data_offset);
+	for_every_entry(vec, map_to_profiles);
 	for_every_entry(vec, prepare_for_dma);
 
 	uint32_t freq_hz = parse_freq(freq, f_unit);
