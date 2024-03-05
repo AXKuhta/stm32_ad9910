@@ -95,8 +95,8 @@ void basic_pulse_cmd(const char* str) {
 	for (size_t i = 0; i < element_count; i++) {
 		vec_push(ram, 0x00);
 		vec_push(ram, 0x00);
-		vec_push(ram, 0xFF);
-		vec_push(ram, 0xFC);
+		vec_push(ram, 0x0e);
+		vec_push(ram, 0x88);
 	}
 
 	vec_push(ram, 0x00);
@@ -224,8 +224,8 @@ static void sequencer_add_sweep_internal(const char* str, const char* fstr, cons
 	for (size_t i = 0; i < element_count; i++) {
 		vec_push(ram, compensation >> 8);
 		vec_push(ram, compensation & 0xFF);
-		vec_push(ram, 0xFF);
-		vec_push(ram, 0xFC);
+		vec_push(ram, 0x0e);
+		vec_push(ram, 0x88);
 	}
 
 	vec_push(ram, 0x00);
@@ -374,8 +374,8 @@ void xmitdata_fsk_cmd(const char* str) {
 		.t1 = timer_mu(offset_ns),
 		.t2 = timer_mu(offset_ns + duration_ns),
 		.profiles[0] = { .ftw = 0, .asf = 0 },
-		.profiles[2] = { .ftw = ad_calc_ftw(f1_hz), .asf = 0x3FFF },
-		.profiles[3] = { .ftw = ad_calc_ftw(f2_hz), .asf = 0x3FFF },
+		.profiles[2] = { .ftw = ad_calc_ftw(f1_hz), .asf = 465*2 },
+		.profiles[3] = { .ftw = ad_calc_ftw(f2_hz), .asf = 465*2 },
 		.profile_modulation = { .buffer = vec->elements, .size = vec->size, .tstep = timer_mu(tstep_ns) }
 	};
 
@@ -439,8 +439,8 @@ void xmitdata_psk_cmd(const char* str) {
 		.t1 = timer_mu(offset_ns),
 		.t2 = timer_mu(offset_ns + duration_ns),
 		.profiles[0] = { .ftw = 0, .asf = 0 },
-		.profiles[2] = { .ftw = ftw, .pow = 0x0000, .asf = 0x3FFF },
-		.profiles[3] = { .ftw = ftw, .pow = 0x7FFF, .asf = 0x3FFF },
+		.profiles[2] = { .ftw = ftw, .pow = 0x0000, .asf = 465*2 },
+		.profiles[3] = { .ftw = ftw, .pow = 0x7FFF, .asf = 465*2 },
 		.profile_modulation = { .buffer = vec->elements, .size = vec->size, .tstep = timer_mu(tstep_ns) }
 	};
 
@@ -451,8 +451,8 @@ void xmitdata_psk_cmd(const char* str) {
 uint8_t bpsk_ram_image[] = {
 	0x00, 0x00, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00,
-	0x00, 0x00, 0xFF, 0xFC,
-	0x7F, 0xFF, 0xFF, 0xFC
+	0x00, 0x00, 0x0e, 0x88,
+	0x7F, 0xFF, 0x0e, 0x88
 };
 
 void xmitdata_zc_psk_cmd(const char* str) {
@@ -563,13 +563,13 @@ void xmitdata_ram_psk_cmd(const char* str) {
 		if (vec->elements[i] == 0) {
 			vec_push(ram, 0x00);
 			vec_push(ram, 0x00);
-			vec_push(ram, 0xFF);
-			vec_push(ram, 0xFC);
+			vec_push(ram, 0x0e);
+			vec_push(ram, 0x88);
 		} else {
 			vec_push(ram, 0x7F);
 			vec_push(ram, 0xFF);
-			vec_push(ram, 0xFF);
-			vec_push(ram, 0xFC);
+			vec_push(ram, 0x0e);
+			vec_push(ram, 0x88);
 		}
 	}
 
@@ -686,7 +686,7 @@ void sequencer_add_pulse_cmd(const char* str) {
 		.t1 = timer_mu(offset_ns),
 		.t2 = timer_mu(offset_ns + duration_ns),
 		.profiles[0] = { .ftw = 0, .asf = 0 },
-		.profiles[1] = { .ftw = ad_calc_ftw(freq_hz), .asf = 0x3FFF }
+		.profiles[1] = { .ftw = ad_calc_ftw(freq_hz), .asf = 465*2 }
 	};
 
 	sequencer_add(pulse);
