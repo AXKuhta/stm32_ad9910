@@ -558,7 +558,7 @@ void xmitdata_zc_psk_cmd(const char* str) {
 		.ram_profiles[2] = { .start = 1, .end = 1, .rate = 0, .mode = AD_RAM_PROFILE_MODE_ZEROCROSSING },
 		.ram_profiles[3] = { .start = 2, .end = 2, .rate = 0, .mode = AD_RAM_PROFILE_MODE_ZEROCROSSING },
 		.profile_modulation = { .buffer = vec->elements, .size = vec->size, .tstep = timer_mu(tstep_ns) },
-		.ram_image = { .buffer = (uint32_t*)ram, .size = 4 },
+		.ram_image = { .buffer = (uint32_t*)ram, .size = 3 },
 		.ram_destination = AD_RAM_DESTINATION_POLAR,
 		.ram_secondary_params = { .ftw =  ftw }
 	};
