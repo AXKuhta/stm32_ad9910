@@ -14,12 +14,35 @@
 #include "vec.h"
 
 extern uint32_t ad_system_clock;
+extern uint16_t ad_default_asf;
 
 #define ABS(x) (x < 0 ? -x : x)
 
 // =============================================================================
 // CLI COMMANDS
 // =============================================================================
+void set_level_cmd(const char* str) {
+	int level;
+
+	int rc = sscanf(str, "%*s %d", &level);
+
+	if (rc != 1) {
+		printf("Invalid arguments\n");
+		printf("Usage: set_level value\n");
+		printf("Example: set_level 16383\n");
+		return;
+	}
+
+	if (level > 0x3FFF || level < 0) {
+		printf("Invalid level; level must be >=0 <16384");
+		return;
+	}
+
+	ad_default_asf = level;
+
+	printf("Set level to %d\n", level);
+}
+
 void test_tone_cmd(const char* str) {
 	char unit[4] = {0};
 	double freq;
@@ -95,8 +118,8 @@ void basic_pulse_cmd(const char* str) {
 	for (size_t i = 0; i < element_count; i++) {
 		vec_push(ram, 0x00);
 		vec_push(ram, 0x00);
-		vec_push(ram, 0x0e);
-		vec_push(ram, 0x88);
+		vec_push(ram, (ad_default_asf >> 6));
+		vec_push(ram, (ad_default_asf << 2) & 0xFF);
 	}
 
 	vec_push(ram, 0x00);
@@ -224,8 +247,8 @@ static void sequencer_add_sweep_internal(const char* str, const char* fstr, cons
 	for (size_t i = 0; i < element_count; i++) {
 		vec_push(ram, compensation >> 8);
 		vec_push(ram, compensation & 0xFF);
-		vec_push(ram, 0x0e);
-		vec_push(ram, 0x88);
+		vec_push(ram, (ad_default_asf >> 6));
+		vec_push(ram, (ad_default_asf << 2) & 0xFF);
 	}
 
 	vec_push(ram, 0x00);
@@ -374,8 +397,8 @@ void xmitdata_fsk_cmd(const char* str) {
 		.t1 = timer_mu(offset_ns),
 		.t2 = timer_mu(offset_ns + duration_ns),
 		.profiles[0] = { .ftw = 0, .asf = 0 },
-		.profiles[2] = { .ftw = ad_calc_ftw(f1_hz), .asf = 465*2 },
-		.profiles[3] = { .ftw = ad_calc_ftw(f2_hz), .asf = 465*2 },
+		.profiles[2] = { .ftw = ad_calc_ftw(f1_hz), .asf = ad_default_asf },
+		.profiles[3] = { .ftw = ad_calc_ftw(f2_hz), .asf = ad_default_asf },
 		.profile_modulation = { .buffer = vec->elements, .size = vec->size, .tstep = timer_mu(tstep_ns) }
 	};
 
@@ -439,21 +462,14 @@ void xmitdata_psk_cmd(const char* str) {
 		.t1 = timer_mu(offset_ns),
 		.t2 = timer_mu(offset_ns + duration_ns),
 		.profiles[0] = { .ftw = 0, .asf = 0 },
-		.profiles[2] = { .ftw = ftw, .pow = 0x0000, .asf = 465*2 },
-		.profiles[3] = { .ftw = ftw, .pow = 0x7FFF, .asf = 465*2 },
+		.profiles[2] = { .ftw = ftw, .pow = 0x0000, .asf = ad_default_asf },
+		.profiles[3] = { .ftw = ftw, .pow = 0x7FFF, .asf = ad_default_asf },
 		.profile_modulation = { .buffer = vec->elements, .size = vec->size, .tstep = timer_mu(tstep_ns) }
 	};
 
 	sequencer_add(pulse);
 	sequencer_run();
 }
-
-uint8_t bpsk_ram_image[] = {
-	0x00, 0x00, 0x00, 0x00,
-	0x00, 0x00, 0x00, 0x00,
-	0x00, 0x00, 0x0e, 0x88,
-	0x7F, 0xFF, 0x0e, 0x88
-};
 
 void xmitdata_zc_psk_cmd(const char* str) {
 	char o_unit[4] = {0};
@@ -518,6 +534,13 @@ void xmitdata_zc_psk_cmd(const char* str) {
 
 	uint32_t ftw = ad_calc_ftw(freq_hz) & 0xFFFC0000;
 
+	uint8_t bpsk_ram_image[] = {
+		0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, (ad_default_asf >> 6) & 0xFF, (ad_default_asf << 2) & 0xFF,
+		0x7F, 0xFF, (ad_default_asf >> 6) & 0xFF, (ad_default_asf << 2) & 0xFF
+	};
+
 	sequencer_stop();
 	sequencer_reset();
 
@@ -563,13 +586,13 @@ void xmitdata_ram_psk_cmd(const char* str) {
 		if (vec->elements[i] == 0) {
 			vec_push(ram, 0x00);
 			vec_push(ram, 0x00);
-			vec_push(ram, 0x0e);
-			vec_push(ram, 0x88);
+			vec_push(ram, (ad_default_asf >> 6));
+			vec_push(ram, (ad_default_asf << 2) & 0xFF);
 		} else {
 			vec_push(ram, 0x7F);
 			vec_push(ram, 0xFF);
-			vec_push(ram, 0x0e);
-			vec_push(ram, 0x88);
+			vec_push(ram, (ad_default_asf >> 6));
+			vec_push(ram, (ad_default_asf << 2) & 0xFF);
 		}
 	}
 
@@ -686,7 +709,7 @@ void sequencer_add_pulse_cmd(const char* str) {
 		.t1 = timer_mu(offset_ns),
 		.t2 = timer_mu(offset_ns + duration_ns),
 		.profiles[0] = { .ftw = 0, .asf = 0 },
-		.profiles[1] = { .ftw = ad_calc_ftw(freq_hz), .asf = 465*2 }
+		.profiles[1] = { .ftw = ad_calc_ftw(freq_hz), .asf = ad_default_asf }
 	};
 
 	sequencer_add(pulse);
@@ -739,6 +762,7 @@ void run(const char* str) {
 	if (strcmp(cmd, "verify") == 0) return ad_readback_all();
 	if (strcmp(cmd, "ram_test") == 0) return ad_ram_test();
 	if (strcmp(cmd, "rfkill") == 0) return enter_rfkill_mode();
+	if (strcmp(cmd, "set_level") == 0) return set_level_cmd(str);
 	if (strcmp(cmd, "test_tone") == 0) return test_tone_cmd(str);
 	if (strcmp(cmd, "basic_pulse") == 0) return basic_pulse_cmd(str);
 	if (strcmp(cmd, "basic_sweep") == 0) return basic_sweep_cmd(str);

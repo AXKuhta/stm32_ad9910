@@ -16,6 +16,8 @@
 #include "algos.h"
 #include "vec.h"
 
+extern uint16_t ad_default_asf;
+
 // "Приватные" глобальные переменные
 static vec_t(seq_entry_t)* sequence;
 static int seq_index;
@@ -254,7 +256,7 @@ void enter_test_tone_mode(uint32_t freq_hz) {
 	enter_rfkill_mode();
 
 	ad_set_profile_freq(1, ad_calc_ftw(freq_hz));
-	ad_set_profile_amplitude(1, 465*2);
+	ad_set_profile_amplitude(1, ad_default_asf);
 	ad_write_all();
 	ad_safety_off(0);
 	set_profile(1);
