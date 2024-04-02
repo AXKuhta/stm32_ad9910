@@ -328,18 +328,6 @@ void* scan_uint8_data(const char* str) {
 	return vec;
 }
 
-static void map_to_profiles(uint8_t* ptr) {
-	if (*ptr) {
-		*ptr = 3;
-	} else {
-		*ptr = 2;
-	}
-}
-
-static void prepare_for_dma(uint8_t* ptr) {
-	*ptr = profile_to_gpio_states(*ptr) >> 8;
-}
-
 void xmitdata_fsk_cmd(const char* str) {
 	char o_unit[4] = {0};
 	char f1_unit[4] = {0};
@@ -361,8 +349,14 @@ void xmitdata_fsk_cmd(const char* str) {
 	}
 
 	vec_t(uint8_t)* vec = scan_uint8_data(str + data_offset);
-	for_every_entry(vec, map_to_profiles);
-	for_every_entry(vec, prepare_for_dma);
+	uint8_t* buffer = malloc(vec->size + 1);
+
+	for (size_t i = 0; i < vec->size; i++) {
+		uint8_t profile = vec->elements[i] ? 3 : 2;
+		buffer[i] = profile_to_gpio_states(profile) >> 8;
+	}
+
+	buffer[vec->size] = 0;
 
 	uint32_t f1_hz = parse_freq(f1, f1_unit);
 	uint32_t f2_hz = parse_freq(f2, f2_unit);
@@ -402,11 +396,13 @@ void xmitdata_fsk_cmd(const char* str) {
 		.profiles[0] = { .ftw = 0, .asf = 0 },
 		.profiles[2] = { .ftw = ad_calc_ftw(f1_hz), .asf = ad_default_asf },
 		.profiles[3] = { .ftw = ad_calc_ftw(f2_hz), .asf = ad_default_asf },
-		.profile_modulation = { .buffer = vec->elements, .size = vec->size, .tstep = timer_mu(tstep_ns) }
+		.profile_modulation = { .buffer = buffer, .size = vec->size + 1, .tstep = timer_mu(tstep_ns) }
 	};
 
 	sequencer_add(pulse);
 	sequencer_run();
+
+	free_vec(vec);
 }
 
 void xmitdata_psk_cmd(const char* str) {
@@ -428,8 +424,14 @@ void xmitdata_psk_cmd(const char* str) {
 	}
 
 	vec_t(uint8_t)* vec = scan_uint8_data(str + data_offset);
-	for_every_entry(vec, map_to_profiles);
-	for_every_entry(vec, prepare_for_dma);
+	uint8_t* buffer = malloc(vec->size + 1);
+
+	for (size_t i = 0; i < vec->size; i++) {
+		uint8_t profile = vec->elements[i] ? 3 : 2;
+		buffer[i] = profile_to_gpio_states(profile) >> 8;
+	}
+
+	buffer[vec->size] = 0;
 
 	uint32_t freq_hz = parse_freq(freq, f_unit);
 	uint32_t offset_ns = parse_time(offset, o_unit);
@@ -468,11 +470,13 @@ void xmitdata_psk_cmd(const char* str) {
 		.profiles[0] = { .ftw = 0, .asf = 0 },
 		.profiles[2] = { .ftw = ftw, .pow = 0x0000, .asf = ad_default_asf },
 		.profiles[3] = { .ftw = ftw, .pow = 0x7FFF, .asf = ad_default_asf },
-		.profile_modulation = { .buffer = vec->elements, .size = vec->size, .tstep = timer_mu(tstep_ns) }
+		.profile_modulation = { .buffer = buffer, .size = vec->size + 1, .tstep = timer_mu(tstep_ns) }
 	};
 
 	sequencer_add(pulse);
 	sequencer_run();
+
+	free_vec(vec);
 }
 
 void xmitdata_zc_psk_cmd(const char* str) {
@@ -494,8 +498,14 @@ void xmitdata_zc_psk_cmd(const char* str) {
 	}
 
 	vec_t(uint8_t)* vec = scan_uint8_data(str + data_offset);
-	for_every_entry(vec, map_to_profiles);
-	for_every_entry(vec, prepare_for_dma);
+	uint8_t* buffer = malloc(vec->size + 1);
+
+	for (size_t i = 0; i < vec->size; i++) {
+		uint8_t profile = vec->elements[i] ? 3 : 2;
+		buffer[i] = profile_to_gpio_states(profile) >> 8;
+	}
+
+	buffer[vec->size] = 0;
 
 	uint32_t freq_hz = parse_freq(freq, f_unit);
 	uint32_t offset_ns = parse_time(offset, o_unit);
@@ -544,7 +554,7 @@ void xmitdata_zc_psk_cmd(const char* str) {
 		.ram_profiles[0] = { .start = 0, .end = 0, .rate = 0, .mode = AD_RAM_PROFILE_MODE_ZEROCROSSING },
 		.ram_profiles[2] = { .start = 1, .end = 1, .rate = 0, .mode = AD_RAM_PROFILE_MODE_ZEROCROSSING },
 		.ram_profiles[3] = { .start = 2, .end = 2, .rate = 0, .mode = AD_RAM_PROFILE_MODE_ZEROCROSSING },
-		.profile_modulation = { .buffer = vec->elements, .size = vec->size, .tstep = timer_mu(tstep_ns) },
+		.profile_modulation = { .buffer = buffer, .size = vec->size + 1, .tstep = timer_mu(tstep_ns) },
 		.ram_image = { .buffer = (uint32_t*)ram, .size = 3 },
 		.ram_destination = AD_RAM_DESTINATION_POLAR,
 		.ram_secondary_params = { .ftw =  ftw }
@@ -552,6 +562,8 @@ void xmitdata_zc_psk_cmd(const char* str) {
 
 	sequencer_add(pulse);
 	sequencer_run();
+
+	free_vec(vec);
 }
 
 void xmitdata_ram_psk_cmd(const char* str) {
