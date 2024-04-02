@@ -113,19 +113,16 @@ void basic_pulse_cmd(const char* str) {
 
 	uint16_t element_count = (duration_ns / 4) / rate;
 
-	vec_t(uint8_t)* ram = init_vec(uint8_t);
+	uint8_t* ram = malloc(4*element_count + 4);
 
 	for (size_t i = 0; i < element_count; i++) {
-		vec_push(ram, 0x00);
-		vec_push(ram, 0x00);
-		vec_push(ram, (ad_default_asf >> 6));
-		vec_push(ram, (ad_default_asf << 2) & 0xFF);
+		ram[4*i + 0] = 0x00;
+		ram[4*i + 1] = 0x00;
+		ram[4*i + 2] = (ad_default_asf >> 6);
+		ram[4*i + 3] = (ad_default_asf << 2) & 0xFF;
 	}
 
-	vec_push(ram, 0x00);
-	vec_push(ram, 0x00);
-	vec_push(ram, 0x00);
-	vec_push(ram, 0x00);
+	memset(ram + element_count*4, 0, 4);
 
 	sequencer_stop();
 	sequencer_reset();
@@ -145,7 +142,7 @@ void basic_pulse_cmd(const char* str) {
 			.rate = rate,
 			.mode = AD_RAM_PROFILE_MODE_RAMPUP
 		},
-		.ram_image = { .buffer = (uint32_t*)ram->elements, .size = element_count + 1 },
+		.ram_image = { .buffer = (uint32_t*)ram, .size = element_count + 1 },
 		.ram_destination = AD_RAM_DESTINATION_POLAR,
 		.ram_secondary_params = { .ftw =  ad_calc_ftw(freq_hz) }
 	};
@@ -242,19 +239,16 @@ static void sequencer_add_sweep_internal(const char* str, const char* fstr, cons
 
 	printf("Start POW: %d\n", start_phase_16bit);
 
-	vec_t(uint8_t)* ram = init_vec(uint8_t);
+	uint8_t* ram = malloc(4*element_count + 4);
 
 	for (size_t i = 0; i < element_count; i++) {
-		vec_push(ram, compensation >> 8);
-		vec_push(ram, compensation & 0xFF);
-		vec_push(ram, (ad_default_asf >> 6));
-		vec_push(ram, (ad_default_asf << 2) & 0xFF);
+		ram[4*i + 0] = compensation >> 8;
+		ram[4*i + 1] = compensation & 0xFF;
+		ram[4*i + 2] = (ad_default_asf >> 6);
+		ram[4*i + 3] = (ad_default_asf << 2) & 0xFF;
 	}
 
-	vec_push(ram, 0x00);
-	vec_push(ram, 0x00);
-	vec_push(ram, 0x00);
-	vec_push(ram, 0x00);
+	memset(ram + element_count*4, 0, 4);
 
 	uint32_t lower_ftw = ftw;
 	uint32_t upper_ftw = ftw + steps*a;
@@ -287,7 +281,7 @@ static void sequencer_add_sweep_internal(const char* str, const char* fstr, cons
 			.rate = rate,
 			.mode = AD_RAM_PROFILE_MODE_RAMPUP
 		},
-		.ram_image = { .buffer = (uint32_t*)ram->elements, .size = element_count + 1 },
+		.ram_image = { .buffer = (uint32_t*)ram, .size = element_count + 1 },
 		.ram_destination = AD_RAM_DESTINATION_POLAR
 	};
 
@@ -531,22 +525,15 @@ void xmitdata_zc_psk_cmd(const char* str) {
 
 	uint32_t ftw = ad_calc_ftw(freq_hz) & 0xFFFC0000;
 
-	vec_t(uint8_t)* ram = init_vec(uint8_t);
-	
-	vec_push(ram, 0x00);
-	vec_push(ram, 0x00);
-	vec_push(ram, 0x00);
-	vec_push(ram, 0x00);
+	uint8_t bpsk_ram_image[12] = {
+		0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, (ad_default_asf >> 6), (ad_default_asf << 2) & 0xFF,
+		0x7F, 0xFF, (ad_default_asf >> 6), (ad_default_asf << 2) & 0xFF
+	};
 
-	vec_push(ram, 0x00);
-	vec_push(ram, 0x00);
-	vec_push(ram, (ad_default_asf >> 6));
-	vec_push(ram, (ad_default_asf << 2) & 0xFF);
+	uint8_t* ram = malloc(12);
 
-	vec_push(ram, 0x7F);
-	vec_push(ram, 0xFF);
-	vec_push(ram, (ad_default_asf >> 6));
-	vec_push(ram, (ad_default_asf << 2) & 0xFF);
+	memcpy(ram, bpsk_ram_image, 12);
 
 	sequencer_stop();
 	sequencer_reset();
@@ -585,28 +572,26 @@ void xmitdata_ram_psk_cmd(const char* str) {
 		return;
 	}
 
-	vec_t(uint8_t)* ram = init_vec(uint8_t);
 	vec_t(uint8_t)* vec = scan_uint8_data(str + data_offset);
 	size_t element_count = vec->size;
 
+	uint8_t* ram = malloc(4*element_count + 4);
+
 	for (size_t i = 0; i < element_count; i++) {
 		if (vec->elements[i] == 0) {
-			vec_push(ram, 0x00);
-			vec_push(ram, 0x00);
-			vec_push(ram, (ad_default_asf >> 6));
-			vec_push(ram, (ad_default_asf << 2) & 0xFF);
+			ram[4*i + 0] = 0x00;
+			ram[4*i + 1] = 0x00;
+			ram[4*i + 2] = (ad_default_asf >> 6);
+			ram[4*i + 3] = (ad_default_asf << 2) & 0xFF;
 		} else {
-			vec_push(ram, 0x7F);
-			vec_push(ram, 0xFF);
-			vec_push(ram, (ad_default_asf >> 6));
-			vec_push(ram, (ad_default_asf << 2) & 0xFF);
+			ram[4*i + 0] = 0x7F;
+			ram[4*i + 1] = 0xFF;
+			ram[4*i + 2] = (ad_default_asf >> 6);
+			ram[4*i + 3] = (ad_default_asf << 2) & 0xFF;
 		}
 	}
 
-	vec_push(ram, 0x00);
-	vec_push(ram, 0x00);
-	vec_push(ram, 0x00);
-	vec_push(ram, 0x00);
+	memset(ram + element_count*4, 0, 4);
 
 	free_vec(vec);
 
@@ -653,7 +638,7 @@ void xmitdata_ram_psk_cmd(const char* str) {
 			.rate = tstep_ns / 4,
 			.mode = AD_RAM_PROFILE_MODE_RAMPUP
 		},
-		.ram_image = { .buffer = (uint32_t*)ram->elements, .size = element_count + 1 },
+		.ram_image = { .buffer = (uint32_t*)ram, .size = element_count + 1 },
 		.ram_destination = AD_RAM_DESTINATION_POLAR,
 		.ram_secondary_params = { .ftw =  ftw }
 	};
