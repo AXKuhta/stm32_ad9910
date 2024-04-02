@@ -27,6 +27,18 @@ void sequencer_init() {
 }
 
 void sequencer_reset() {
+	for (size_t i = 0; i < sequence->size; i++) {
+		if (sequence->elements[i].ram_image.buffer) {
+			free(sequence->elements[i].ram_image.buffer);
+			sequence->elements[i].ram_image.buffer = NULL;
+		}
+
+		if (sequence->elements[i].profile_modulation.buffer) {
+			free(sequence->elements[i].profile_modulation.buffer);
+			sequence->elements[i].profile_modulation.buffer = NULL;
+		}
+	}
+
 	clear_vec(sequence);
 }
 
