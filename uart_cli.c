@@ -15,6 +15,7 @@
 
 extern uint32_t ad_system_clock;
 extern uint16_t ad_default_asf;
+extern uint8_t ad_default_fsc;
 
 #define ABS(x) (x < 0 ? -x : x)
 
@@ -22,25 +23,38 @@ extern uint16_t ad_default_asf;
 // CLI COMMANDS
 // =============================================================================
 void set_level_cmd(const char* str) {
-	int level;
+	char unit[4] = {0};
+	double voltage;
 
-	int rc = sscanf(str, "%*s %d", &level);
+	int rc = sscanf(str, "%*s %lf %3s", &voltage, unit);
 
 	if (rc != 1) {
 		printf("Invalid arguments\n");
-		printf("Usage: set_level value\n");
-		printf("Example: set_level 16383\n");
+		printf("Usage: set_level voltage unit\n");
+		printf("Example: set_level 200 mV\n");
 		return;
 	}
 
-	if (level > 0x3FFF || level < 0) {
-		printf("Invalid level; level must be >=0 <16384");
+	double voltage_vrms = parse_volts(voltage, unit);
+
+	if (voltage_vrms == 0) {
 		return;
 	}
 
-	ad_default_asf = level;
+	uint16_t asf;
+	uint8_t fsc;
 
-	printf("Set level to %d\n", level);
+	int success = best_asf_fsc(voltage_vrms, &asf, &fsc);
+
+	if (!success) {
+		printf("Unable; try a voltage below 300 mV\n");
+		return;
+	}
+
+	ad_default_asf = asf;
+	ad_default_fsc = fsc;
+
+	printf("Set ASF=%u FSC=%u\n", asf, fsc);
 }
 
 void test_tone_cmd(const char* str) {
@@ -130,6 +144,7 @@ void basic_pulse_cmd(const char* str) {
 	seq_entry_t pulse = {
 		.t1 = timer_mu(offset_ns),
 		.t2 = timer_mu(offset_ns + duration_ns),
+		.fsc = ad_default_fsc,
 		.ram_profiles[0] = {
 			.start = element_count,
 			.end = element_count,
@@ -269,6 +284,7 @@ static void sequencer_add_sweep_internal(const char* str, const char* fstr, cons
 		},
 		.t1 = timer_mu(offset_ns),
 		.t2 = timer_mu(offset_ns + duration_ns),
+		.fsc = ad_default_fsc,
 		.ram_profiles[0] = {
 			.start = element_count,
 			.end = element_count,
@@ -393,6 +409,7 @@ void xmitdata_fsk_cmd(const char* str) {
 	seq_entry_t pulse = {
 		.t1 = timer_mu(offset_ns),
 		.t2 = timer_mu(offset_ns + duration_ns),
+		.fsc = ad_default_fsc,
 		.profiles[0] = { .ftw = 0, .asf = 0 },
 		.profiles[2] = { .ftw = ad_calc_ftw(f1_hz), .asf = ad_default_asf },
 		.profiles[3] = { .ftw = ad_calc_ftw(f2_hz), .asf = ad_default_asf },
@@ -467,6 +484,7 @@ void xmitdata_psk_cmd(const char* str) {
 	seq_entry_t pulse = {
 		.t1 = timer_mu(offset_ns),
 		.t2 = timer_mu(offset_ns + duration_ns),
+		.fsc = ad_default_fsc,
 		.profiles[0] = { .ftw = 0, .asf = 0 },
 		.profiles[2] = { .ftw = ftw, .pow = 0x0000, .asf = ad_default_asf },
 		.profiles[3] = { .ftw = ftw, .pow = 0x7FFF, .asf = ad_default_asf },
@@ -551,6 +569,7 @@ void xmitdata_zc_psk_cmd(const char* str) {
 	seq_entry_t pulse = {
 		.t1 = timer_mu(offset_ns),
 		.t2 = timer_mu(offset_ns + duration_ns),
+		.fsc = ad_default_fsc,
 		.ram_profiles[0] = { .start = 0, .end = 0, .rate = 0, .mode = AD_RAM_PROFILE_MODE_ZEROCROSSING },
 		.ram_profiles[2] = { .start = 1, .end = 1, .rate = 0, .mode = AD_RAM_PROFILE_MODE_ZEROCROSSING },
 		.ram_profiles[3] = { .start = 2, .end = 2, .rate = 0, .mode = AD_RAM_PROFILE_MODE_ZEROCROSSING },
@@ -638,6 +657,7 @@ void xmitdata_ram_psk_cmd(const char* str) {
 	seq_entry_t pulse = {
 		.t1 = timer_mu(offset_ns),
 		.t2 = timer_mu(offset_ns + duration_ns),
+		.fsc = ad_default_fsc,
 		.ram_profiles[0] = {
 			.start = element_count,
 			.end = element_count,
@@ -712,6 +732,7 @@ void sequencer_add_pulse_cmd(const char* str) {
 	seq_entry_t pulse = {
 		.t1 = timer_mu(offset_ns),
 		.t2 = timer_mu(offset_ns + duration_ns),
+		.fsc = ad_default_fsc,
 		.profiles[0] = { .ftw = 0, .asf = 0 },
 		.profiles[1] = { .ftw = ad_calc_ftw(freq_hz), .asf = ad_default_asf }
 	};

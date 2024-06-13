@@ -33,6 +33,7 @@ typedef struct seq_entry_t {
 		uint32_t* buffer;
 		size_t size;
 	} ram_image;
+	uint8_t fsc;
 	uint8_t ram_destination;
 	profile_t ram_secondary_params;
 	union {

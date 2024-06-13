@@ -10,9 +10,10 @@ uint32_t ad_system_clock = 0;
 
 // Используемое по умолчанию значение амплитуды (ASF)
 // Максимальным допустимым значением является 0x3FFF
-// Когда Full Scale Current = 0x7F, ASF = 0x3FFF соответствует уровню примерно 950 mVpp
-// Когда Full Scale Current = 0x01, ASF = 0x3FFF соответствует уровню примерно 400 mVpp
 uint16_t ad_default_asf = 1024;
+
+// Используемое по умолчанию значение тока ЦАПа (FSC)
+uint8_t ad_default_fsc = 0;
 
 static struct { uint32_t min, max; } vco_ranges[] = {
 	{ .min = 420000000, .max = 485000000 },
@@ -57,9 +58,6 @@ void ad_init() {
 	// SDIO Input Only
 	r00[3] = 0x02;
 
-	// Full scale current
-	r03[03] = 0x01;
-
 	ad_enable_pll(25*1000*1000, 40);
 	
 	r01[0] = 0b00000001; // Enable amplitude scale from single tone profiles
@@ -72,7 +70,6 @@ void ad_init() {
 	ad_write(0x00, r00, 4);
 	ad_write(0x01, r01, 4);
 	ad_write(0x02, r02, 4);
-	ad_write(0x03, r03, 4);
 	
 	ad_pulse_io_update();
 }

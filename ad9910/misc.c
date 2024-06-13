@@ -4,6 +4,10 @@
 #include "ad9910/pins.h"
 #include "ad9910/misc.h"
 
+void ad_set_full_scale_current(uint8_t fsc) {
+	r03[03] = fsc;
+}
+
 // Тест с переключением SYNC_CLK
 // Полезно для тестирования задержек
 void ad_toggle_sync_clk() {	

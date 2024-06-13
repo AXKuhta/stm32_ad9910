@@ -173,3 +173,32 @@ uint16_t fit_time(uint32_t time_ns) {
 
 	return clocks/overhead;
 }
+
+// См. Auxiliary DAC в AD9910 datasheet
+static double fsc_i(uint8_t x) {
+	return (86.4 / 10000) * (1 + (x/96.0));
+}
+
+// Подобрать наилучшую комбинацию значений ASF и FSC для представления определённого уровня V (rms)
+// Предполагается нагрузка 50 ом на выходе платы синтезатора
+//
+// Значение ASF отвечает за цифровое масштабирование синусоиды перед ЦАПом
+// Маленькие значения ASF хуже - с ними теряется часть разрешения ЦАПа
+//
+// Здесь реализован поиск максимального подходящего значения ASF
+//
+int best_asf_fsc(double voltage_vrms, uint16_t* asfp, uint8_t* fscp) {
+	for (int fsc = 0; fsc < 256; fsc++) {
+		double cost =  fsc_i(fsc) * (50.0/3.0 / 1.41421356237309504 / 16383);
+		double asf = voltage_vrms / cost;
+		
+		if (asf <= 16383) {
+			*asfp = (uint16_t)(asf + 0.5);
+			*fscp = fsc;
+
+			return 1;
+		}
+	}
+
+	return 0;
+}

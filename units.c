@@ -40,6 +40,23 @@ uint32_t parse_time(double time, const char* unit) {
 	return time * multiplier;
 }
 
+double parse_volts(double voltage, const char* unit) {
+	double multiplier;
+
+	if (strcasecmp(unit, "uv") == 0) {
+		multiplier = 0.0001 * 0.0001;
+	} else if (strcasecmp(unit, "mv") == 0) {
+		multiplier = 0.0001;
+	} else if (strcasecmp(unit, "v") == 0) {
+		multiplier = 1;
+	} else {
+		printf("Invalid voltage unit: %s\n", unit);
+		return 0;
+	}
+
+	return voltage * multiplier;
+}
+
 char* time_unit(double time) {
 	const char* unit;
 	char* ret = NULL;
