@@ -111,8 +111,6 @@ void input_overrun_error() {
 }
 
 void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
-	(void)huart;
-
 	printf("\nUART error (%lu)\n", huart->ErrorCode);
 	while (1) {};
 }
