@@ -113,7 +113,8 @@ void input_overrun_error() {
 void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
 	(void)huart;
 
-	run_later(input_overrun_error);
+	printf("\nUART error (%lu)\n", huart->ErrorCode);
+	while (1) {};
 }
 
 // This function is called when the line goes idle
