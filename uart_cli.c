@@ -25,7 +25,7 @@ extern uint8_t ad_default_fsc;
 // =============================================================================
 
 // 10^(-.4 dBm/10)
-#define OUTPUT_RATIO_CAL 0.89 //0.9120108394
+#define OUTPUT_RATIO_CAL 0.9120108394
 
 void set_level_cmd(const char* str) {
 	char unit[4] = {0};
