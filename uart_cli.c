@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <string.h>
 #include <stdlib.h>
+#include <math.h>
 
 #include "isr.h"
 #include "performance.h"
@@ -60,12 +61,18 @@ void set_level_cmd(const char* str) {
 		return;
 	}
 
-	char* verif_voltage = volts_unit( ad_voltage_vrms_from_asf_fsc(asf, fsc) * OUTPUT_RATIO_CAL );
+	double backconv_voltage = ad_voltage_vrms_from_asf_fsc(asf, fsc) * OUTPUT_RATIO_CAL;
+
+	// Assume 50 ohms load
+	double watts = backconv_voltage * backconv_voltage / 50.0;
+	double dbm = 10.0*log10(watts / .001);
+
+	char* verif_voltage = volts_unit( backconv_voltage );
 
 	ad_default_asf = asf;
 	ad_default_fsc = fsc;
 
-	printf("Set ASF=%u FSC=%u which is %s rms\n", asf, fsc, verif_voltage);
+	printf("Set ASF=%u FSC=%u which is %s rms or %.1lf dBm\n", asf, fsc, verif_voltage, dbm);
 
 	free(verif_voltage);
 }
