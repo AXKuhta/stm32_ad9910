@@ -22,6 +22,10 @@ extern uint8_t ad_default_fsc;
 // =============================================================================
 // CLI COMMANDS
 // =============================================================================
+
+// 10^(-.4 dBm/10)
+#define OUTPUT_RATIO_CAL 0.89 //0.9120108394
+
 void set_level_cmd(const char* str) {
 	char unit[4] = {0};
 	double voltage;
@@ -44,7 +48,7 @@ void set_level_cmd(const char* str) {
 	uint16_t asf;
 	uint8_t fsc;
 
-	int success = best_asf_fsc(voltage_vrms, &asf, &fsc);
+	int success = best_asf_fsc(voltage_vrms / OUTPUT_RATIO_CAL, &asf, &fsc);
 
 	if (!success) {
 		printf("Unable; try a voltage below 300 mV\n");
@@ -56,10 +60,14 @@ void set_level_cmd(const char* str) {
 		return;
 	}
 
+	char* verif_voltage = volts_unit( ad_voltage_vrms_from_asf_fsc(asf, fsc) * OUTPUT_RATIO_CAL );
+
 	ad_default_asf = asf;
 	ad_default_fsc = fsc;
 
-	printf("Set ASF=%u FSC=%u\n", asf, fsc);
+	printf("Set ASF=%u FSC=%u which is %s rms\n", asf, fsc, verif_voltage);
+
+	free(verif_voltage);
 }
 
 void test_tone_cmd(const char* str) {

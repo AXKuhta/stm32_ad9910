@@ -27,3 +27,14 @@ double ad_backconvert_step_time(uint16_t step_time) {
 	double tstep = 1.0 / (ad_system_clock / 4.0);
 	return step_time * tstep;
 }
+
+// Ток ЦАПа
+// См. Auxiliary DAC в AD9910 datasheet
+double ad_fsc_i(uint8_t fsc) {
+	return (86.4 / 10000) * (1 + (fsc/96.0));
+}
+
+// Предполагает нагрузку 50 ом на выходе платы синтезатора
+double ad_voltage_vrms_from_asf_fsc(uint16_t asf, uint8_t fsc) {
+	return asf * ad_fsc_i(fsc) * (50.0/3.0 / 1.41421356237309504 / 16383);
+}

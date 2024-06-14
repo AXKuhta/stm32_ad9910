@@ -102,3 +102,21 @@ char* freq_unit(double freq) {
 	return ret;
 }
 
+char* volts_unit(double voltage) {
+	const char* unit;
+	char* ret = NULL;
+
+	if (voltage < 0.001) {
+		voltage = voltage*1000*1000;
+		unit = "uV";
+	} else if (voltage < 1) {
+		voltage = voltage*1000;
+		unit = "mV";
+	} else {
+		unit = "V";
+	}
+
+	asprintf(&ret, "%.3lf %s", voltage, unit);
+
+	return ret;
+}
