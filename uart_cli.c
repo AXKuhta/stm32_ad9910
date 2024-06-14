@@ -28,7 +28,7 @@ void set_level_cmd(const char* str) {
 
 	int rc = sscanf(str, "%*s %lf %3s", &voltage, unit);
 
-	if (rc != 1) {
+	if (rc != 2) {
 		printf("Invalid arguments\n");
 		printf("Usage: set_level voltage unit\n");
 		printf("Example: set_level 200 mV\n");
@@ -48,6 +48,11 @@ void set_level_cmd(const char* str) {
 
 	if (!success) {
 		printf("Unable; try a voltage below 300 mV\n");
+		return;
+	}
+
+	if (asf < 2) {
+		printf("Unable; try a voltage above 10 uV\n");
 		return;
 	}
 

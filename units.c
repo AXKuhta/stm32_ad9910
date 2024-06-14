@@ -44,9 +44,9 @@ double parse_volts(double voltage, const char* unit) {
 	double multiplier;
 
 	if (strcasecmp(unit, "uv") == 0) {
-		multiplier = 0.0001 * 0.0001;
+		multiplier = 0.001 * 0.001;
 	} else if (strcasecmp(unit, "mv") == 0) {
-		multiplier = 0.0001;
+		multiplier = 0.001;
 	} else if (strcasecmp(unit, "v") == 0) {
 		multiplier = 1;
 	} else {
