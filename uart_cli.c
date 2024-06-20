@@ -24,8 +24,11 @@ extern uint8_t ad_default_fsc;
 // CLI COMMANDS
 // =============================================================================
 
-// 10^(-.4 dBm/10)
-#define OUTPUT_RATIO_CAL 0.9120108394
+// 10^(-.4 dBm/10)		matches PR100 (158 MHz tone)
+// #define OUTPUT_RATIO_CAL 0.9120108394
+
+// 10^(-.2 dBm/10)		should match G4-218 (158 MHz tone)
+#define OUTPUT_RATIO_CAL 0.954992586
 
 void set_level_cmd(const char* str) {
 	char unit[4] = {0};
@@ -73,6 +76,35 @@ void set_level_cmd(const char* str) {
 	ad_default_fsc = fsc;
 
 	printf("Set ASF=%u FSC=%u which is %s rms or %.1lf dBm\n", asf, fsc, verif_voltage, dbm);
+
+	free(verif_voltage);
+}
+
+void dbg_level_cmd(const char* str) {
+	uint16_t asf;
+	uint8_t fsc;
+
+	int rc = sscanf(str, "%*s %hu %hhu", &asf, &fsc);
+
+	if (rc != 2) {
+		printf("Invalid arguments\n");
+		printf("Usage: dbg_level asf fsc\n");
+		printf("Example: dbg_level 16383 127\n");
+		return;
+	}
+
+	double backconv_voltage = ad_voltage_vrms_from_asf_fsc(asf, fsc) * OUTPUT_RATIO_CAL;
+
+	// Assume 50 ohms load
+	double watts = backconv_voltage * backconv_voltage / 50.0;
+	double dbm = 10.0*log10(watts / .001);
+
+	char* verif_voltage = volts_unit( backconv_voltage );
+
+	printf("Set ASF=%u FSC=%u which is %s rms or %.1lf dBm\n", asf, fsc, verif_voltage, dbm);
+
+	ad_default_asf = asf;
+	ad_default_fsc = fsc;
 
 	free(verif_voltage);
 }
@@ -808,6 +840,7 @@ void run(const char* str) {
 	if (strcmp(cmd, "ram_test") == 0) return ad_ram_test();
 	if (strcmp(cmd, "rfkill") == 0) return enter_rfkill_mode();
 	if (strcmp(cmd, "set_level") == 0) return set_level_cmd(str);
+	if (strcmp(cmd, "dbg_level") == 0) return dbg_level_cmd(str);
 	if (strcmp(cmd, "test_tone") == 0) return test_tone_cmd(str);
 	if (strcmp(cmd, "basic_pulse") == 0) return basic_pulse_cmd(str);
 	if (strcmp(cmd, "basic_sweep") == 0) return basic_sweep_cmd(str);
