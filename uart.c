@@ -106,13 +106,44 @@ void parse() {
 }
 
 void input_overrun_error() {
-	printf("\nInput overrun error\n");
 	while (1) {};
 }
 
 void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
-	printf("\nUART error (%lu)\n", huart->ErrorCode);
-	while (1) {};
+	const char* error_type = "UNKNOWN\n";
+
+	switch (huart->ErrorCode) {
+		case HAL_UART_ERROR_NONE:
+			error_type = "No error\n";
+			break;
+		case HAL_UART_ERROR_PE:
+			error_type = "Parity error\n";
+			break;
+		case HAL_UART_ERROR_NE:
+			error_type = "Noise error\n";
+			break;
+		case HAL_UART_ERROR_FE:
+			error_type = "Frame error\n";
+			break;
+		case HAL_UART_ERROR_ORE:
+			error_type = "Overrun error\n";
+			break;
+		case HAL_UART_ERROR_DMA:
+			error_type = "DMA transfer error\n";
+			break;
+		case HAL_UART_ERROR_RTO:
+			error_type = "Receive timeour error\n";
+			break;
+		default:
+			break;
+	}
+
+	const char* message = "UART error: ";
+
+	_write(1, message, strlen(message));
+	_write(1, error_type, strlen(error_type));
+
+	restart_rx();
 }
 
 // This function is called when the line goes idle
