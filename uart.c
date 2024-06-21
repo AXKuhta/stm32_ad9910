@@ -97,6 +97,8 @@ const char* get_next_str(const char* buf) {
 void parse() {
 	const char* buf = (const char*)input_buffer;
 
+	_write(1, "\n", 1);
+
 	do {
 		run(buf);
 		buf = get_next_str(buf);
@@ -152,7 +154,7 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size) {
 	uint8_t* base = huart->pRxBuffPtr;
 	uint8_t* last = base - 1 + Size;
 
-	// Must do this or it will look to ARM like the memory is still 0
+	// [When dcache is enabled] Must do this or it will look to ARM like the memory is still 0
 	// ...Except when input_buffer is in the first 64KB of SRAM which is uncached
 	SCB_InvalidateDCache_by_Addr((uint32_t*)input_buffer, INPUT_BUFFER_SIZE);
 
@@ -160,14 +162,25 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size) {
 	extern uint32_t perf_usart3_bytes_rx;
 	perf_usart3_bytes_rx += Size;
 
-	// Echo keypresses
-	_write(1, (char*)base, Size);
+	if (space_remains == 0) {
+		return run_later(input_overrun_error);
+	}
+
+	// Command handling
+	// Ensure that memory will remain unchanged while parsing
+	int resume_rx = 1;
+
+	if (*last == '\n' || *last == '\r') {
+		run_later(parse);
+		resume_rx = 0;
+	}
 
 	// Backspace handling
+	int bksp = 0;
+
 	// Different terminals may send different backspace codes
 	// Handle both types
 	if (*last == 127) {
-		_write(1, (char[]){8, ' ', 8}, 3);
 		*last = 8;
 	}
 
@@ -181,17 +194,18 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size) {
 
 		space_remains++;
 		base = last;
+		bksp = 1;
 	}
 
-	if (space_remains == 0) {
-		return run_later(input_overrun_error);
-	}
-
-	// Ensure that memory will remain untouched while parsing
-	if (*last == '\n' || *last == '\r') {
-		_write(1, "\n", 1);
-		run_later(parse);
-	} else {
+	// Resume reception
+	// Make sure no _writes() happen prior! This is latency sensitive
+	if (resume_rx)
 		HAL_UARTEx_ReceiveToIdle_DMA(huart, base + Size, space_remains);
-	}	
+
+	// Echo keypresses
+	if (bksp) {
+		_write(1, (char[]){8, ' ', 8}, 3);
+	} else {
+		_write(1, (char*)base, Size);
+	}
 }
