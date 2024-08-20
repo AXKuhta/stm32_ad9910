@@ -253,7 +253,12 @@ static void sequencer_add_sweep_internal(const char* str, const char* fstr, cons
 	double fstep = ad_system_clock / ((1ull << 32) + 0.0);
 	uint32_t steps = duration_ns / (4 * b);
 
-	double span_hz = fstep * steps * a;
+	if (duration_ns % (4 * b) != 0) {
+		printf("Invalid combination of duration and b; duration must be a factor of b * 4 ns\n");
+		return;
+	}
+
+	double span_hz = a * fstep * (steps - 1);
 	double f1_hz = fc_hz - span_hz/2;
 	double f2_hz = f1_hz + span_hz;
 
@@ -318,7 +323,7 @@ static void sequencer_add_sweep_internal(const char* str, const char* fstr, cons
 	memset(ram + element_count*4, 0, 4);
 
 	uint32_t lower_ftw = ftw;
-	uint32_t upper_ftw = ftw + steps*a;
+	uint32_t upper_ftw = ftw + a * (steps - 1);
 
 	// We can only reset DRG to lower_ftw, therefore lower_ftw must always be lower than upper_ftw
 	// Use mirrored FTWs for f1 > f2 sweeps
