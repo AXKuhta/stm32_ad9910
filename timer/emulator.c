@@ -66,18 +66,18 @@ static void timer1_init(uint32_t prescaler, uint32_t period, uint32_t pulse) {
 // period = 64962
 // pulse = 19
 //
-void radar_emulator_start(uint32_t target_hz, double target_t) {
-	uint32_t desired_freq = 65536 * target_hz;
-	uint32_t prescaler = M_216MHz / (double)desired_freq + 0.5;
+void radar_emulator_start(double target_hz, double target_t) {
+	double desired_freq = 65536 * target_hz;
+	uint32_t prescaler = M_216MHz / desired_freq + 0.5;
 	double scaled_freq = M_216MHz / (prescaler + 1);
-	uint32_t period = scaled_freq / (double)target_hz + 0.5;
+	uint32_t period = scaled_freq / target_hz + 0.5;
 	uint32_t pulse = scaled_freq * target_t + 0.5;
 
 	timer1_init(prescaler, period, pulse);
 
-	char* tstr = time_unit(target_t);
+	char* tstr = time_unit(pulse / scaled_freq);
 
-	printf("Radar emulator enabled: %s pulses at %ld Hz\n", tstr, target_hz);
+	printf("Radar emulator enabled: %s pulses at %lf Hz\n", tstr, scaled_freq / period);
 
 	free(tstr);
 }

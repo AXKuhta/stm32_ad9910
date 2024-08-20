@@ -10,6 +10,7 @@
 #include "ad9910.h"
 #include "units.h"
 #include "timer.h"
+#include "timer/emulator.h"
 #include "sequencer.h"
 #include "algos.h"
 #include "vec.h"
@@ -827,6 +828,27 @@ void sequencer_cmd(const char* str) {
 	printf("Unknown sequencer command: [%s]\n", cmd);
 }
 
+void radar_emulator_cmd(const char* str) {
+	char d_unit[4] = {0};
+	char f_unit[4] = {0};
+	double duration;
+	double freq;
+
+	int rc = sscanf(str, "%*s %lf %s %lf %s", &freq, f_unit, &duration, d_unit);
+
+	if (rc != 4) {
+		printf("Invalid arguments\n");
+		printf("Usage: radar_emulator freq unit duration unit\n");
+		printf("Example: radar_emulator 25 Hz 12 us\n");
+		return;
+	}
+
+	double freq_hz = parse_freq(freq, f_unit);
+	double duration_ns = parse_time(duration, d_unit);
+
+	radar_emulator_start(freq_hz, duration_ns / 1000.0 / 1000.0 / 1000.0);
+}
+
 void run(const char* str) {
 	char cmd[32] = {0};
 
@@ -850,6 +872,7 @@ void run(const char* str) {
 	if (strcmp(cmd, "basic_pulse") == 0) return basic_pulse_cmd(str);
 	if (strcmp(cmd, "basic_sweep") == 0) return basic_sweep_cmd(str);
 	if (strcmp(cmd, "basic_xmitdata") == 0) return basic_xmitdata_cmd(str);
+	if (strcmp(cmd, "radar_emulator") == 0) return radar_emulator_cmd(str);
 
 	printf("Unknown command: [%s]\n", cmd);
 }

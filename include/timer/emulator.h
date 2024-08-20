@@ -1,2 +1,2 @@
 
-void radar_emulator_start(uint32_t target_hz, double target_t);
+void radar_emulator_start(double target_hz, double target_t);
