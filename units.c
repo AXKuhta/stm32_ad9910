@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 
-uint32_t parse_freq(double freq, const char* unit) {
+double parse_freq(double freq, const char* unit) {
 	double multiplier;
 
 	if (strcasecmp(unit, "mhz") == 0) {
@@ -21,7 +21,7 @@ uint32_t parse_freq(double freq, const char* unit) {
 	return freq * multiplier;
 }
 
-uint32_t parse_time(double time, const char* unit) {
+double parse_time(double time, const char* unit) {
 	double multiplier;
 
 	if (strcasecmp(unit, "s") == 0) {
