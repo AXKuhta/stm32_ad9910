@@ -131,3 +131,9 @@ seq run
 ```
 
 ![sequencer](https://github.com/AXKuhta/stm32_ad9910/assets/11133304/f3c8a885-f8eb-494d-8bab-78471956a0b9)
+
+## radar_emulator [freq] [unit] [duration] [unit]
+
+Настроить частоту следования триггеров от внутреннего источника, а также их длительность.
+
+Пример: `radar_emulator 25 Hz 12 us`
