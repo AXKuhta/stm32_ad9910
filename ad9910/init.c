@@ -40,7 +40,7 @@ static void ad_enable_pll(uint32_t refclk, uint8_t multiplier) {
 
 	assert(icp < 8);
 
-	r02[0] = 0b00001000 + vco; 	// XTAL out disable + VCO
+	r02[0] = 0b00011000 + vco; 	// XTAL out enable (Drive strength low) + VCO
 	r02[1] = icp << 3; 			// Charge pump current
 	r02[2] = 0b11000001; 		// Divider disable + PLL enable
 	r02[3] = multiplier << 1;
