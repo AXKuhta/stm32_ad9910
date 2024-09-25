@@ -32,7 +32,7 @@ static void timer1_init(uint32_t prescaler, uint32_t period, uint32_t pulse) {
 	// PWM1 = Начинает на высоком уровне
 	// PWM2 = Начинает на низком уровне
 	TIM_OC_InitTypeDef oc_config = {
-		.OCMode = TIM_OCMODE_PWM1,
+		.OCMode = TIM_OCMODE_PWM2,
 		.Pulse = pulse,
 		.OCPolarity = TIM_OCPOLARITY_HIGH,
 		.OCFastMode = TIM_OCFAST_DISABLE
@@ -66,6 +66,11 @@ static void timer1_init(uint32_t prescaler, uint32_t period, uint32_t pulse) {
 // period = 64962
 // pulse = 19
 //
+// # _pulse_ тиков таймера соответствуют желаемому времени заполнения
+// # но это должны быть последние _pulse_ тиков
+// # так что:
+// pulse = period - pulse
+//
 void radar_emulator_start(double target_hz, double target_t) {
 	double desired_freq = 65536 * target_hz;
 	uint32_t prescaler = M_216MHz / desired_freq + 0.5;
@@ -73,7 +78,7 @@ void radar_emulator_start(double target_hz, double target_t) {
 	uint32_t period = scaled_freq / target_hz + 0.5;
 	uint32_t pulse = scaled_freq * target_t + 0.5;
 
-	timer1_init(prescaler, period, pulse);
+	timer1_init(prescaler, period, period - pulse);
 
 	char* tstr = time_unit(pulse / scaled_freq);
 
