@@ -18,6 +18,8 @@ static void timer1_init(uint32_t prescaler, uint32_t period, uint32_t pulse) {
 	__HAL_RCC_TIM1_CLK_ENABLE();
 	timer1_gpio_init();
 
+	uint16_t limit = 2;
+
 	TIM_HandleTypeDef timer1_defaults = {
 		.Instance = TIM1,
 		.Init = {
@@ -25,7 +27,8 @@ static void timer1_init(uint32_t prescaler, uint32_t period, uint32_t pulse) {
 			.CounterMode = TIM_COUNTERMODE_UP,
 			.Period = period,
 			.ClockDivision = TIM_CLOCKDIVISION_DIV1,
-			.RepetitionCounter = 0
+			.RepetitionCounter = limit,
+			.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE
 		}
 	};
 	
@@ -40,7 +43,16 @@ static void timer1_init(uint32_t prescaler, uint32_t period, uint32_t pulse) {
 	
 	HAL_TIM_PWM_Init(&timer1_defaults);
 	HAL_TIM_PWM_ConfigChannel(&timer1_defaults, &oc_config, TIM_CHANNEL_1);
-	
+
+	// Спровоцировать update event, чтобы значение из preload перенеслось в shadow регистры
+	timer1_defaults.Instance->EGR = TIM_EGR_UG;
+
+	// Остановить таймер по истечению RepetitionCounter
+	// Будет лежать в preload регистре, пока
+	// RepetitionCounter > 0
+	if (limit)
+		timer1_defaults.Instance->ARR = 0;
+
 	HAL_TIM_PWM_Start(&timer1_defaults, TIM_CHANNEL_1);
 }
 
