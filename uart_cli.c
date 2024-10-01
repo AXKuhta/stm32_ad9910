@@ -191,9 +191,6 @@ void basic_pulse_cmd(const char* str) {
 
 	memset(ram + element_count*4, 0, 4);
 
-	sequencer_stop();
-	sequencer_reset();
-
 	seq_entry_t pulse = {
 		.t1 = timer_mu(offset_ns),
 		.t2 = timer_mu(offset_ns + duration_ns),
@@ -215,6 +212,7 @@ void basic_pulse_cmd(const char* str) {
 		.ram_secondary_params = { .ftw =  ad_calc_ftw(freq_hz) }
 	};
 
+	sequencer_reset();
 	sequencer_add(pulse);
 	sequencer_run();
 }
@@ -360,14 +358,12 @@ static void sequencer_add_sweep_internal(const char* str, const char* fstr, cons
 	};
 
 	if (run) {
-		sequencer_stop();
 		sequencer_reset();
-	}
-
-	sequencer_add(pulse);
-
-	if (run)
+		sequencer_add(pulse);
 		sequencer_run();
+	} else {
+		sequencer_add(pulse);
+	}
 }
 
 void sequencer_add_sweep_cmd(const char* str) {
@@ -461,9 +457,6 @@ void xmitdata_fsk_cmd(const char* str) {
 	free(verif_tstep);
 	free(verif_duration_ns);
 
-	sequencer_stop();
-	sequencer_reset();
-
 	seq_entry_t pulse = {
 		.t1 = timer_mu(offset_ns),
 		.t2 = timer_mu(offset_ns + duration_ns),
@@ -474,6 +467,7 @@ void xmitdata_fsk_cmd(const char* str) {
 		.profile_modulation = { .buffer = buffer, .size = vec->size + 1, .tstep = timer_mu(tstep_ns) }
 	};
 
+	sequencer_reset();
 	sequencer_add(pulse);
 	sequencer_run();
 
@@ -536,9 +530,6 @@ void xmitdata_psk_cmd(const char* str) {
 
 	uint32_t ftw = ad_calc_ftw(freq_hz);
 
-	sequencer_stop();
-	sequencer_reset();
-
 	seq_entry_t pulse = {
 		.t1 = timer_mu(offset_ns),
 		.t2 = timer_mu(offset_ns + duration_ns),
@@ -549,6 +540,7 @@ void xmitdata_psk_cmd(const char* str) {
 		.profile_modulation = { .buffer = buffer, .size = vec->size + 1, .tstep = timer_mu(tstep_ns) }
 	};
 
+	sequencer_reset();
 	sequencer_add(pulse);
 	sequencer_run();
 
@@ -621,9 +613,6 @@ void xmitdata_zc_psk_cmd(const char* str) {
 
 	memcpy(ram, bpsk_ram_image, 12);
 
-	sequencer_stop();
-	sequencer_reset();
-
 	seq_entry_t pulse = {
 		.t1 = timer_mu(offset_ns),
 		.t2 = timer_mu(offset_ns + duration_ns),
@@ -637,6 +626,7 @@ void xmitdata_zc_psk_cmd(const char* str) {
 		.ram_secondary_params = { .ftw =  ftw }
 	};
 
+	sequencer_reset();
 	sequencer_add(pulse);
 	sequencer_run();
 
@@ -709,9 +699,6 @@ void xmitdata_ram_psk_cmd(const char* str) {
 
 	uint32_t ftw = ad_calc_ftw(freq_hz);
 
-	sequencer_stop();
-	sequencer_reset();
-
 	seq_entry_t pulse = {
 		.t1 = timer_mu(offset_ns),
 		.t2 = timer_mu(offset_ns + duration_ns),
@@ -733,6 +720,7 @@ void xmitdata_ram_psk_cmd(const char* str) {
 		.ram_secondary_params = { .ftw =  ftw }
 	};
 
+	sequencer_reset();
 	sequencer_add(pulse);
 	sequencer_run();
 }

@@ -27,7 +27,10 @@ void sequencer_init() {
 	sequence = init_vec(seq_entry_t);
 }
 
+// Остановить и очистить секвенсор
 void sequencer_reset() {
+	sequencer_stop();
+
 	for (size_t i = 0; i < sequence->size; i++) {
 		if (sequence->elements[i].ram_image.buffer) {
 			free(sequence->elements[i].ram_image.buffer);
