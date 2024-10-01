@@ -18,7 +18,7 @@ static void timer1_init(uint32_t prescaler, uint32_t period, uint32_t pulse) {
 	__HAL_RCC_TIM1_CLK_ENABLE();
 	timer1_gpio_init();
 
-	uint16_t limit = 2;
+	uint16_t limit = 0;
 
 	TIM_HandleTypeDef timer1_defaults = {
 		.Instance = TIM1,
@@ -27,7 +27,7 @@ static void timer1_init(uint32_t prescaler, uint32_t period, uint32_t pulse) {
 			.CounterMode = TIM_COUNTERMODE_UP,
 			.Period = period,
 			.ClockDivision = TIM_CLOCKDIVISION_DIV1,
-			.RepetitionCounter = limit,
+			.RepetitionCounter = limit ? limit - 1 : 0,
 			.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE
 		}
 	};
