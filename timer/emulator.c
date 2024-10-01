@@ -14,11 +14,9 @@ static void timer1_gpio_init() {
 	PIN_AF_Init(RADAR_EMULATOR, GPIO_MODE_AF_PP, GPIO_NOPULL, GPIO_AF1_TIM1); // TIM1_CH1
 }
 
-static void timer1_init(uint32_t prescaler, uint32_t period, uint32_t pulse) {
+static void timer1_init(uint32_t prescaler, uint32_t period, uint32_t pulse, uint16_t limit) {
 	__HAL_RCC_TIM1_CLK_ENABLE();
 	timer1_gpio_init();
-
-	uint16_t limit = 0;
 
 	TIM_HandleTypeDef timer1_defaults = {
 		.Instance = TIM1,
@@ -56,6 +54,14 @@ static void timer1_init(uint32_t prescaler, uint32_t period, uint32_t pulse) {
 	HAL_TIM_PWM_Start(&timer1_defaults, TIM_CHANNEL_1);
 }
 
+static void timer1_stop() {
+	TIM_HandleTypeDef timer1_defaults = {
+		.Instance = TIM1
+	};
+
+	HAL_TIM_PWM_Stop(&timer1_defaults, TIM_CHANNEL_1);
+}
+
 //
 // Данная функция настроит TIM1 для имитации внешнего управляющего сигнала от радара (12 мкс, 25 Гц)
 // Вычисление параметров таймера выглядит следующим образом:
@@ -83,18 +89,24 @@ static void timer1_init(uint32_t prescaler, uint32_t period, uint32_t pulse) {
 // # так что:
 // pulse = period - pulse
 //
-void radar_emulator_start(double target_hz, double target_t) {
+void radar_emulator_start(double target_hz, double target_t, uint16_t limit) {
 	double desired_freq = 65536 * target_hz;
 	uint32_t prescaler = M_216MHz / desired_freq + 0.5;
 	double scaled_freq = M_216MHz / (prescaler + 1);
 	uint32_t period = scaled_freq / target_hz + 0.5;
 	uint32_t pulse = scaled_freq * target_t + 0.5;
 
-	timer1_init(prescaler, period, period - pulse);
+	timer1_init(prescaler, period, period - pulse, limit);
 
 	char* tstr = time_unit(pulse / scaled_freq);
 
 	printf("Radar emulator enabled: %s pulses at %lf Hz\n", tstr, scaled_freq / period);
 
 	free(tstr);
+}
+
+void radar_emulator_stop() {
+	timer1_stop();
+
+	printf("Radar emulator stopped\n");
 }

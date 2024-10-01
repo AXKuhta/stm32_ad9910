@@ -833,20 +833,41 @@ void radar_emulator_cmd(const char* str) {
 	char f_unit[4] = {0};
 	double duration;
 	double freq;
+	int limit;
 
-	int rc = sscanf(str, "%*s %lf %s %lf %s", &freq, f_unit, &duration, d_unit);
+	int rc = sscanf(str, "%*s %lf %s %lf %s %d", &freq, f_unit, &duration, d_unit, &limit);
 
-	if (rc != 4) {
+	if (rc != 4 && rc != 5) {
 		printf("Invalid arguments\n");
-		printf("Usage: radar_emulator freq unit duration unit\n");
-		printf("Example: radar_emulator 25 Hz 12 us\n");
+		printf("Usage: radar_emulator freq unit duration unit [count]\n");
+		printf("Example - infinite pulses: radar_emulator 25 Hz 12 us\n");
+		printf("Example - just one pulse: radar_emulator 25 Hz 12 us 1\n");
+		return;
+	}
+
+	if (rc == 4) {
+		limit = 0;
+	} else {
+		if (!limit) {
+			radar_emulator_stop();
+			return;
+		}
+
+		if (limit > 65535) {
+			printf("Pulse count must be no greater than 65535\n");
+			return;
+		}
+	}
+
+	if (freq == 0.0 || duration == 0.0) {
+		radar_emulator_stop();
 		return;
 	}
 
 	double freq_hz = parse_freq(freq, f_unit);
 	double duration_ns = parse_time(duration, d_unit);
 
-	radar_emulator_start(freq_hz, duration_ns / 1000.0 / 1000.0 / 1000.0);
+	radar_emulator_start(freq_hz, duration_ns / 1000.0 / 1000.0 / 1000.0, limit);
 }
 
 void run(const char* str) {
