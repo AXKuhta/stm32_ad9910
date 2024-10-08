@@ -15,6 +15,15 @@ TIM_HandleTypeDef timer8;
 // Модуляция + отладочный выход
 void timer8_gpio_init() {
 	PIN_AF_Init(MODULATION_DBG, GPIO_MODE_AF_PP, GPIO_NOPULL, GPIO_AF3_TIM8); // TIM8_CH1
+	//PIN_AF_Init(BREAK_INPUT, GPIO_MODE_AF_PP, GPIO_NOPULL, GPIO_AF3_TIM8);
+
+	HAL_GPIO_Init(GPIOC, &((GPIO_InitTypeDef) {
+		.Mode = GPIO_MODE_AF_PP,
+		.Pull = GPIO_NOPULL,
+		.Speed = GPIO_SPEED_FREQ_MEDIUM,
+		.Pin = GPIO_PIN_6,
+		.Alternate = GPIO_AF3_TIM8
+	}));
 }
 
 //
@@ -41,14 +50,16 @@ void timer8_init() {
 		.OCMode = TIM_OCMODE_PWM2,
 		.Pulse = 4,
 		.OCPolarity = TIM_OCPOLARITY_HIGH,
-		.OCFastMode = TIM_OCFAST_DISABLE
+		.OCFastMode = TIM_OCFAST_DISABLE,
+		.OCIdleState = TIM_OCIDLESTATE_RESET,
+		.OCNIdleState = TIM_OCIDLESTATE_RESET,
 	};
 	
 	HAL_TIM_OC_Init(&timer8);
 	HAL_TIM_OC_ConfigChannel(&timer8, &oc_config, TIM_CHANNEL_1);
 
 	HAL_TIM_Base_Init(&timer8);
-	HAL_TIM_Base_Start(&timer8); // Не спровоцирует запуск, поскольку сконфигурирован мастер
+	HAL_TIM_Base_Start(&timer8);
 	HAL_TIM_OC_Start(&timer8, TIM_CHANNEL_1);
 }
 
