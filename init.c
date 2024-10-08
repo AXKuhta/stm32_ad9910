@@ -151,6 +151,8 @@ void print_startup_info() {
 	printf("System clock: %ld MHz\n", sysclockfreq / 1000 / 1000);
 }
 
+void timer8_init();
+
 void system_init() {
 	/* Configure the MPU attributes */
 	MPU_Config();
@@ -192,7 +194,9 @@ void system_init() {
 	sequencer_init();
 	enter_rfkill_mode();
 	usart3_rx_dma_init();
-	timer8_up_dma_init();
+	//timer8_up_dma_init();
 	uart_cli_init();
 	network_init();
+
+	timer8_init();
 }

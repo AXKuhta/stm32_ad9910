@@ -167,7 +167,7 @@ void pulse_complete_callback() {
 		profile_mod_buffer = entry.profile_modulation.buffer;
 		profile_mod_size = entry.profile_modulation.size;
 
-		timer8_reconfigure(entry.profile_modulation.tstep);
+		//timer8_reconfigure(entry.profile_modulation.tstep);
 	} else {
 		profile_mod_buffer = &tone_profile;
 		profile_mod_size = 1;
@@ -204,7 +204,7 @@ void sequencer_run() {
 
 	// Полный сброс + активация таймеров
 	timer2_restart();
-	timer8_restart();
+	//timer8_restart();
 
 	// А что произойдёт, если внешний триггер придёт между timer2_restart() и pulse_complete_callback()?
 	pulse_complete_callback();
@@ -258,7 +258,7 @@ void sequencer_stop() {
 // Прекратить подачу сигналов
 void enter_rfkill_mode() {
 	timer2_stop();
-	timer8_stop();
+	//timer8_stop();
 
 	ad_set_profile_freq(0, 0);
 	ad_set_profile_amplitude(0, 0);
