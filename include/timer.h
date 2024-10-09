@@ -1,6 +1,6 @@
 
-#define M_216MHz (200.0 * 1000.0 * 1000.0)
-#define NS_TO_216MHZ_MU (0.200)
+#define M_216MHz (50.0 * 1000.0 * 1000.0)
+#define NS_TO_216MHZ_MU (0.05)
 
 #define MAX_NS_16BIT_216MHz ((1 << 16) - 1) / NS_TO_216MHZ_MU
 

@@ -38,7 +38,7 @@ void timer8_init() {
 		.Init = {
 			.Prescaler = 0,
 			.CounterMode = TIM_COUNTERMODE_UP,
-			.Period = 7,
+			.Period = 1,
 			.ClockDivision = TIM_CLOCKDIVISION_DIV1,
 			.RepetitionCounter = 0
 		}
@@ -48,7 +48,7 @@ void timer8_init() {
 
 	TIM_OC_InitTypeDef oc_config = {
 		.OCMode = TIM_OCMODE_PWM2,
-		.Pulse = 4,
+		.Pulse = 1,
 		.OCPolarity = TIM_OCPOLARITY_HIGH,
 		.OCFastMode = TIM_OCFAST_DISABLE,
 		.OCIdleState = TIM_OCIDLESTATE_RESET,
