@@ -20,7 +20,7 @@ void timer8_gpio_init() {
 	HAL_GPIO_Init(GPIOC, &((GPIO_InitTypeDef) {
 		.Mode = GPIO_MODE_AF_PP,
 		.Pull = GPIO_NOPULL,
-		.Speed = GPIO_SPEED_FREQ_MEDIUM,
+		.Speed = GPIO_SPEED_FREQ_VERY_HIGH,
 		.Pin = GPIO_PIN_6,
 		.Alternate = GPIO_AF3_TIM8
 	}));

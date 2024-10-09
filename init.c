@@ -152,6 +152,7 @@ void print_startup_info() {
 }
 
 void timer8_init();
+void debug2_start(double target_hz, double target_t);
 
 void system_init() {
 	/* Configure the MPU attributes */
@@ -188,6 +189,7 @@ void system_init() {
 	print_startup_info();
 
 	radar_emulator_start(25, 12.0 / 1000.0 / 1000.0, 0);
+	debug2_start(25, 12.0/1000/1000);
 	spi4_init();
 	ad_init();
 
