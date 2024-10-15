@@ -1,7 +1,4 @@
 
-#define M_216MHz (216.0 * 1000.0 * 1000.0)
-#define NS_TO_216MHZ_MU (0.216)
-
 double ns_to_machine_units_factor();
 uint32_t timer_mu(double time_ns);
 double timer_ns(uint32_t time_mu);
