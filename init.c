@@ -11,49 +11,33 @@
 #include "ethernet.h"
 #include "sequencer.h"
 
-/**
-	* @brief  Configure the MPU attributes
-	* @param  None
-	* @retval None
-	*/
-void MPU_Config(void){
-	MPU_Region_InitTypeDef MPU_InitStruct;
 
-	/* Disable the MPU */
+static void MPU_Config(void) {
+	MPU_Region_InitTypeDef MPU_InitStruct = {
+		.Enable = MPU_REGION_ENABLE,
+		.BaseAddress = 0x00,
+		.Size = MPU_REGION_SIZE_4GB,
+		.AccessPermission = MPU_REGION_NO_ACCESS,
+		.IsBufferable = MPU_ACCESS_NOT_BUFFERABLE,
+		.IsCacheable = MPU_ACCESS_NOT_CACHEABLE,
+		.IsShareable = MPU_ACCESS_NOT_SHAREABLE,
+		.Number = MPU_REGION_NUMBER0,
+		.TypeExtField = MPU_TEX_LEVEL0,
+		.SubRegionDisable = 0x87,
+		.DisableExec = MPU_INSTRUCTION_ACCESS_DISABLE
+	};
+
 	HAL_MPU_Disable();
-
-	/* Configure the MPU as Strongly ordered for not defined regions */
-	MPU_InitStruct.Enable = MPU_REGION_ENABLE;
-	MPU_InitStruct.BaseAddress = 0x00;
-	MPU_InitStruct.Size = MPU_REGION_SIZE_4GB;
-	MPU_InitStruct.AccessPermission = MPU_REGION_NO_ACCESS;
-	MPU_InitStruct.IsBufferable = MPU_ACCESS_NOT_BUFFERABLE;
-	MPU_InitStruct.IsCacheable = MPU_ACCESS_NOT_CACHEABLE;
-	MPU_InitStruct.IsShareable = MPU_ACCESS_SHAREABLE;
-	MPU_InitStruct.Number = MPU_REGION_NUMBER0;
-	MPU_InitStruct.TypeExtField = MPU_TEX_LEVEL0;
-	MPU_InitStruct.SubRegionDisable = 0x87;
-	MPU_InitStruct.DisableExec = MPU_INSTRUCTION_ACCESS_DISABLE;
-
 	HAL_MPU_ConfigRegion(&MPU_InitStruct);
-
-	/* Enable the MPU */
 	HAL_MPU_Enable(MPU_PRIVILEGED_DEFAULT);
 }
 
-/**
-	* @brief  CPU L1-Cache enable.
-	* @param  None
-	* @retval None
-	*/
-void CPU_CACHE_Enable(void)
-{
-	/* Enable I-Cache */
-	SCB_EnableICache();
-
-	/* Enable D-Cache */
-	SCB_EnableDCache();
-}
+// Enabling dcache causes Ethernet to be unreliable
+// Thus cache left disabled
+// static void CPU_CACHE_Enable(void) {
+// 	SCB_EnableICache();
+// 	SCB_EnableDCache();
+// }
 
 // Select HSI as STM32's SYSCLK source
 // Used when PLL needs to be reset
@@ -156,7 +140,7 @@ static void run_from_hse(void) {
 	source_sysclk_from_pll();
 }
 
-// Включение TIMPRES удваивает частоту таймеров до 216 МГц (Непонятно, почему его назвали предделителем, если он не делит)
+// Run timers at full clock
 void enable_fast_timers() {
 	RCC_PeriphCLKInitTypeDef RCC_PeriphCLKInitStruct = {
 		.PeriphClockSelection = RCC_PERIPHCLK_TIM,
