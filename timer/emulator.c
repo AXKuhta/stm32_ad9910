@@ -91,8 +91,8 @@ static void timer1_stop() {
 //
 void radar_emulator_start(double target_hz, double target_t, uint16_t limit) {
 	double desired_freq = 65536 * target_hz;
-	uint32_t prescaler = M_216MHz / desired_freq + 0.5;
-	double scaled_freq = M_216MHz / (prescaler + 1);
+	uint32_t prescaler = (double)HAL_RCC_GetSysClockFreq() / desired_freq + 0.5;
+	double scaled_freq = (double)HAL_RCC_GetSysClockFreq() / (prescaler + 1);
 	uint32_t period = scaled_freq / target_hz + 0.5;
 	uint32_t pulse = scaled_freq * target_t + 0.5;
 

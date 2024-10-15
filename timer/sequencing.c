@@ -96,7 +96,7 @@ void timer8_init() {
 	__HAL_RCC_TIM8_CLK_ENABLE();
 	timer8_gpio_init();
 
-	uint32_t period = 1*1000*1000 * NS_TO_216MHZ_MU + 0.5;
+	uint32_t period = 1*1000*1000 * ns_to_machine_units_factor() + 0.5;
 	
 	TIM_HandleTypeDef timer8_defaults = {
 		.Instance = TIM8,
@@ -113,7 +113,7 @@ void timer8_init() {
 
 	TIM_OC_InitTypeDef oc_config = {
 		.OCMode = TIM_OCMODE_PWM2,
-		.Pulse = period - (20.0 * NS_TO_216MHZ_MU + 0.5),
+		.Pulse = period - (20.0 * ns_to_machine_units_factor() + 0.5),
 		.OCPolarity = TIM_OCPOLARITY_HIGH,
 		.OCFastMode = TIM_OCFAST_DISABLE
 	};
@@ -150,7 +150,7 @@ void timer8_reconfigure(uint32_t period) {
 	};
 
 	TIM_Base_SetConfig(TIM8, &base_config);
-	TIM8->CCR1 = period - (20.0 * NS_TO_216MHZ_MU + 0.5);
+	TIM8->CCR1 = period - (20.0 * ns_to_machine_units_factor() + 0.5);
 }
 
 void timer8_stop() {

@@ -438,7 +438,7 @@ void xmitdata_fsk_cmd(const char* str) {
 		return;
 	}
 
-	if (tstep_ns >= MAX_NS_16BIT_216MHz) {
+	if ( tstep_ns >= max_ns_16bit_timer() ) {
 		printf("Error: tstep too large\n");
 		return;
 	}
@@ -511,7 +511,7 @@ void xmitdata_psk_cmd(const char* str) {
 		return;
 	}
 
-	if (tstep_ns >= MAX_NS_16BIT_216MHz) {
+	if ( tstep_ns >= max_ns_16bit_timer() ) {
 		printf("Error: tstep too large\n");
 		return;
 	}
@@ -584,7 +584,7 @@ void xmitdata_zc_psk_cmd(const char* str) {
 		return;
 	}
 
-	if (tstep_ns >= MAX_NS_16BIT_216MHz) {
+	if ( tstep_ns >= max_ns_16bit_timer() ) {
 		printf("Error: tstep too large\n");
 		return;
 	}
