@@ -870,29 +870,20 @@ void wait_mcast_packet() {
 		.sin_address.ulIP_IPv4 = FreeRTOS_inet_addr("234.5.6.7")
 	};
 
-	// FREERTOS_SO_RCVTIMEO также выступает таймаутом для accept()
-	// Если выставить его в portMAX_DELAY, то будет блокирующий режим
-	// static const TickType_t receive_timeout = portMAX_DELAY;
-    // FreeRTOS_setsockopt(socket, 0, FREERTOS_SO_RCVTIMEO, &receive_timeout, sizeof(receive_timeout));
-
-	// Backlog = 1; это однопоточный сервер
 	assert( FreeRTOS_bind(socket, &addr, sizeof(addr)) == 0 );
-	//FreeRTOS_listen(socket, 1);
-
-	char buf;
-
-	BaseType_t status;
 
 	while (1) {
-		printf("Waiting\n");
-
 		struct freertos_sockaddr from = {0};
 		socklen_t from_sz = sizeof(from);
+		char buf;
 
-		status = FreeRTOS_recvfrom(socket, &buf, 1, 0, &from, &from_sz);
+		printf("Waiting\n");
+
+		BaseType_t status = FreeRTOS_recvfrom(socket, &buf, 1, 0, &from, &from_sz);
 
 		if (status < 0) {
-			printf("error %d\n", status);
+			FreeRTOS_closesocket(socket);
+			printf("recvfrom error %ld\n", status);
 			return;
 		}
 
