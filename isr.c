@@ -172,4 +172,16 @@ void ETH_IRQHandler() {
 	RECORD_INTERRUPT();
 }
 
+extern void timer14_schedule_stop();
 
+void TIM8_TRG_COM_TIM14_IRQHandler() {
+	timer14_schedule_stop();
+
+	TIM_HandleTypeDef timer14 = {
+		.Instance = TIM14
+	};
+
+	HAL_TIM_IRQHandler(&timer14);
+
+	RECORD_INTERRUPT();
+}

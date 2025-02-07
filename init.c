@@ -204,6 +204,7 @@ void system_init() {
 	__HAL_RCC_GPIOC_CLK_ENABLE();
 	__HAL_RCC_GPIOD_CLK_ENABLE();
 	__HAL_RCC_GPIOE_CLK_ENABLE();
+	__HAL_RCC_GPIOF_CLK_ENABLE();
 	__HAL_RCC_GPIOG_CLK_ENABLE();
 
 	usart3_init();
@@ -214,7 +215,7 @@ void system_init() {
 	spi4_init();
 	ad_init();
 
-	run_from_hse();
+	run_from_hsi();
 
 	sequencer_init();
 	enter_rfkill_mode();
