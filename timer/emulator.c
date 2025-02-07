@@ -15,16 +15,18 @@ static void timer14_gpio_init() {
 	PIN_AF_Init(RADAR_EMULATOR, GPIO_MODE_AF_PP, GPIO_NOPULL, GPIO_AF9_TIM14);
 }
 
-int pulses_remain = 0;
+static int pulses_remain = 0;
 
+// Поддерживающая функция когда внутренний генератор работает в режиме конечного количества импульсов
 void timer14_schedule_stop() {
-	// Остановить таймер по истечению RepetitionCounter
-	// Будет лежать в preload регистре, пока
-	// RepetitionCounter > 0
-	if (pulses_remain == 1)
+	if (pulses_remain == 0) {
+		// Остановить таймер при следующем переполнении
+		// Новый ARR будет лежать в preload регистре
+		// затем применен в момент переполнения
 		TIM14->ARR = 0;
-
-	pulses_remain--;
+	} else {
+		pulses_remain--;
+	}	
 }
 
 // Инициализировать и запустить внутренний генератор импульсов
@@ -62,11 +64,14 @@ static void timer14_init(uint32_t prescaler, uint32_t period, uint32_t pulse, in
 	// Спровоцировать update event, чтобы значение из preload перенеслось в shadow регистры
 	timer14_defaults.Instance->EGR = TIM_EGR_UG;
 
-	pulses_remain = limit;
+	pulses_remain = limit ? limit - 1 : 0;
 
 	timer14_schedule_stop();
 
+	// TODO: Вынести конфигурацию всех прерываний в isr.c
+	// Проще будет рассуждать о приоритетах обработчиков
 	HAL_NVIC_EnableIRQ(TIM8_TRG_COM_TIM14_IRQn);
+	HAL_NVIC_SetPriority(TIM8_TRG_COM_TIM14_IRQn, 0, 0);
 
 	if (limit) {
 		HAL_TIM_PWM_Start_IT(&timer14_defaults, TIM_CHANNEL_1);
