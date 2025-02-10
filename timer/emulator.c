@@ -57,16 +57,16 @@ static void timer14_init(uint32_t prescaler, uint32_t period, uint32_t pulse, in
 		.OCPolarity = TIM_OCPOLARITY_HIGH,
 		.OCFastMode = TIM_OCFAST_DISABLE
 	};
-	
+
+	// - Очистить CNT
+	// - Отключить генерацию прерываний
+	__HAL_RCC_TIM14_FORCE_RESET();
+	__HAL_RCC_TIM14_RELEASE_RESET();
+
+	// Примечание:
+	// В рамках HAL_TIM_PWM_Init произойдёт update event, так что значение из preload попадёт в shadow без дополнительных действий
 	HAL_TIM_PWM_Init(&timer14_defaults);
 	HAL_TIM_PWM_ConfigChannel(&timer14_defaults, &oc_config, TIM_CHANNEL_1);
-
-	// Спровоцировать update event, чтобы значение из preload перенеслось в shadow регистры
-	timer14_defaults.Instance->EGR = TIM_EGR_UG;
-
-	pulses_remain = limit ? limit - 1 : 0;
-
-	timer14_schedule_stop();
 
 	// TODO: Вынести конфигурацию всех прерываний в isr.c
 	// Проще будет рассуждать о приоритетах обработчиков
@@ -74,11 +74,14 @@ static void timer14_init(uint32_t prescaler, uint32_t period, uint32_t pulse, in
 	HAL_NVIC_SetPriority(TIM8_TRG_COM_TIM14_IRQn, 0, 0);
 
 	if (limit) {
-		HAL_TIM_PWM_Start_IT(&timer14_defaults, TIM_CHANNEL_1);
-	} else {
-		HAL_TIM_PWM_Start(&timer14_defaults, TIM_CHANNEL_1);
+		pulses_remain = limit;
+		timer14_schedule_stop();
+
+		// - Включить прерывание по переполнению (CNT == ARR)
+		__HAL_TIM_ENABLE_IT(&timer14_defaults, TIM_IT_UPDATE);
 	}
 	
+	HAL_TIM_PWM_Start(&timer14_defaults, TIM_CHANNEL_1);
 }
 
 static void timer14_stop() {
