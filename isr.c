@@ -8,7 +8,7 @@
 // =============================================================================
 // INTERRUPT PROFILER
 // =============================================================================
-#define LIST_SIZE 32
+#define LIST_SIZE 256
 
 typedef struct interrupt_t {
 	const char* title;
@@ -123,8 +123,10 @@ void SysTick_Handler(void) {
 extern UART_HandleTypeDef usart3;
 extern DMA_HandleTypeDef dma_usart3_rx;
 extern DMA_HandleTypeDef dma_timer8_up;
-extern TIM_HandleTypeDef timer2;
-extern TIM_HandleTypeDef timer8;
+
+extern TIM_HandleTypeDef master_timer;
+extern TIM_HandleTypeDef slave_timer_a;
+extern TIM_HandleTypeDef slave_timer_b;
 
 void USART3_IRQHandler() {
 	HAL_UART_IRQHandler(&usart3);
@@ -149,19 +151,21 @@ void DMA2_Stream1_IRQHandler() {
 extern uint8_t parking_profile;
 extern void pulse_complete_callback();
 
+int idx = 0;
+
+// Конец излучения
 void TIM2_IRQHandler() {
-	__HAL_TIM_DISABLE_DMA(&timer8, TIM_DMA_UPDATE);		// 1. Убрать источник DMA request-ов
-	TIM8->CR1 &= ~(TIM_CR1_CEN);						// 2. Поставить таймер на паузу -- почему-то просто __HAL_TIM_DISABLE(&timer8) не рабоает
-	TIM8->CNT = 0;										// 3. И занулить его, чтобы он случайно не застрял на значении выше CCR1
 	set_profile(parking_profile);						// 4. Выставить нулевой профиль принудительно
 	run_later(pulse_complete_callback);					// 5. Запланировать запись параметров следующего импульса
 
-	HAL_TIM_IRQHandler(&timer2);
-	RECORD_INTERRUPT();
-}
+	HAL_TIM_IRQHandler(&master_timer);
 
-void TIM8_UP_TIM13_IRQHandler() {
-	HAL_TIM_IRQHandler(&timer8);
+	// В __HAL_TIM_DISABLE проверка на отключение каналов, только нам это зачем??
+	slave_timer_a.Instance->CR1 &= ~(TIM_CR1_CEN);
+	slave_timer_b.Instance->CR1 &= ~(TIM_CR1_CEN);
+
+	idx = 0;
+
 	RECORD_INTERRUPT();
 }
 
@@ -177,11 +181,44 @@ extern void timer14_schedule_stop();
 void TIM8_TRG_COM_TIM14_IRQHandler() {
 	timer14_schedule_stop();
 
-	TIM_HandleTypeDef timer14 = {
-		.Instance = TIM14
-	};
+	HAL_TIM_IRQHandler(&(TIM_HandleTypeDef){ .Instance = TIM14 });
 
-	HAL_TIM_IRQHandler(&timer14);
+	RECORD_INTERRUPT();
+}
 
+// ccmr1 bit fields
+// 0000000v 0000000u 0vvv0000 0uuu0000
+// ch2+     ch1+     ch2      ch1
+//
+// ccmr2 bit fields
+// 0000000y 0000000x 0yyy0000 0xxx0000
+// ch4+     ch3+     ch4      ch3
+//
+// uuuu
+// 0000 frozen
+// 0001 set active on match
+// 0010 set inactive on match
+// 0011 toggle
+// 0100 force inactive
+// 0101 force active
+// 0110 active while CNT < OC (PWM1)
+// 0111 active while CNT > OC (PWM2)
+// 1... extra modes, see reference manual pg. 799
+
+uint32_t set_hi = 0b00000000000000000001000000010000;
+uint32_t set_lo = 0b00000000000000000010000000100000;
+
+void TIM3_IRQHandler() {
+	int odd = idx & 1;
+
+	TIM3->CCMR1 = odd ? set_lo : set_hi;
+	TIM3->CCMR2 = odd ? set_lo : set_hi;
+
+	TIM4->CCMR1 = odd ? set_lo : set_hi;
+	TIM4->CCMR2 = odd ? set_lo : set_hi;
+
+	idx++;
+
+	__HAL_TIM_CLEAR_IT(&slave_timer_a, TIM_IT_UPDATE);
 	RECORD_INTERRUPT();
 }

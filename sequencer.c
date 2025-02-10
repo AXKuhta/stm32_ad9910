@@ -155,8 +155,9 @@ uint8_t parking_profile = 0;
 uint8_t tone_profile = GPIO_PIN_13 >> 8;
 
 extern DMA_HandleTypeDef dma_timer8_up;
-extern TIM_HandleTypeDef timer8;
-extern TIM_HandleTypeDef timer2;
+extern TIM_HandleTypeDef master_timer;
+extern TIM_HandleTypeDef slave_timer_a;
+extern TIM_HandleTypeDef slave_timer_b;
 
 void pulse_complete_callback() {
 	seq_entry_t entry = sequence->elements[seq_index++ % sequence->size];
@@ -167,7 +168,7 @@ void pulse_complete_callback() {
 		profile_mod_buffer = entry.profile_modulation.buffer;
 		profile_mod_size = entry.profile_modulation.size;
 
-		timer8_reconfigure(entry.profile_modulation.tstep);
+		// FIXME: timer8_reconfigure(entry.profile_modulation.tstep);
 	} else {
 		profile_mod_buffer = &tone_profile;
 		profile_mod_size = 1;
@@ -188,13 +189,14 @@ void pulse_complete_callback() {
 
 	// Можно производить запись только в верхнюю часть регистра ODR, сдвинув адрес на 1
 	// Если DMA был настроен в режим DMA_CIRCULAR, то модуляция будет идти по кругу
-	HAL_DMA_Start(&dma_timer8_up, (uint32_t)profile_mod_buffer, (uint32_t)&GPIOD->ODR + 1, profile_mod_size);
-	__HAL_TIM_ENABLE_DMA(&timer8, TIM_DMA_UPDATE);
+	// FIXME:
+	// HAL_DMA_Start(&dma_timer8_up, (uint32_t)profile_mod_buffer, (uint32_t)&GPIOD->ODR + 1, profile_mod_size);
+	// __HAL_TIM_ENABLE_DMA(&timer8, TIM_DMA_UPDATE);
 
 	// Принудительно закинуть в таймер очень большое значение, чтобы он случайно не пересёк те точки, которые мы вот вот запишем
-	timer2.Instance->CNT = 0x7FFFFFFF;
-	timer2.Instance->CCR3 = entry.t1;
-	timer2.Instance->CCR4 = entry.t2;
+	master_timer.Instance->CNT = 0x7FFFFFFF;
+	master_timer.Instance->CCR3 = entry.t1;
+	master_timer.Instance->CCR4 = entry.t2;
 }
 
 void sequencer_run() {
@@ -203,8 +205,7 @@ void sequencer_run() {
 	seq_index = 0;
 
 	// Полный сброс + активация таймеров
-	timer2_restart();
-	timer8_restart();
+	timer_restart();
 
 	// А что произойдёт, если внешний триггер придёт между timer2_restart() и pulse_complete_callback()?
 	pulse_complete_callback();
@@ -257,8 +258,7 @@ void sequencer_stop() {
 
 // Прекратить подачу сигналов
 void enter_rfkill_mode() {
-	timer2_stop();
-	timer8_stop();
+	timer_stop();
 
 	ad_set_profile_freq(0, 0);
 	ad_set_profile_amplitude(0, 0);
