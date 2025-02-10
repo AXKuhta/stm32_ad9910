@@ -19,14 +19,17 @@ static int pulses_remain = 0;
 
 // Поддерживающая функция когда внутренний генератор работает в режиме конечного количества импульсов
 void timer14_schedule_stop() {
-	if (pulses_remain == 0) {
+	if (pulses_remain > 1) {
+		pulses_remain--;
+	} else { // Остался один импульс?
 		// Остановить таймер при следующем переполнении
 		// Новый ARR будет лежать в preload регистре
 		// затем применен в момент переполнения
 		TIM14->ARR = 0;
-	} else {
-		pulses_remain--;
-	}	
+
+		// Удостовериться, что прерывание не сработает на последнем переполнении
+		__HAL_TIM_DISABLE_IT(&(TIM_HandleTypeDef){ .Instance = TIM14 }, TIM_IT_UPDATE);
+	}
 }
 
 // Инициализировать и запустить внутренний генератор импульсов
@@ -75,10 +78,12 @@ static void timer14_init(uint32_t prescaler, uint32_t period, uint32_t pulse, in
 
 	if (limit) {
 		pulses_remain = limit;
-		timer14_schedule_stop();
 
 		// - Включить прерывание по переполнению (CNT == ARR)
-		__HAL_TIM_ENABLE_IT(&timer14_defaults, TIM_IT_UPDATE);
+		__HAL_TIM_CLEAR_IT(&timer14_defaults, TIM_IT_UPDATE); // у нас выставлен UIF после update event - нужно его снять
+		__HAL_TIM_ENABLE_IT(&timer14_defaults, TIM_IT_UPDATE); // <--- иначе прямо с этой строки попадём в прерывание
+
+		timer14_schedule_stop();
 	}
 	
 	HAL_TIM_PWM_Start(&timer14_defaults, TIM_CHANNEL_1);
