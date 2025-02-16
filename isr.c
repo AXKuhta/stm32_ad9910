@@ -121,30 +121,46 @@ void SysTick_Handler(void) {
 // =============================================================================
 
 extern UART_HandleTypeDef usart3;
-extern DMA_HandleTypeDef dma_usart3_rx;
-extern DMA_HandleTypeDef dma_timer8_up;
 
 extern TIM_HandleTypeDef master_timer;
 extern TIM_HandleTypeDef slave_timer_a;
 extern TIM_HandleTypeDef slave_timer_b;
 
+extern DMA_HandleTypeDef dma_usart3_rx;
+
+extern DMA_HandleTypeDef dma_slave_timer_a_up;
+extern DMA_HandleTypeDef dma_slave_timer_a_cc1;
+
+extern DMA_HandleTypeDef dma_slave_timer_b_up;
+extern DMA_HandleTypeDef dma_slave_timer_b_cc1;
+
 void USART3_IRQHandler() {
 	HAL_UART_IRQHandler(&usart3);
-	
 	RECORD_INTERRUPT();
 }
 
 void DMA1_Stream1_IRQHandler() {
 	HAL_DMA_IRQHandler(&dma_usart3_rx);
-
 	RECORD_INTERRUPT();
 }
 
-void DMA2_Stream1_IRQHandler() {
-	HAL_DMA_IRQHandler(&dma_timer8_up);
+void DMA1_Stream2_IRQHandler() {
+	HAL_DMA_IRQHandler(&dma_slave_timer_a_up);
+	RECORD_INTERRUPT();
+}
 
-	//printf("DMA2 State: %u Error %u NDTR %u ODR %u\n", HAL_DMA_GetState(&dma_timer8_up), HAL_DMA_GetError(&dma_timer8_up), DMA2_Stream1->NDTR, GPIOD->ODR);
+void DMA1_Stream4_IRQHandler() {
+	HAL_DMA_IRQHandler(&dma_slave_timer_a_cc1);
+	RECORD_INTERRUPT();
+}
 
+void DMA1_Stream6_IRQHandler() {
+	HAL_DMA_IRQHandler(&dma_slave_timer_b_up);
+	RECORD_INTERRUPT();
+}
+
+void DMA1_Stream0_IRQHandler() {
+	HAL_DMA_IRQHandler(&dma_slave_timer_b_cc1);
 	RECORD_INTERRUPT();
 }
 
@@ -204,21 +220,3 @@ void TIM8_TRG_COM_TIM14_IRQHandler() {
 // 0110 active while CNT < OC (PWM1)
 // 0111 active while CNT > OC (PWM2)
 // 1... extra modes, see reference manual pg. 799
-
-uint32_t set_hi = 0b00000000000000000001000000010000;
-uint32_t set_lo = 0b00000000000000000010000000100000;
-
-void TIM3_IRQHandler() {
-	int odd = idx & 1;
-
-	TIM3->CCMR1 = odd ? set_lo : set_hi;
-	TIM3->CCMR2 = odd ? set_lo : set_hi;
-
-	TIM4->CCMR1 = odd ? set_lo : set_hi;
-	TIM4->CCMR2 = odd ? set_lo : set_hi;
-
-	idx++;
-
-	__HAL_TIM_CLEAR_IT(&slave_timer_a, TIM_IT_UPDATE);
-	RECORD_INTERRUPT();
-}

@@ -191,6 +191,37 @@ void basic_pulse_cmd(const char* str) {
 
 	memset(ram + element_count*4, 0, 4);
 
+	uint32_t set_hi = 0b00000000000000000001000000010000;
+	uint32_t set_lo = 0b00000000000000000010000000100000;
+
+	uint32_t set_pwm1fa = 0b00000000000000000110010001100100;
+	uint32_t set_pwm2fa = 0b00000000000000000111010001110100;
+
+	size_t count = 8;
+	uint32_t* buf = malloc(4*2*count);
+
+	// for (int i = 0; i < count; i++) {
+	// 	buf[2*i + 0] = i & 1 ? set_lo : set_hi;
+	// 	buf[2*i + 1] = i & 1 ? set_lo : set_hi;
+	// }
+
+	buf[0] = set_hi;
+	buf[1] = set_hi;
+	buf[2] = set_lo;
+	buf[3] = set_lo;
+	buf[4] = set_hi;
+	buf[5] = set_hi;
+	buf[6] = set_lo;
+	buf[7] = set_lo;
+	buf[8] = set_hi;
+	buf[9] = set_hi;
+	buf[10] = set_lo;
+	buf[11] = set_lo;
+	buf[12] = set_hi;
+	buf[13] = set_hi;
+	buf[14] = set_lo;
+	buf[15] = set_lo;
+
 	seq_entry_t pulse = {
 		.t1 = timer_mu(offset_ns),
 		.t2 = timer_mu(offset_ns + duration_ns),
@@ -209,7 +240,13 @@ void basic_pulse_cmd(const char* str) {
 		},
 		.ram_image = { .buffer = (uint32_t*)ram, .size = element_count + 1 },
 		.ram_destination = AD_RAM_DESTINATION_POLAR,
-		.ram_secondary_params = { .ftw =  ad_calc_ftw(freq_hz) }
+		.ram_secondary_params = { .ftw =  ad_calc_ftw(freq_hz) },
+		.logic_level_sequence = {
+			.slave_a_stream = buf,
+			.slave_b_stream = buf,
+			.hold_time = NULL,
+			.count = count
+		}
 	};
 
 	sequencer_reset();
@@ -421,6 +458,8 @@ void xmitdata_fsk_cmd(const char* str) {
 	vec_t(uint8_t)* vec = scan_uint8_data(str + data_offset);
 	uint8_t* buffer = malloc(vec->size + 1);
 
+	// profile code construction
+	// profiles_to_logic_blaster
 	for (size_t i = 0; i < vec->size; i++) {
 		uint8_t profile = vec->elements[i] ? 3 : 2;
 		buffer[i] = profile_to_gpio_states(profile) >> 8;
@@ -464,7 +503,8 @@ void xmitdata_fsk_cmd(const char* str) {
 		.profiles[0] = { .ftw = 0, .asf = 0 },
 		.profiles[2] = { .ftw = ad_calc_ftw(f1_hz), .asf = ad_default_asf },
 		.profiles[3] = { .ftw = ad_calc_ftw(f2_hz), .asf = ad_default_asf },
-		.profile_modulation = { .buffer = buffer, .size = vec->size + 1, .tstep = timer_mu(tstep_ns) }
+		//.profile_modulation = { .buffer = buffer, .size = vec->size + 1, .tstep = timer_mu(tstep_ns) }
+		.logic_level_sequence = {} // FIXME
 	};
 
 	sequencer_reset();
@@ -537,7 +577,8 @@ void xmitdata_psk_cmd(const char* str) {
 		.profiles[0] = { .ftw = 0, .asf = 0 },
 		.profiles[2] = { .ftw = ftw, .pow = 0x0000, .asf = ad_default_asf },
 		.profiles[3] = { .ftw = ftw, .pow = 0x7FFF, .asf = ad_default_asf },
-		.profile_modulation = { .buffer = buffer, .size = vec->size + 1, .tstep = timer_mu(tstep_ns) }
+		//.profile_modulation = { .buffer = buffer, .size = vec->size + 1, .tstep = timer_mu(tstep_ns) }
+		.logic_level_sequence = {} // FIXME
 	};
 
 	sequencer_reset();
@@ -620,7 +661,8 @@ void xmitdata_zc_psk_cmd(const char* str) {
 		.ram_profiles[0] = { .start = 0, .end = 0, .rate = 0, .mode = AD_RAM_PROFILE_MODE_ZEROCROSSING },
 		.ram_profiles[2] = { .start = 1, .end = 1, .rate = 0, .mode = AD_RAM_PROFILE_MODE_ZEROCROSSING },
 		.ram_profiles[3] = { .start = 2, .end = 2, .rate = 0, .mode = AD_RAM_PROFILE_MODE_ZEROCROSSING },
-		.profile_modulation = { .buffer = buffer, .size = vec->size + 1, .tstep = timer_mu(tstep_ns) },
+		//.profile_modulation = { .buffer = buffer, .size = vec->size + 1, .tstep = timer_mu(tstep_ns) },
+		.logic_level_sequence = {}, // FIXME
 		.ram_image = { .buffer = (uint32_t*)ram, .size = 3 },
 		.ram_destination = AD_RAM_DESTINATION_POLAR,
 		.ram_secondary_params = { .ftw =  ftw }

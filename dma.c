@@ -3,14 +3,31 @@
 
 #include "stm32f7xx_hal.h"
 
+// TODO: Вынести __HAL_LINKDMA в usart.c
 extern UART_HandleTypeDef usart3;
+
 DMA_HandleTypeDef dma_usart3_rx;
-DMA_HandleTypeDef dma_timer8_up;
 
-void usart3_rx_dma_init() {
-	__HAL_RCC_DMA1_CLK_ENABLE();
+DMA_HandleTypeDef dma_slave_timer_a_up;  // Slave A, Перезапись ARR
+DMA_HandleTypeDef dma_slave_timer_a_cc1; // Slave A, Перезапись CCMR1 и CCMR2
 
-	// USART3 = DMA 1, Channel 4, Stream 1
+DMA_HandleTypeDef dma_slave_timer_b_up;  // Slave B, Перезапись ARR
+DMA_HandleTypeDef dma_slave_timer_b_cc1; // Slave B, Перезапись CCMR1 и CCMR2
+
+// На DMA1 занято 5 из 8 движков:
+// USART3 = DMA1, Channel 4, Stream 1
+// TIM3 UP  DMA1, Channel 5, Stream 2
+// TIM3 CH1 DMA1, Channel 5, Stream 4
+// TIM4 UP  DMA1, Channel 2, Stream 6
+// TIM4 CH1 DMA1, Channel 2, Stream 0
+//
+// Движки 3, 5, 7 свободны и доступны для доп. действий по событиям от TIM3/TIM4
+//
+// Если отказаться от перестройки hold time, то можно освободить движки 2, 6
+//
+// Взято из таблицы "DMA1 request mapping" в STM32F746 reference manual
+//
+static void usart3_rx_dma_init() {
 	DMA_HandleTypeDef dma_usart3_rx_defaults = {
 		.Instance = DMA1_Stream1,
 		.Init = {
@@ -31,8 +48,6 @@ void usart3_rx_dma_init() {
 
 	dma_usart3_rx = dma_usart3_rx_defaults;
 
-	printf("USART3 DMA Init\n");
-
 	assert(HAL_DMA_Init(&dma_usart3_rx) == HAL_OK);
 
 	__HAL_LINKDMA(&usart3, hdmarx, dma_usart3_rx);
@@ -43,35 +58,102 @@ void usart3_rx_dma_init() {
 	HAL_NVIC_EnableIRQ(DMA1_Stream1_IRQn);
 }
 
-void timer8_up_dma_init() {
-	__HAL_RCC_DMA2_CLK_ENABLE();
-
-	// TIM8_UP = DMA 2, Channel 7, Stream 1
-	// Взято из таблицы "DMA2 request mapping" в STM32F746 reference manual
-	DMA_HandleTypeDef dma_timer8_up_defaults = {
-		.Instance = DMA2_Stream1,
+static void logic_level_blaster_dma_init() {
+	dma_slave_timer_a_up = (DMA_HandleTypeDef) {
+		.Instance = DMA1_Stream2,
 		.Init = {
-			.Channel = DMA_CHANNEL_7,
-			.Direction = DMA_MEMORY_TO_PERIPH,
-			.PeriphInc = DMA_PINC_DISABLE,
-			.MemInc = DMA_MINC_ENABLE,
-			.PeriphDataAlignment = DMA_PDATAALIGN_BYTE,
-			.MemDataAlignment = DMA_MDATAALIGN_BYTE,
-			.Mode = DMA_NORMAL,
-			.Priority = DMA_PRIORITY_VERY_HIGH,
-			.FIFOMode = DMA_FIFOMODE_DISABLE,
-			.FIFOThreshold = DMA_FIFO_THRESHOLD_1QUARTERFULL,
-			.MemBurst = DMA_MBURST_SINGLE,
-			.PeriphBurst = DMA_PBURST_SINGLE
+			.Channel 				= DMA_CHANNEL_5,
+			.Direction 				= DMA_MEMORY_TO_PERIPH,
+			.PeriphInc 				= DMA_PINC_DISABLE,
+			.MemInc 				= DMA_MINC_ENABLE,
+			.PeriphDataAlignment 	= DMA_PDATAALIGN_WORD,
+			.MemDataAlignment 		= DMA_MDATAALIGN_WORD,
+			.Mode 					= DMA_NORMAL,
+			.Priority 				= DMA_PRIORITY_LOW,
+			.FIFOMode 				= DMA_FIFOMODE_DISABLE,
+			.FIFOThreshold 			= DMA_FIFO_THRESHOLD_1QUARTERFULL,
+			.MemBurst 				= DMA_MBURST_SINGLE,
+			.PeriphBurst 			= DMA_PBURST_SINGLE
 		}
 	};
 
-	dma_timer8_up = dma_timer8_up_defaults;
+	dma_slave_timer_a_cc1 = (DMA_HandleTypeDef) {
+		.Instance = DMA1_Stream4,
+		.Init = {
+			.Channel 				= DMA_CHANNEL_5,
+			.Direction 				= DMA_MEMORY_TO_PERIPH,
+			.PeriphInc 				= DMA_PINC_DISABLE,
+			.MemInc 				= DMA_MINC_ENABLE,
+			.PeriphDataAlignment 	= DMA_PDATAALIGN_WORD,
+			.MemDataAlignment 		= DMA_MDATAALIGN_WORD,
+			.Mode 					= DMA_NORMAL,
+			.Priority 				= DMA_PRIORITY_LOW,
+			.FIFOMode 				= DMA_FIFOMODE_DISABLE,
+			.FIFOThreshold 			= DMA_FIFO_THRESHOLD_1QUARTERFULL,
+			.MemBurst 				= DMA_MBURST_SINGLE,
+			.PeriphBurst 			= DMA_PBURST_SINGLE
+		}
+	};
 
-	printf("TIM8 DMA Init\n");
+	dma_slave_timer_b_up = (DMA_HandleTypeDef) {
+		.Instance = DMA1_Stream6,
+		.Init = {
+			.Channel 				= DMA_CHANNEL_2,
+			.Direction 				= DMA_MEMORY_TO_PERIPH,
+			.PeriphInc 				= DMA_PINC_DISABLE,
+			.MemInc 				= DMA_MINC_ENABLE,
+			.PeriphDataAlignment 	= DMA_PDATAALIGN_WORD,
+			.MemDataAlignment 		= DMA_MDATAALIGN_WORD,
+			.Mode 					= DMA_NORMAL,
+			.Priority 				= DMA_PRIORITY_LOW,
+			.FIFOMode 				= DMA_FIFOMODE_DISABLE,
+			.FIFOThreshold 			= DMA_FIFO_THRESHOLD_1QUARTERFULL,
+			.MemBurst 				= DMA_MBURST_SINGLE,
+			.PeriphBurst 			= DMA_PBURST_SINGLE
+		}
+	};
 
-	assert(HAL_DMA_Init(&dma_timer8_up) == HAL_OK);
+	dma_slave_timer_b_cc1 = (DMA_HandleTypeDef) {
+		.Instance = DMA1_Stream0,
+		.Init = {
+			.Channel 				= DMA_CHANNEL_2,
+			.Direction 				= DMA_MEMORY_TO_PERIPH,
+			.PeriphInc 				= DMA_PINC_DISABLE,
+			.MemInc 				= DMA_MINC_ENABLE,
+			.PeriphDataAlignment 	= DMA_PDATAALIGN_WORD,
+			.MemDataAlignment 		= DMA_MDATAALIGN_WORD,
+			.Mode 					= DMA_NORMAL,
+			.Priority 				= DMA_PRIORITY_LOW,
+			.FIFOMode 				= DMA_FIFOMODE_DISABLE,
+			.FIFOThreshold 			= DMA_FIFO_THRESHOLD_1QUARTERFULL,
+			.MemBurst 				= DMA_MBURST_SINGLE,
+			.PeriphBurst 			= DMA_PBURST_SINGLE
+		}
+	};
 
-	HAL_NVIC_SetPriority(DMA2_Stream1_IRQn, 0, 1);
-	HAL_NVIC_EnableIRQ(DMA2_Stream1_IRQn);
+	assert(HAL_DMA_Init(&dma_slave_timer_a_up) == HAL_OK);
+	assert(HAL_DMA_Init(&dma_slave_timer_a_cc1) == HAL_OK);
+
+	assert(HAL_DMA_Init(&dma_slave_timer_b_up) == HAL_OK);
+	assert(HAL_DMA_Init(&dma_slave_timer_b_cc1) == HAL_OK);
+
+	// FIXME: вынести в isr.c
+	HAL_NVIC_SetPriority(DMA1_Stream2_IRQn, 7, 0);
+	HAL_NVIC_SetPriority(DMA1_Stream4_IRQn, 7, 0);
+	HAL_NVIC_SetPriority(DMA1_Stream6_IRQn, 7, 0);
+	HAL_NVIC_SetPriority(DMA1_Stream0_IRQn, 7, 0);
+
+	HAL_NVIC_EnableIRQ(DMA1_Stream2_IRQn);
+	HAL_NVIC_EnableIRQ(DMA1_Stream4_IRQn);
+	HAL_NVIC_EnableIRQ(DMA1_Stream6_IRQn);
+	HAL_NVIC_EnableIRQ(DMA1_Stream0_IRQn);
+}
+
+void dma_init() {
+	printf("DMA Init\n");
+
+	__HAL_RCC_DMA1_CLK_ENABLE();
+
+	usart3_rx_dma_init();
+	logic_level_blaster_dma_init();
 }

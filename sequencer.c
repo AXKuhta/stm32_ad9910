@@ -31,15 +31,22 @@ void sequencer_init() {
 void sequencer_reset() {
 	sequencer_stop();
 
+	// Здесь фактически деструктор для seq_entry_t
+	// Высвобождение всей памяти
 	for (size_t i = 0; i < sequence->size; i++) {
 		if (sequence->elements[i].ram_image.buffer) {
 			free(sequence->elements[i].ram_image.buffer);
 			sequence->elements[i].ram_image.buffer = NULL;
 		}
 
-		if (sequence->elements[i].profile_modulation.buffer) {
-			free(sequence->elements[i].profile_modulation.buffer);
-			sequence->elements[i].profile_modulation.buffer = NULL;
+		if (sequence->elements[i].logic_level_sequence.count) {
+			free(sequence->elements[i].logic_level_sequence.slave_a_stream);
+			free(sequence->elements[i].logic_level_sequence.slave_b_stream);
+			free(sequence->elements[i].logic_level_sequence.hold_time);
+
+			sequence->elements[i].logic_level_sequence.slave_a_stream = NULL;
+			sequence->elements[i].logic_level_sequence.slave_b_stream = NULL;
+			sequence->elements[i].logic_level_sequence.hold_time = NULL;
 		}
 	}
 
@@ -130,11 +137,7 @@ static void debug_print_entry(seq_entry_t* entry) {
 		}
 	}
 
-	if (entry->profile_modulation.size) {
-		printf(" Profile modulation:\n");
-		print_profile_modulation_buffer(entry->profile_modulation.buffer, entry->profile_modulation.size);
-		printf("\n");
-	}
+	// TODO: вывод информации о logic level sequence исп. print_profile_modulation_buffer
 
 	printf(" ===============\n");
 }
@@ -154,27 +157,34 @@ void sequencer_add(seq_entry_t entry) {
 uint8_t parking_profile = 0;
 uint8_t tone_profile = GPIO_PIN_13 >> 8;
 
-extern DMA_HandleTypeDef dma_timer8_up;
+
 extern TIM_HandleTypeDef master_timer;
 extern TIM_HandleTypeDef slave_timer_a;
 extern TIM_HandleTypeDef slave_timer_b;
 
+extern DMA_HandleTypeDef dma_slave_timer_a_up;  // Slave A, Перезапись ARR
+extern DMA_HandleTypeDef dma_slave_timer_a_cc1;	// Slave A, Перезапись CCMR1 и CCMR2
+
+extern DMA_HandleTypeDef dma_slave_timer_b_up;  // Slave B, Перезапись ARR
+extern DMA_HandleTypeDef dma_slave_timer_b_cc1; // Slave B, Перезапись CCMR1 и CCMR2
+
+// Важно для выставления статуса READY в структурках HAL
+static void dma_abort() {
+	//HAL_DMA_Abort(&dma_slave_timer_a_up);
+	//HAL_DMA_Abort(&dma_slave_timer_a_cc1);
+
+	//HAL_DMA_Abort(&dma_slave_timer_b_up);
+	//HAL_DMA_Abort(&dma_slave_timer_b_cc1);
+
+	HAL_TIM_DMABurst_WriteStop(&slave_timer_a, TIM_DMA_CC1);
+	HAL_TIM_DMABurst_WriteStop(&slave_timer_b, TIM_DMA_CC1);
+}
+
 void pulse_complete_callback() {
 	seq_entry_t entry = sequence->elements[seq_index++ % sequence->size];
-	uint8_t* profile_mod_buffer;
-	size_t profile_mod_size;
 
-	if (entry.profile_modulation.buffer) {
-		profile_mod_buffer = entry.profile_modulation.buffer;
-		profile_mod_size = entry.profile_modulation.size;
-
-		// FIXME: timer8_reconfigure(entry.profile_modulation.tstep);
-	} else {
-		profile_mod_buffer = &tone_profile;
-		profile_mod_size = 1;
-	}
-
-	HAL_DMA_Abort(&dma_timer8_up);
+	// FIXME: Logic Level Sequence empty
+	dma_abort();	
 
 	spi_write_entry(entry);
 	ad_safety_off(entry.ram_image.size > 0);
@@ -187,11 +197,40 @@ void pulse_complete_callback() {
 		timer2_trgo_on_reset();
 	}
 
-	// Можно производить запись только в верхнюю часть регистра ODR, сдвинув адрес на 1
-	// Если DMA был настроен в режим DMA_CIRCULAR, то модуляция будет идти по кругу
-	// FIXME:
-	// HAL_DMA_Start(&dma_timer8_up, (uint32_t)profile_mod_buffer, (uint32_t)&GPIOD->ODR + 1, profile_mod_size);
-	// __HAL_TIM_ENABLE_DMA(&timer8, TIM_DMA_UPDATE);
+	// Конфигурация генератора последовательностей логических уровней
+	//HAL_DMA_Start(&dma_slave_timer_a_up, (uint32_t)entry.logic_level_sequence.hold_time, (uint32_t)slave_timer_a.Instance->ARR, entry.logic_level_sequence.count);
+	//HAL_DMA_Start(&dma_slave_timer_b_up, (uint32_t)entry.logic_level_sequence.hold_time, (uint32_t)slave_timer_b.Instance->ARR, entry.logic_level_sequence.count);
+
+	//__HAL_TIM_ENABLE_DMA(&slave_timer_a, TIM_DMA_UPDATE);
+	//__HAL_TIM_ENABLE_DMA(&slave_timer_b, TIM_DMA_UPDATE);
+
+	assert(HAL_TIM_DMABurst_MultiWriteStart(
+		&slave_timer_a,
+		TIM_DMABASE_CCMR1,
+		TIM_DMA_CC1,
+		(void*)entry.logic_level_sequence.slave_a_stream,
+		TIM_DMABURSTLENGTH_2TRANSFERS,
+		2*entry.logic_level_sequence.count
+	) == HAL_OK);
+
+	assert(HAL_TIM_DMABurst_MultiWriteStart(
+		&slave_timer_b,
+		TIM_DMABASE_CCMR1,
+		TIM_DMA_CC1,
+		(void*)entry.logic_level_sequence.slave_b_stream,
+		TIM_DMABURSTLENGTH_2TRANSFERS,
+		2*entry.logic_level_sequence.count
+	) == HAL_OK);
+
+	// Прайминг
+	// Приведёт к поднятию двух DMA запросов
+	HAL_TIM_GenerateEvent(&slave_timer_a, TIM_EVENTSOURCE_CC1);
+	HAL_TIM_GenerateEvent(&slave_timer_b, TIM_EVENTSOURCE_CC1);
+
+	// Костыль чтобы избежать одного пустого периода
+	// От доп. задержки в один такт таймера не избавиться
+	slave_timer_a.Instance->CNT = 215;
+	slave_timer_b.Instance->CNT = 215;
 
 	// Принудительно закинуть в таймер очень большое значение, чтобы он случайно не пересёк те точки, которые мы вот вот запишем
 	master_timer.Instance->CNT = 0x7FFFFFFF;

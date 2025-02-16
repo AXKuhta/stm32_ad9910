@@ -43,6 +43,12 @@ TIM_HandleTypeDef master_timer;  // TIM2
 TIM_HandleTypeDef slave_timer_a; // TIM3
 TIM_HandleTypeDef slave_timer_b; // TIM4
 
+extern DMA_HandleTypeDef dma_slave_timer_a_up;  // Slave A, Перезапись ARR
+extern DMA_HandleTypeDef dma_slave_timer_a_cc1; // Slave A, Перезапись CCMR1 и CCMR2
+
+extern DMA_HandleTypeDef dma_slave_timer_b_up;  // Slave B, Перезапись ARR
+extern DMA_HandleTypeDef dma_slave_timer_b_cc1; // Slave B, Перезапись CCMR1 и CCMR2
+
 static void gpio_init() {
 	PIN_AF_Init(A0, GPIO_MODE_AF_PP, GPIO_PULLDOWN, GPIO_AF1_TIM2);
 
@@ -56,6 +62,8 @@ static void gpio_init() {
 	PIN_AF_Init(PD14, GPIO_MODE_AF_PP, GPIO_PULLDOWN, GPIO_AF2_TIM4);
 	PIN_AF_Init(PD15, GPIO_MODE_AF_PP, GPIO_PULLDOWN, GPIO_AF2_TIM4);
 }
+
+#define PERIOD 216 // 216 = 1us
 
 void timer_init() {
 	__HAL_RCC_TIM2_CLK_ENABLE();
@@ -102,7 +110,7 @@ void timer_init() {
 			.ClockDivision = TIM_CLOCKDIVISION_DIV1,
 			.CounterMode = TIM_COUNTERMODE_UP,
 			.Prescaler = 0,
-			.Period = 432,
+			.Period = PERIOD,
 			.RepetitionCounter = 0
 		}
 	};
@@ -111,7 +119,7 @@ void timer_init() {
 	// см. таблицу "TIMx internal trigger connection" в STM32F746 reference manual (страница 783)
 	// https://www.st.com/resource/en/reference_manual/rm0385-stm32f75xxx-and-stm32f74xxx-advanced-armbased-32bit-mcus-stmicroelectronics.pdf
 	HAL_TIM_SlaveConfigSynchronization(&slave_timer_a, &(TIM_SlaveConfigTypeDef){
-		.SlaveMode = TIM_SLAVEMODE_COMBINED_RESETTRIGGER,
+		.SlaveMode = TIM_SLAVEMODE_TRIGGER,
 		.InputTrigger = TIM_TS_ITR1,
 		.TriggerPolarity = TIM_TRIGGERPOLARITY_RISING
 	});
@@ -125,14 +133,14 @@ void timer_init() {
 			.ClockDivision = TIM_CLOCKDIVISION_DIV1,
 			.CounterMode = TIM_COUNTERMODE_UP,
 			.Prescaler = 0,
-			.Period = 432,
+			.Period = PERIOD,
 			.RepetitionCounter = 0
 		}
 	};
 
 	// Тоже ITR1
 	HAL_TIM_SlaveConfigSynchronization(&slave_timer_b, &(TIM_SlaveConfigTypeDef){
-		.SlaveMode = TIM_SLAVEMODE_COMBINED_RESETTRIGGER,
+		.SlaveMode = TIM_SLAVEMODE_TRIGGER,
 		.InputTrigger = TIM_TS_ITR1,
 		.TriggerPolarity = TIM_TRIGGERPOLARITY_RISING
 	});
@@ -148,23 +156,23 @@ void timer_init() {
 	// Pulse		Значение
 	// OCPolarity	Инверсия - не нужно
 	// OCFastMode	Пропуск ступеней конвейера - не нужно
-	HAL_TIM_OC_ConfigChannel(&slave_timer_a, &(TIM_OC_InitTypeDef){ .OCMode = TIM_OCMODE_FORCED_INACTIVE, .Pulse = 432 }, TIM_CHANNEL_1);
-	HAL_TIM_OC_ConfigChannel(&slave_timer_a, &(TIM_OC_InitTypeDef){ .OCMode = TIM_OCMODE_FORCED_INACTIVE, .Pulse = 432 }, TIM_CHANNEL_2);
-	HAL_TIM_OC_ConfigChannel(&slave_timer_a, &(TIM_OC_InitTypeDef){ .OCMode = TIM_OCMODE_FORCED_INACTIVE, .Pulse = 432 }, TIM_CHANNEL_3);
-	HAL_TIM_OC_ConfigChannel(&slave_timer_a, &(TIM_OC_InitTypeDef){ .OCMode = TIM_OCMODE_FORCED_INACTIVE, .Pulse = 432 }, TIM_CHANNEL_4);
+	HAL_TIM_OC_ConfigChannel(&slave_timer_a, &(TIM_OC_InitTypeDef){ .OCMode = TIM_OCMODE_FORCED_INACTIVE, .Pulse = PERIOD }, TIM_CHANNEL_1);
+	HAL_TIM_OC_ConfigChannel(&slave_timer_a, &(TIM_OC_InitTypeDef){ .OCMode = TIM_OCMODE_FORCED_INACTIVE, .Pulse = PERIOD }, TIM_CHANNEL_2);
+	HAL_TIM_OC_ConfigChannel(&slave_timer_a, &(TIM_OC_InitTypeDef){ .OCMode = TIM_OCMODE_FORCED_INACTIVE, .Pulse = PERIOD }, TIM_CHANNEL_3);
+	HAL_TIM_OC_ConfigChannel(&slave_timer_a, &(TIM_OC_InitTypeDef){ .OCMode = TIM_OCMODE_FORCED_INACTIVE, .Pulse = PERIOD }, TIM_CHANNEL_4);
 
-	HAL_TIM_OC_ConfigChannel(&slave_timer_b, &(TIM_OC_InitTypeDef){ .OCMode = TIM_OCMODE_FORCED_INACTIVE, .Pulse = 432 }, TIM_CHANNEL_1);
-	HAL_TIM_OC_ConfigChannel(&slave_timer_b, &(TIM_OC_InitTypeDef){ .OCMode = TIM_OCMODE_FORCED_INACTIVE, .Pulse = 432 }, TIM_CHANNEL_2);
-	HAL_TIM_OC_ConfigChannel(&slave_timer_b, &(TIM_OC_InitTypeDef){ .OCMode = TIM_OCMODE_FORCED_INACTIVE, .Pulse = 432 }, TIM_CHANNEL_3);
-	HAL_TIM_OC_ConfigChannel(&slave_timer_b, &(TIM_OC_InitTypeDef){ .OCMode = TIM_OCMODE_FORCED_INACTIVE, .Pulse = 432 }, TIM_CHANNEL_4);
+	HAL_TIM_OC_ConfigChannel(&slave_timer_b, &(TIM_OC_InitTypeDef){ .OCMode = TIM_OCMODE_FORCED_INACTIVE, .Pulse = PERIOD }, TIM_CHANNEL_1);
+	HAL_TIM_OC_ConfigChannel(&slave_timer_b, &(TIM_OC_InitTypeDef){ .OCMode = TIM_OCMODE_FORCED_INACTIVE, .Pulse = PERIOD }, TIM_CHANNEL_2);
+	HAL_TIM_OC_ConfigChannel(&slave_timer_b, &(TIM_OC_InitTypeDef){ .OCMode = TIM_OCMODE_FORCED_INACTIVE, .Pulse = PERIOD }, TIM_CHANNEL_3);
+	HAL_TIM_OC_ConfigChannel(&slave_timer_b, &(TIM_OC_InitTypeDef){ .OCMode = TIM_OCMODE_FORCED_INACTIVE, .Pulse = PERIOD }, TIM_CHANNEL_4);
 
 	// Взаимодействует с очередями FreeRTOS
 	// Приоритет должен быть больше или равен configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY
 	HAL_NVIC_SetPriority(TIM2_IRQn, 7, 0);
 	HAL_NVIC_EnableIRQ(TIM2_IRQn);
 
-	HAL_NVIC_SetPriority(TIM3_IRQn, 0, 0);
-	HAL_NVIC_EnableIRQ(TIM3_IRQn);
+	// HAL_NVIC_SetPriority(TIM3_IRQn, 0, 0);
+	// HAL_NVIC_EnableIRQ(TIM3_IRQn);
 
 	// Не нужно
 	// HAL_NVIC_SetPriority(TIM4_IRQn, 0, 1);
@@ -191,6 +199,12 @@ void timer_init() {
 	HAL_TIM_OC_Start(&slave_timer_b, TIM_CHANNEL_2);
 	HAL_TIM_OC_Start(&slave_timer_b, TIM_CHANNEL_3);
 	HAL_TIM_OC_Start(&slave_timer_b, TIM_CHANNEL_4);
+
+	__HAL_LINKDMA(&slave_timer_a, hdma[TIM_DMA_ID_UPDATE], dma_slave_timer_a_up);
+	__HAL_LINKDMA(&slave_timer_a, hdma[TIM_DMA_ID_CC1], dma_slave_timer_a_cc1);
+
+	__HAL_LINKDMA(&slave_timer_b, hdma[TIM_DMA_ID_UPDATE], dma_slave_timer_b_up);
+	__HAL_LINKDMA(&slave_timer_b, hdma[TIM_DMA_ID_CC1], dma_slave_timer_b_cc1);
 }
 
 // Обычный режим, отступ > 0
