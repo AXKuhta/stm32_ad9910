@@ -197,30 +197,19 @@ void basic_pulse_cmd(const char* str) {
 	uint32_t set_pwm1fa = 0b00000000000000000110010001100100;
 	uint32_t set_pwm2fa = 0b00000000000000000111010001110100;
 
-	size_t count = 8;
+	// Дробим на сегменты по 1 us
+	// 900 сегментов hold hi
+	// 1 сегмент hold lo
+	size_t count = duration_ns / 1000 + 1;
 	uint32_t* buf = malloc(4*2*count);
 
-	// for (int i = 0; i < count; i++) {
-	// 	buf[2*i + 0] = i & 1 ? set_lo : set_hi;
-	// 	buf[2*i + 1] = i & 1 ? set_lo : set_hi;
-	// }
+	for (int i = 0; i < count; i++) {
+		buf[2*i + 0] = i & 1 ? set_hi : set_lo;
+		buf[2*i + 1] = i & 1 ? set_hi : set_lo;
+	}
 
-	buf[0] = set_hi;
-	buf[1] = set_hi;
-	buf[2] = set_lo;
-	buf[3] = set_lo;
-	buf[4] = set_hi;
-	buf[5] = set_hi;
-	buf[6] = set_lo;
-	buf[7] = set_lo;
-	buf[8] = set_hi;
-	buf[9] = set_hi;
-	buf[10] = set_lo;
-	buf[11] = set_lo;
-	buf[12] = set_hi;
-	buf[13] = set_hi;
-	buf[14] = set_lo;
-	buf[15] = set_lo;
+	buf[2*(count - 1)] = set_lo;
+	buf[2*(count - 1) + 1] = set_lo;
 
 	seq_entry_t pulse = {
 		.t1 = timer_mu(offset_ns),

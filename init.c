@@ -215,7 +215,7 @@ void system_init() {
 	spi4_init();
 	ad_init();
 
-	run_from_hsi();
+	run_from_hse();
 
 	dma_init();
 
