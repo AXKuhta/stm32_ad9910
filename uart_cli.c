@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include <math.h>
 
+#include "stm32f7xx_hal.h"
+
 #include "isr.h"
 #include "performance.h"
 #include "ad9910.h"
@@ -20,6 +22,124 @@ extern uint16_t ad_default_asf;
 extern uint8_t ad_default_fsc;
 
 #define ABS(x) (x < 0 ? -x : x)
+
+// Подготовка кодов для регистров CCMR
+// TODO: вынести в другое место
+#define DR_CTL	  0b00000001
+#define DRHOLD    0b00000010
+#define TXE       0b00000100
+#define OSK       0b00001000
+#define P_0       0b00010000
+#define P_1       0b00100000
+#define P_2       0b01000000
+#define IO_UPDATE 0b10000000
+
+#define PROFILE0  (0)
+#define PROFILE1  (P_0)
+#define PROFILE2  (P_1)
+#define PROFILE3  (P_1 | P_0)
+#define PROFILE4  (P_2)
+#define PROFILE5  (P_2 | P_0)
+#define PROFILE6  (P_2 | P_1)
+#define PROFILE7  (P_2 | P_1 | P_0)
+
+typedef struct logic_t {
+	double hold;
+	uint8_t state;
+} logic_t;
+
+// Спуск последовательности состояний в машинные коды
+// Выделит и вернёт три массива для DMA
+//
+// Пример использования:
+//
+// ```
+// seq_entry_t pulse = {
+//     .logic_level_sequence = lower_logic_sequence((logic_t[]){
+//         { .hold = .0009, .state = P_0 }, // Излучение
+//         { .hold = .0001, .state = 0 }, // Парковка
+//         { 0, 0 } // Терминатор
+//     })
+// };
+// ```
+static logic_level_sequence_t lower_logic_sequence(logic_t states[]) {
+	double timer_eps = 1.0 / HAL_RCC_GetSysClockFreq();
+	int slots_used = 0;
+
+	// Проход 1: определить необходимый запас слотов времени
+	// Триалим количество разбивок
+	for (size_t i = 0; states[i].hold; i++) {
+		double timer_mu_real = (double)states[i].hold / timer_eps;
+		uint32_t timer_mu = timer_mu_real;
+
+		// Не можем точно представить время?
+		// TODO: сообщение об ошибке
+		assert(timer_mu == timer_mu_real);
+
+		int slots = 1;
+
+		while (timer_mu / slots > 0xFFFF || timer_mu % slots) {
+			slots++;
+
+			// TODO: сообщение об ошибке
+			assert(slots < 100);
+		}
+
+		slots_used += slots;
+	}
+
+	// TODO: использовать uint16_t - верхние биты бесполезны
+	uint32_t* slave_a_stream = malloc(2 * sizeof(uint32_t) * slots_used);
+	uint32_t* slave_b_stream = malloc(2 * sizeof(uint32_t) * slots_used);
+	uint16_t* hold_time = malloc(sizeof(uint32_t) * slots_used);
+
+	const uint8_t set_hi = 0b00010000;
+	const uint8_t set_lo = 0b00100000;
+
+	// Проход 2: делаем машинные коды
+	for (size_t i = 0, j = 0; states[i].hold; i++) {
+		uint8_t state = states[i].state;
+
+		uint8_t a1 = state & DR_CTL ? set_hi : set_lo;
+		uint8_t a2 = state & DRHOLD ? set_hi : set_lo;
+		uint8_t a3 = state & TXE    ? set_hi : set_lo;
+		uint8_t a4 = state & OSK    ? set_hi : set_lo;
+		uint8_t b1 = state & P_0    ? set_hi : set_lo;
+		uint8_t b2 = state & P_1    ? set_hi : set_lo;
+		uint8_t b3 = state & P_2    ? set_hi : set_lo;
+		uint8_t b4 = state & IO_UPDATE ? set_hi : set_lo;
+
+		// Заново найти количество разбивок
+		double timer_mu_real = (double)states[i].hold / timer_eps;
+		uint32_t timer_mu = timer_mu_real;
+
+		int slots = 1;
+
+		while (timer_mu / slots > 0xFFFF || timer_mu % slots) {
+			slots++;
+		}
+
+		// Размножить
+		for (int k = 0; k < slots; k++) {
+			slave_a_stream[2*j + 0] = (a2 << 8) + a1;
+			slave_a_stream[2*j + 1] = (a4 << 8) + a3;
+
+			slave_b_stream[2*j + 0] = (b2 << 8) + b1;
+			slave_b_stream[2*j + 1] = (b4 << 8) + b3;
+
+			hold_time[j] = timer_mu / slots;
+
+			j++;
+		}
+	}
+
+	return (logic_level_sequence_t) {
+		.slave_a_stream = (void*)slave_a_stream,
+		.slave_b_stream = (void*)slave_b_stream,
+		.hold_time = hold_time,
+		.count = slots_used
+	};
+}
 
 // =============================================================================
 // CLI COMMANDS
@@ -158,6 +278,7 @@ void basic_pulse_cmd(const char* str) {
 	uint32_t freq_hz = parse_freq(freq, f_unit);
 	uint32_t offset_ns = parse_time(offset, o_unit);
 	uint32_t duration_ns = parse_time(duration, d_unit);
+	double emit_sec = duration_ns / 1000.0 / 1000.0 / 1000.0; // TODO: переделать логичнее, parse_time -> time_factor
 
 	if (freq_hz == 0) {
 		return;
@@ -191,25 +312,6 @@ void basic_pulse_cmd(const char* str) {
 
 	memset(ram + element_count*4, 0, 4);
 
-	uint32_t set_hi = 0b00000000000000000001000000010000;
-	uint32_t set_lo = 0b00000000000000000010000000100000;
-
-	// Дробим на сегменты по 1 us
-	// 900 сегментов hold hi
-	// 1 сегмент hold lo
-	size_t count = duration_ns / 1000 + 1;
-	uint32_t* buf = malloc(4*2*count);
-	uint16_t* hold = malloc(2*count);
-
-	for (int i = 0; i < count; i++) {
-		buf[2*i + 0] = i & 1 ? set_lo : set_hi;
-		buf[2*i + 1] = i & 1 ? set_lo : set_hi;
-		hold[i] = 216 - i; // 216 = 1 us
-	}
-
-	buf[2*(count - 1)] = set_lo;
-	buf[2*(count - 1) + 1] = set_lo;
-
 	seq_entry_t pulse = {
 		.t1 = timer_mu(offset_ns),
 		.t2 = timer_mu(offset_ns + duration_ns),
@@ -229,12 +331,11 @@ void basic_pulse_cmd(const char* str) {
 		.ram_image = { .buffer = (uint32_t*)ram, .size = element_count + 1 },
 		.ram_destination = AD_RAM_DESTINATION_POLAR,
 		.ram_secondary_params = { .ftw =  ad_calc_ftw(freq_hz) },
-		.logic_level_sequence = {
-			.slave_a_stream = buf,
-			.slave_b_stream = buf,
-			.hold_time = hold,
-			.count = count
-		}
+		.logic_level_sequence = lower_logic_sequence((logic_t[]){
+			{ .hold = emit_sec, .state = PROFILE1 },
+			{ .hold = .0000001, .state = PROFILE0 },
+			{ 0, 0 }
+		})
 	};
 
 	sequencer_reset();
@@ -267,6 +368,7 @@ static void sequencer_add_sweep_internal(const char* str, const char* fstr, cons
 	uint32_t fc_hz = parse_freq(fc, fc_unit);
 	uint32_t offset_ns = parse_time(offset, o_unit);
 	uint32_t duration_ns = parse_time(duration, d_unit);
+	double emit_sec = duration_ns / 1000.0 / 1000.0 / 1000.0;
 
 	if (b < 1) {
 		printf("Invalid b; must be greater than 0\n");
@@ -379,7 +481,12 @@ static void sequencer_add_sweep_internal(const char* str, const char* fstr, cons
 			.mode = AD_RAM_PROFILE_MODE_RAMPUP
 		},
 		.ram_image = { .buffer = (uint32_t*)ram, .size = element_count + 1 },
-		.ram_destination = AD_RAM_DESTINATION_POLAR
+		.ram_destination = AD_RAM_DESTINATION_POLAR,
+		.logic_level_sequence = lower_logic_sequence((logic_t[]){
+			{ .hold = emit_sec, .state = PROFILE1 },
+			{ .hold = .0000001, .state = PROFILE0 },
+			{ 0, 0 }
+		})
 	};
 
 	if (run) {
@@ -443,30 +550,28 @@ void xmitdata_fsk_cmd(const char* str) {
 		return;
 	}
 
-	vec_t(uint8_t)* vec = scan_uint8_data(str + data_offset);
-	uint8_t* buffer = malloc(vec->size + 1);
-
-	// profile code construction
-	// profiles_to_logic_blaster
-	for (size_t i = 0; i < vec->size; i++) {
-		uint8_t profile = vec->elements[i] ? 3 : 2;
-		buffer[i] = profile_to_gpio_states(profile) >> 8;
-	}
-
-	buffer[vec->size] = 0;
-
 	uint32_t f1_hz = parse_freq(f1, f1_unit);
 	uint32_t f2_hz = parse_freq(f2, f2_unit);
 	uint32_t offset_ns = parse_time(offset, o_unit);
 	uint32_t tstep_ns = parse_time(tstep, ts_unit);
+	double step = tstep_ns / 1000.0 / 1000.0 / 1000.0;
+
+	vec_t(uint8_t)* vec = scan_uint8_data(str + data_offset);
+	vec_t(logic_t)* v2 = init_vec(logic_t);
+
+	for (size_t i = 0; i < vec->size; i++) {
+		vec_push(v2, (logic_t){
+			.hold = step,
+			.state = vec->elements[i] ? PROFILE2 : PROFILE3
+		});
+	}
+
+	vec_push(v2, (logic_t){ .hold = .0000001, .state = PROFILE0 } );
+	vec_push(v2, (logic_t){ 0 });
+
 	uint32_t duration_ns = tstep_ns * vec->size;
 	
 	if (f1_hz == 0 || f2_hz == 0) {
-		return;
-	}
-
-	if ( tstep_ns >= max_ns_16bit_timer() ) {
-		printf("Error: tstep too large\n");
 		return;
 	}
 
@@ -491,8 +596,7 @@ void xmitdata_fsk_cmd(const char* str) {
 		.profiles[0] = { .ftw = 0, .asf = 0 },
 		.profiles[2] = { .ftw = ad_calc_ftw(f1_hz), .asf = ad_default_asf },
 		.profiles[3] = { .ftw = ad_calc_ftw(f2_hz), .asf = ad_default_asf },
-		//.profile_modulation = { .buffer = buffer, .size = vec->size + 1, .tstep = timer_mu(tstep_ns) }
-		.logic_level_sequence = {} // FIXME
+		.logic_level_sequence = lower_logic_sequence(v2->elements)
 	};
 
 	sequencer_reset();
@@ -500,6 +604,7 @@ void xmitdata_fsk_cmd(const char* str) {
 	sequencer_run();
 
 	free_vec(vec);
+	free_vec(v2);
 }
 
 void xmitdata_psk_cmd(const char* str) {
@@ -520,27 +625,27 @@ void xmitdata_psk_cmd(const char* str) {
 		return;
 	}
 
-	vec_t(uint8_t)* vec = scan_uint8_data(str + data_offset);
-	uint8_t* buffer = malloc(vec->size + 1);
-
-	for (size_t i = 0; i < vec->size; i++) {
-		uint8_t profile = vec->elements[i] ? 3 : 2;
-		buffer[i] = profile_to_gpio_states(profile) >> 8;
-	}
-
-	buffer[vec->size] = 0;
-
 	uint32_t freq_hz = parse_freq(freq, f_unit);
 	uint32_t offset_ns = parse_time(offset, o_unit);
 	uint32_t tstep_ns = parse_time(tstep, ts_unit);
+	double step = tstep_ns / 1000.0 / 1000.0 / 1000.0;
+
+	vec_t(uint8_t)* vec = scan_uint8_data(str + data_offset);
+	vec_t(logic_t)* v2 = init_vec(logic_t);
+
+	for (size_t i = 0; i < vec->size; i++) {
+		vec_push(v2, (logic_t){
+			.hold = step,
+			.state = vec->elements[i] ? PROFILE2 : PROFILE3
+		});
+	}
+
+	vec_push(v2, (logic_t){ .hold = .0000001, .state = 0 } );
+	vec_push(v2, (logic_t){ 0 });
+
 	uint32_t duration_ns = tstep_ns * vec->size;
 	
 	if (freq_hz == 0) {
-		return;
-	}
-
-	if ( tstep_ns >= max_ns_16bit_timer() ) {
-		printf("Error: tstep too large\n");
 		return;
 	}
 
@@ -565,8 +670,7 @@ void xmitdata_psk_cmd(const char* str) {
 		.profiles[0] = { .ftw = 0, .asf = 0 },
 		.profiles[2] = { .ftw = ftw, .pow = 0x0000, .asf = ad_default_asf },
 		.profiles[3] = { .ftw = ftw, .pow = 0x7FFF, .asf = ad_default_asf },
-		//.profile_modulation = { .buffer = buffer, .size = vec->size + 1, .tstep = timer_mu(tstep_ns) }
-		.logic_level_sequence = {} // FIXME
+		.logic_level_sequence = lower_logic_sequence(v2->elements)
 	};
 
 	sequencer_reset();
@@ -574,6 +678,7 @@ void xmitdata_psk_cmd(const char* str) {
 	sequencer_run();
 
 	free_vec(vec);
+	free_vec(v2);
 }
 
 void xmitdata_zc_psk_cmd(const char* str) {
@@ -594,27 +699,27 @@ void xmitdata_zc_psk_cmd(const char* str) {
 		return;
 	}
 
-	vec_t(uint8_t)* vec = scan_uint8_data(str + data_offset);
-	uint8_t* buffer = malloc(vec->size + 1);
-
-	for (size_t i = 0; i < vec->size; i++) {
-		uint8_t profile = vec->elements[i] ? 3 : 2;
-		buffer[i] = profile_to_gpio_states(profile) >> 8;
-	}
-
-	buffer[vec->size] = 0;
-
 	uint32_t freq_hz = parse_freq(freq, f_unit);
 	uint32_t offset_ns = parse_time(offset, o_unit);
 	uint32_t tstep_ns = parse_time(tstep, ts_unit);
+	double step = tstep_ns / 1000.0 / 1000.0 / 1000.0;
+
+	vec_t(uint8_t)* vec = scan_uint8_data(str + data_offset);
+	vec_t(logic_t)* v2 = init_vec(logic_t);
+
+	for (size_t i = 0; i < vec->size; i++) {
+		vec_push(v2, (logic_t){
+			.hold = step,
+			.state = vec->elements[i] ? PROFILE2 : PROFILE3
+		});
+	}
+
+	vec_push(v2, (logic_t){ .hold = .0000001, .state = 0 } );
+	vec_push(v2, (logic_t){ 0 });
+
 	uint32_t duration_ns = tstep_ns * vec->size;
 	
 	if (freq_hz == 0) {
-		return;
-	}
-
-	if ( tstep_ns >= max_ns_16bit_timer() ) {
-		printf("Error: tstep too large\n");
 		return;
 	}
 
@@ -649,8 +754,7 @@ void xmitdata_zc_psk_cmd(const char* str) {
 		.ram_profiles[0] = { .start = 0, .end = 0, .rate = 0, .mode = AD_RAM_PROFILE_MODE_ZEROCROSSING },
 		.ram_profiles[2] = { .start = 1, .end = 1, .rate = 0, .mode = AD_RAM_PROFILE_MODE_ZEROCROSSING },
 		.ram_profiles[3] = { .start = 2, .end = 2, .rate = 0, .mode = AD_RAM_PROFILE_MODE_ZEROCROSSING },
-		//.profile_modulation = { .buffer = buffer, .size = vec->size + 1, .tstep = timer_mu(tstep_ns) },
-		.logic_level_sequence = {}, // FIXME
+		.logic_level_sequence = lower_logic_sequence(v2->elements),
 		.ram_image = { .buffer = (uint32_t*)ram, .size = 3 },
 		.ram_destination = AD_RAM_DESTINATION_POLAR,
 		.ram_secondary_params = { .ftw =  ftw }
@@ -661,6 +765,7 @@ void xmitdata_zc_psk_cmd(const char* str) {
 	sequencer_run();
 
 	free_vec(vec);
+	free_vec(v2);
 }
 
 void xmitdata_ram_psk_cmd(const char* str) {
@@ -702,12 +807,11 @@ void xmitdata_ram_psk_cmd(const char* str) {
 
 	memset(ram + element_count*4, 0, 4);
 
-	free_vec(vec);
-
 	uint32_t freq_hz = parse_freq(freq, f_unit);
 	uint32_t offset_ns = parse_time(offset, o_unit);
 	uint32_t tstep_ns = parse_time(tstep, ts_unit);
 	uint32_t duration_ns = tstep_ns * element_count;
+	double emit_sec = duration_ns / 1000.0 / 1000.0 / 1000.0;
 
 	if (freq_hz == 0) {
 		return;
@@ -747,12 +851,19 @@ void xmitdata_ram_psk_cmd(const char* str) {
 		},
 		.ram_image = { .buffer = (uint32_t*)ram, .size = element_count + 1 },
 		.ram_destination = AD_RAM_DESTINATION_POLAR,
-		.ram_secondary_params = { .ftw =  ftw }
+		.ram_secondary_params = { .ftw =  ftw },
+		.logic_level_sequence = lower_logic_sequence((logic_t[]){
+			{ .hold = emit_sec, .state = PROFILE1 },
+			{ .hold = .0000001, .state = PROFILE0 },
+			{ 0, 0 }
+		})
 	};
 
 	sequencer_reset();
 	sequencer_add(pulse);
 	sequencer_run();
+
+	free_vec(vec);
 }
 
 void basic_xmitdata_cmd(const char* str) {
@@ -794,6 +905,7 @@ void sequencer_add_pulse_cmd(const char* str) {
 	uint32_t freq_hz 		= parse_freq(freq, f_unit);
 	uint32_t offset_ns 		= parse_time(offset, o_unit);
 	uint32_t duration_ns 	= parse_time(duration, d_unit);
+	double emit_sec = duration_ns / 1000.0 / 1000.0 / 1000.0;
 
 	if (freq_hz == 0) {
 		return;
@@ -810,7 +922,12 @@ void sequencer_add_pulse_cmd(const char* str) {
 		.t2 = timer_mu(offset_ns + duration_ns),
 		.fsc = ad_default_fsc,
 		.profiles[0] = { .ftw = 0, .asf = 0 },
-		.profiles[1] = { .ftw = ad_calc_ftw(freq_hz), .asf = ad_default_asf }
+		.profiles[1] = { .ftw = ad_calc_ftw(freq_hz), .asf = ad_default_asf },
+		.logic_level_sequence = lower_logic_sequence((logic_t[]){
+			{ .hold = emit_sec, .state = PROFILE1 },
+			{ .hold = .0000001, .state = PROFILE0 },
+			{ 0, 0 }
+		})
 	};
 
 	sequencer_add(pulse);
