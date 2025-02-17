@@ -194,18 +194,17 @@ void basic_pulse_cmd(const char* str) {
 	uint32_t set_hi = 0b00000000000000000001000000010000;
 	uint32_t set_lo = 0b00000000000000000010000000100000;
 
-	uint32_t set_pwm1fa = 0b00000000000000000110010001100100;
-	uint32_t set_pwm2fa = 0b00000000000000000111010001110100;
-
 	// Дробим на сегменты по 1 us
 	// 900 сегментов hold hi
 	// 1 сегмент hold lo
 	size_t count = duration_ns / 1000 + 1;
 	uint32_t* buf = malloc(4*2*count);
+	uint16_t* hold = malloc(2*count);
 
 	for (int i = 0; i < count; i++) {
-		buf[2*i + 0] = i & 1 ? set_hi : set_lo;
-		buf[2*i + 1] = i & 1 ? set_hi : set_lo;
+		buf[2*i + 0] = i & 1 ? set_lo : set_hi;
+		buf[2*i + 1] = i & 1 ? set_lo : set_hi;
+		hold[i] = 216 - i; // 216 = 1 us
 	}
 
 	buf[2*(count - 1)] = set_lo;
@@ -233,7 +232,7 @@ void basic_pulse_cmd(const char* str) {
 		.logic_level_sequence = {
 			.slave_a_stream = buf,
 			.slave_b_stream = buf,
-			.hold_time = NULL,
+			.hold_time = hold,
 			.count = count
 		}
 	};

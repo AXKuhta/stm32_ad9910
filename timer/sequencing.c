@@ -63,8 +63,6 @@ static void gpio_init() {
 	PIN_AF_Init(PD15, GPIO_MODE_AF_PP, GPIO_PULLDOWN, GPIO_AF2_TIM4);
 }
 
-#define PERIOD 216 // 216 = 1us
-
 void timer_init() {
 	__HAL_RCC_TIM2_CLK_ENABLE();
 	__HAL_RCC_TIM3_CLK_ENABLE();
@@ -108,9 +106,9 @@ void timer_init() {
 		.Instance = TIM3,
 		.Init = {
 			.ClockDivision = TIM_CLOCKDIVISION_DIV1,
-			.CounterMode = TIM_COUNTERMODE_UP,
+			.CounterMode = TIM_COUNTERMODE_DOWN,
 			.Prescaler = 0,
-			.Period = PERIOD,
+			.Period = 0xFFFF,
 			.RepetitionCounter = 0
 		}
 	};
@@ -131,9 +129,9 @@ void timer_init() {
 		.Instance = TIM4,
 		.Init = {
 			.ClockDivision = TIM_CLOCKDIVISION_DIV1,
-			.CounterMode = TIM_COUNTERMODE_UP,
+			.CounterMode = TIM_COUNTERMODE_DOWN,
 			.Prescaler = 0,
-			.Period = PERIOD,
+			.Period = 0xFFFF,
 			.RepetitionCounter = 0
 		}
 	};
@@ -156,15 +154,15 @@ void timer_init() {
 	// Pulse		Значение
 	// OCPolarity	Инверсия - не нужно
 	// OCFastMode	Пропуск ступеней конвейера - не нужно
-	HAL_TIM_OC_ConfigChannel(&slave_timer_a, &(TIM_OC_InitTypeDef){ .OCMode = TIM_OCMODE_FORCED_INACTIVE, .Pulse = PERIOD }, TIM_CHANNEL_1);
-	HAL_TIM_OC_ConfigChannel(&slave_timer_a, &(TIM_OC_InitTypeDef){ .OCMode = TIM_OCMODE_FORCED_INACTIVE, .Pulse = PERIOD }, TIM_CHANNEL_2);
-	HAL_TIM_OC_ConfigChannel(&slave_timer_a, &(TIM_OC_InitTypeDef){ .OCMode = TIM_OCMODE_FORCED_INACTIVE, .Pulse = PERIOD }, TIM_CHANNEL_3);
-	HAL_TIM_OC_ConfigChannel(&slave_timer_a, &(TIM_OC_InitTypeDef){ .OCMode = TIM_OCMODE_FORCED_INACTIVE, .Pulse = PERIOD }, TIM_CHANNEL_4);
+	HAL_TIM_OC_ConfigChannel(&slave_timer_a, &(TIM_OC_InitTypeDef){ .OCMode = TIM_OCMODE_FORCED_INACTIVE, .Pulse = 0 }, TIM_CHANNEL_1);
+	HAL_TIM_OC_ConfigChannel(&slave_timer_a, &(TIM_OC_InitTypeDef){ .OCMode = TIM_OCMODE_FORCED_INACTIVE, .Pulse = 0 }, TIM_CHANNEL_2);
+	HAL_TIM_OC_ConfigChannel(&slave_timer_a, &(TIM_OC_InitTypeDef){ .OCMode = TIM_OCMODE_FORCED_INACTIVE, .Pulse = 0 }, TIM_CHANNEL_3);
+	HAL_TIM_OC_ConfigChannel(&slave_timer_a, &(TIM_OC_InitTypeDef){ .OCMode = TIM_OCMODE_FORCED_INACTIVE, .Pulse = 0 }, TIM_CHANNEL_4);
 
-	HAL_TIM_OC_ConfigChannel(&slave_timer_b, &(TIM_OC_InitTypeDef){ .OCMode = TIM_OCMODE_FORCED_INACTIVE, .Pulse = PERIOD }, TIM_CHANNEL_1);
-	HAL_TIM_OC_ConfigChannel(&slave_timer_b, &(TIM_OC_InitTypeDef){ .OCMode = TIM_OCMODE_FORCED_INACTIVE, .Pulse = PERIOD }, TIM_CHANNEL_2);
-	HAL_TIM_OC_ConfigChannel(&slave_timer_b, &(TIM_OC_InitTypeDef){ .OCMode = TIM_OCMODE_FORCED_INACTIVE, .Pulse = PERIOD }, TIM_CHANNEL_3);
-	HAL_TIM_OC_ConfigChannel(&slave_timer_b, &(TIM_OC_InitTypeDef){ .OCMode = TIM_OCMODE_FORCED_INACTIVE, .Pulse = PERIOD }, TIM_CHANNEL_4);
+	HAL_TIM_OC_ConfigChannel(&slave_timer_b, &(TIM_OC_InitTypeDef){ .OCMode = TIM_OCMODE_FORCED_INACTIVE, .Pulse = 0 }, TIM_CHANNEL_1);
+	HAL_TIM_OC_ConfigChannel(&slave_timer_b, &(TIM_OC_InitTypeDef){ .OCMode = TIM_OCMODE_FORCED_INACTIVE, .Pulse = 0 }, TIM_CHANNEL_2);
+	HAL_TIM_OC_ConfigChannel(&slave_timer_b, &(TIM_OC_InitTypeDef){ .OCMode = TIM_OCMODE_FORCED_INACTIVE, .Pulse = 0 }, TIM_CHANNEL_3);
+	HAL_TIM_OC_ConfigChannel(&slave_timer_b, &(TIM_OC_InitTypeDef){ .OCMode = TIM_OCMODE_FORCED_INACTIVE, .Pulse = 0 }, TIM_CHANNEL_4);
 
 	// Взаимодействует с очередями FreeRTOS
 	// Приоритет должен быть больше или равен configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY

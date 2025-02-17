@@ -170,10 +170,10 @@ extern DMA_HandleTypeDef dma_slave_timer_b_cc1; // Slave B, Перезапись
 
 // Важно для выставления статуса READY в структурках HAL
 static void dma_abort() {
-	//HAL_DMA_Abort(&dma_slave_timer_a_up);
-	//HAL_DMA_Abort(&dma_slave_timer_a_cc1);
+	HAL_DMA_Abort(&dma_slave_timer_a_up);
+	HAL_DMA_Abort(&dma_slave_timer_b_up);
 
-	//HAL_DMA_Abort(&dma_slave_timer_b_up);
+	//HAL_DMA_Abort(&dma_slave_timer_a_cc1);
 	//HAL_DMA_Abort(&dma_slave_timer_b_cc1);
 
 	HAL_TIM_DMABurst_WriteStop(&slave_timer_a, TIM_DMA_CC1);
@@ -198,12 +198,10 @@ void pulse_complete_callback() {
 	}
 
 	// Конфигурация генератора последовательностей логических уровней
-	//HAL_DMA_Start(&dma_slave_timer_a_up, (uint32_t)entry.logic_level_sequence.hold_time, (uint32_t)slave_timer_a.Instance->ARR, entry.logic_level_sequence.count);
-	//HAL_DMA_Start(&dma_slave_timer_b_up, (uint32_t)entry.logic_level_sequence.hold_time, (uint32_t)slave_timer_b.Instance->ARR, entry.logic_level_sequence.count);
+	assert(HAL_DMA_Start(&dma_slave_timer_a_up, (uint32_t)entry.logic_level_sequence.hold_time, (uint32_t)&slave_timer_a.Instance->ARR, entry.logic_level_sequence.count) == HAL_OK);
+	assert(HAL_DMA_Start(&dma_slave_timer_b_up, (uint32_t)entry.logic_level_sequence.hold_time, (uint32_t)&slave_timer_b.Instance->ARR, entry.logic_level_sequence.count) == HAL_OK);
 
-	//__HAL_TIM_ENABLE_DMA(&slave_timer_a, TIM_DMA_UPDATE);
-	//__HAL_TIM_ENABLE_DMA(&slave_timer_b, TIM_DMA_UPDATE);
-
+	// FIXME: MultiWriteStart внутри использует HAL_DMA_Start_IT, но нам не нужны прерывания
 	assert(HAL_TIM_DMABurst_MultiWriteStart(
 		&slave_timer_a,
 		TIM_DMABASE_CCMR1,
@@ -222,15 +220,19 @@ void pulse_complete_callback() {
 		2*entry.logic_level_sequence.count
 	) == HAL_OK);
 
+	__HAL_TIM_ENABLE_DMA(&slave_timer_a, TIM_DMA_UPDATE);
+	__HAL_TIM_ENABLE_DMA(&slave_timer_b, TIM_DMA_UPDATE);
+
 	// Прайминг
-	// Приведёт к поднятию двух DMA запросов
 	HAL_TIM_GenerateEvent(&slave_timer_a, TIM_EVENTSOURCE_CC1);
 	HAL_TIM_GenerateEvent(&slave_timer_b, TIM_EVENTSOURCE_CC1);
+	HAL_TIM_GenerateEvent(&slave_timer_a, TIM_EVENTSOURCE_UPDATE);
+	HAL_TIM_GenerateEvent(&slave_timer_b, TIM_EVENTSOURCE_UPDATE);
 
 	// Костыль чтобы избежать одного пустого периода
 	// От доп. задержки в один такт таймера не избавиться
-	slave_timer_a.Instance->CNT = 215;
-	slave_timer_b.Instance->CNT = 215;
+	slave_timer_a.Instance->CNT = 1;
+	slave_timer_b.Instance->CNT = 1;
 
 	// Принудительно закинуть в таймер очень большое значение, чтобы он случайно не пересёк те точки, которые мы вот вот запишем
 	master_timer.Instance->CNT = 0x7FFFFFFF;
