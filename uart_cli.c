@@ -15,6 +15,9 @@
 #include "algos.h"
 #include "vec.h"
 
+#include "stm32f7xx_hal.h"
+#include "pin_init.h"
+
 extern uint32_t ad_system_clock;
 extern uint16_t ad_default_asf;
 extern uint8_t ad_default_fsc;
@@ -860,43 +863,56 @@ void radar_emulator_cmd(const char* str) {
 
 #include "FreeRTOS_IP.h"
 
+#define DDC_EARLY_INDICATOR 	GPIOE, GPIO_PIN_2
+
 void wait_mcast_packet() {
-	Socket_t socket = FreeRTOS_socket(FREERTOS_AF_INET, FREERTOS_SOCK_DGRAM, 0);
+	run("radar_emulator 25 hz 1 ms");
 
-	assert(socket != FREERTOS_INVALID_SOCKET);
+	PIN_Init(DDC_EARLY_INDICATOR);
 
-	struct freertos_sockaddr addr = {
-		.sin_port = FreeRTOS_htons(25000),
-		.sin_address.ulIP_IPv4 = FreeRTOS_inet_addr("234.5.6.7")
-	};
+	while(1) {
+		HAL_GPIO_WritePin(DDC_EARLY_INDICATOR, GPIO_PIN_RESET);
+		
+		Socket_t socket = FreeRTOS_socket(FREERTOS_AF_INET, FREERTOS_SOCK_DGRAM, 0);
 
-	assert( FreeRTOS_bind(socket, &addr, sizeof(addr)) == 0 );
+		assert(socket != FREERTOS_INVALID_SOCKET);
 
-	while (1) {
-		struct freertos_sockaddr from = {0};
-		socklen_t from_sz = sizeof(from);
-		char buf;
+		struct freertos_sockaddr addr = {
+			.sin_port = FreeRTOS_htons(25000),
+			.sin_address.ulIP_IPv4 = FreeRTOS_inet_addr("234.5.6.7")
+		};
 
-		printf("Waiting\n");
+		assert( FreeRTOS_bind(socket, &addr, sizeof(addr)) == 0 );
 
-		BaseType_t status = FreeRTOS_recvfrom(socket, &buf, 1, 0, &from, &from_sz);
+		while (1) {
+			struct freertos_sockaddr from = {0};
+			socklen_t from_sz = sizeof(from);
+			char buf;
 
-		if (status < 0) {
-			FreeRTOS_closesocket(socket);
-			printf("recvfrom error %ld\n", status);
-			return;
+			printf("Waiting\n");
+
+			BaseType_t status = FreeRTOS_recvfrom(socket, &buf, 1, 0, &from, &from_sz);
+
+			if (status < 0) {
+				FreeRTOS_closesocket(socket);
+				printf("recvfrom error %ld\n", status);
+				return;
+			}
+
+			if (status > 0)
+				break;
+
+			vTaskDelay(1000);
 		}
 
-		if (status > 0)
-			break;
+		FreeRTOS_closesocket(socket);
 
-		vTaskDelay(1000);
+		sequencer_run();
+
+		HAL_GPIO_WritePin(DDC_EARLY_INDICATOR, GPIO_PIN_SET);
+		vTaskDelay(5);
 	}
 
-	FreeRTOS_closesocket(socket);
-
-	sequencer_run();
-	
 	printf("Have packet\n");
 }
 
