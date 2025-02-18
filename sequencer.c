@@ -173,8 +173,11 @@ static void dma_abort() {
 	HAL_DMA_Abort(&dma_slave_timer_a_up);
 	HAL_DMA_Abort(&dma_slave_timer_b_up);
 
-	//HAL_DMA_Abort(&dma_slave_timer_a_cc1);
-	//HAL_DMA_Abort(&dma_slave_timer_b_cc1);
+	// DMA запрос таймера может быть зависшим в поднятом состоянии
+	// Приведёт к тому, что сразу после HAL_DMA_Start произойдёт транзакция
+	// Отключение запроса снимает запрос
+	__HAL_TIM_DISABLE_DMA(&slave_timer_a, TIM_DMA_UPDATE);
+	__HAL_TIM_DISABLE_DMA(&slave_timer_b, TIM_DMA_UPDATE);
 
 	HAL_TIM_DMABurst_WriteStop(&slave_timer_a, TIM_DMA_CC1);
 	HAL_TIM_DMABurst_WriteStop(&slave_timer_b, TIM_DMA_CC1);

@@ -91,7 +91,7 @@ static logic_level_sequence_t lower_logic_sequence(logic_t states[]) {
 	// TODO: использовать uint16_t - верхние биты бесполезны
 	uint32_t* slave_a_stream = malloc(2 * sizeof(uint32_t) * slots_used);
 	uint32_t* slave_b_stream = malloc(2 * sizeof(uint32_t) * slots_used);
-	uint16_t* hold_time = malloc(sizeof(uint32_t) * slots_used);
+	uint16_t* hold_time = malloc(sizeof(uint16_t) * slots_used);
 
 	const uint8_t set_hi = 0b00010000;
 	const uint8_t set_lo = 0b00100000;
@@ -333,7 +333,7 @@ void basic_pulse_cmd(const char* str) {
 		.ram_secondary_params = { .ftw =  ad_calc_ftw(freq_hz) },
 		.logic_level_sequence = lower_logic_sequence((logic_t[]){
 			{ .hold = emit_sec, .state = PROFILE1 },
-			{ .hold = .0000001, .state = PROFILE0 },
+			{ .hold = .000001, .state = PROFILE0 },
 			{ 0, 0 }
 		})
 	};
@@ -484,7 +484,7 @@ static void sequencer_add_sweep_internal(const char* str, const char* fstr, cons
 		.ram_destination = AD_RAM_DESTINATION_POLAR,
 		.logic_level_sequence = lower_logic_sequence((logic_t[]){
 			{ .hold = emit_sec, .state = PROFILE1 },
-			{ .hold = .0000001, .state = PROFILE0 },
+			{ .hold = .000001, .state = PROFILE0 },
 			{ 0, 0 }
 		})
 	};
@@ -566,7 +566,7 @@ void xmitdata_fsk_cmd(const char* str) {
 		});
 	}
 
-	vec_push(v2, (logic_t){ .hold = .0000001, .state = PROFILE0 } );
+	vec_push(v2, (logic_t){ .hold = .000001, .state = PROFILE0 } );
 	vec_push(v2, (logic_t){ 0 });
 
 	uint32_t duration_ns = tstep_ns * vec->size;
@@ -640,7 +640,7 @@ void xmitdata_psk_cmd(const char* str) {
 		});
 	}
 
-	vec_push(v2, (logic_t){ .hold = .0000001, .state = 0 } );
+	vec_push(v2, (logic_t){ .hold = .000001, .state = 0 } );
 	vec_push(v2, (logic_t){ 0 });
 
 	uint32_t duration_ns = tstep_ns * vec->size;
@@ -714,7 +714,7 @@ void xmitdata_zc_psk_cmd(const char* str) {
 		});
 	}
 
-	vec_push(v2, (logic_t){ .hold = .0000001, .state = 0 } );
+	vec_push(v2, (logic_t){ .hold = .000001, .state = 0 } );
 	vec_push(v2, (logic_t){ 0 });
 
 	uint32_t duration_ns = tstep_ns * vec->size;
@@ -854,7 +854,7 @@ void xmitdata_ram_psk_cmd(const char* str) {
 		.ram_secondary_params = { .ftw =  ftw },
 		.logic_level_sequence = lower_logic_sequence((logic_t[]){
 			{ .hold = emit_sec, .state = PROFILE1 },
-			{ .hold = .0000001, .state = PROFILE0 },
+			{ .hold = .000001, .state = PROFILE0 },
 			{ 0, 0 }
 		})
 	};
@@ -925,7 +925,7 @@ void sequencer_add_pulse_cmd(const char* str) {
 		.profiles[1] = { .ftw = ad_calc_ftw(freq_hz), .asf = ad_default_asf },
 		.logic_level_sequence = lower_logic_sequence((logic_t[]){
 			{ .hold = emit_sec, .state = PROFILE1 },
-			{ .hold = .0000001, .state = PROFILE0 },
+			{ .hold = .000001, .state = PROFILE0 },
 			{ 0, 0 }
 		})
 	};
