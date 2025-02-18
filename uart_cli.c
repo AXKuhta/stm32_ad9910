@@ -110,14 +110,14 @@ static logic_level_sequence_t lower_logic_sequence(logic_t states[]) {
 	for (size_t i = 0, j = 0; states[i].hold; i++) {
 		uint8_t state = states[i].state;
 
-		uint8_t a1 = state & DR_CTL ? set_hi : set_lo;
-		uint8_t a2 = state & DRHOLD ? set_hi : set_lo;
-		uint8_t a3 = state & TXE    ? set_hi : set_lo;
-		uint8_t a4 = state & OSK    ? set_hi : set_lo;
-		uint8_t b1 = state & P_0    ? set_hi : set_lo;
-		uint8_t b2 = state & P_1    ? set_hi : set_lo;
-		uint8_t b3 = state & P_2    ? set_hi : set_lo;
-		uint8_t b4 = state & IO_UPDATE ? set_hi : set_lo;
+		uint8_t a1 = state & DR_CTL ? set_hi : set_lo;		// PC6
+		uint8_t a2 = state & DRHOLD ? set_hi : set_lo;		// PC7
+		uint8_t a3 = state & TXE    ? set_hi : set_lo;		// PC8
+		uint8_t a4 = state & OSK    ? set_hi : set_lo;		// PC9
+		uint8_t b1 = state & P_1    ? set_hi : set_lo;		// PD12
+		uint8_t b2 = state & P_0    ? set_hi : set_lo;		// PD13
+		uint8_t b3 = state & P_2    ? set_hi : set_lo;		// PD14
+		uint8_t b4 = state & IO_UPDATE ? set_hi : set_lo;	// PD15
 
 		// Заново найти количество разбивок
 		double timer_mu_real = (double)states[i].hold * timer_mhz * 1000.0 * 1000.0;

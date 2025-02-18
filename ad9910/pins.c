@@ -70,7 +70,7 @@ void drhold_timer_controlled() {
 }
 
 void ad_init_gpio() {
-	init_profile_gpio();
+	//init_profile_gpio(); - управляются таймером
 	init_control_gpio();
 
 	drctl_software_controlled();
