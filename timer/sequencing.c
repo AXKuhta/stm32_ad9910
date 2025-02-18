@@ -49,7 +49,7 @@ extern DMA_HandleTypeDef dma_slave_timer_a_cc1; // Slave A, Перезапись
 extern DMA_HandleTypeDef dma_slave_timer_b_up;  // Slave B, Перезапись ARR
 extern DMA_HandleTypeDef dma_slave_timer_b_cc1; // Slave B, Перезапись CCMR1 и CCMR2
 
-static void gpio_init() {
+void logic_blaster_init_gpio() {
 	PIN_AF_Init(A0, GPIO_MODE_AF_PP, GPIO_PULLDOWN, GPIO_AF1_TIM2);
 
 	PIN_AF_Init(PC6, GPIO_MODE_AF_PP, GPIO_PULLDOWN, GPIO_AF2_TIM3);
@@ -67,8 +67,6 @@ void timer_init() {
 	__HAL_RCC_TIM2_CLK_ENABLE();
 	__HAL_RCC_TIM3_CLK_ENABLE();
 	__HAL_RCC_TIM4_CLK_ENABLE();
-	
-	gpio_init();
 
 	// ====================================================================================
 	// TIM2 - Master
@@ -228,21 +226,3 @@ void timer_restart() {
 	__HAL_RCC_TIM4_RELEASE_RESET();
 	timer_init();
 }
-
-// Чего не хватает:
-// - Перестройки периода
-// - Очереди логических уровней
-
-// // Изменить период на лету
-// void timer8_reconfigure(uint32_t period) {
-// 	TIM_Base_InitTypeDef base_config = {
-// 		.Prescaler = 0,
-// 		.CounterMode = TIM_COUNTERMODE_UP,
-// 		.Period = period - 1,
-// 		.ClockDivision = TIM_CLOCKDIVISION_DIV1,
-// 		.RepetitionCounter = 0
-// 	};
-
-// 	TIM_Base_SetConfig(TIM8, &base_config);
-// 	TIM8->CCR1 = period - (20.0 * ns_to_machine_units_factor() + 0.5);
-// }

@@ -241,6 +241,8 @@ void pulse_complete_callback() {
 	master_timer.Instance->CNT = 0x7FFFFFFF;
 	master_timer.Instance->CCR3 = entry.t1;
 	master_timer.Instance->CCR4 = entry.t2;
+
+	ad_slave_to_tim();
 }
 
 void sequencer_run() {
@@ -256,6 +258,8 @@ void sequencer_run() {
 }
 
 void spi_write_entry(seq_entry_t entry) {
+	ad_slave_to_arm();
+
 	if (entry.sweep.fstep_ftw > 0) {
 		ad_enable_ramp();
 
@@ -304,6 +308,7 @@ void sequencer_stop() {
 void enter_rfkill_mode() {
 	timer_stop();
 
+	ad_slave_to_arm();
 	ad_set_profile_freq(0, 0);
 	ad_set_profile_amplitude(0, 0);
 	ad_disable_ramp();

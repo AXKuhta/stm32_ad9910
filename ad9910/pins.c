@@ -5,11 +5,12 @@
 #include "stm32f7xx_hal.h"
 #include "pin_init.h"
 #include "ad9910/pins.h"
+#include "timer/sequencing.h"
 
 // Профили
 #define P_0 	GPIOD, GPIO_PIN_13
 #define P_1 	GPIOD, GPIO_PIN_12
-#define P_2 	GPIOD, GPIO_PIN_11
+#define P_2 	GPIOD, GPIO_PIN_14
 
 // Управляющие сигналы
 #define IO_UPDATE 	GPIOB, GPIO_PIN_0
@@ -17,64 +18,36 @@
 #define DR_CTL 		GPIOB, GPIO_PIN_11
 #define DR_HOLD 	GPIOB, GPIO_PIN_10
 
-// Перевести номер профиля в значение, пригодное для записи в регистр ODR
-uint16_t profile_to_gpio_states(uint8_t profile_id) {
-	return 	(profile_id & 0b001 ? GPIO_PIN_13 : 0) +
-			(profile_id & 0b010 ? GPIO_PIN_12 : 0) +
-			(profile_id & 0b100 ? GPIO_PIN_11 : 0);
-}
-
 // Установить профиль
 void set_profile(uint8_t profile_id) {
 	assert(profile_id < 8);
 
-	LL_GPIO_WriteOutputPort(GPIOD, profile_to_gpio_states(profile_id));
-}
-
-static void init_profile_gpio() {
-	PIN_Init(P_0);
-	PIN_Init(P_1);
-	PIN_Init(P_2);
-	
-	HAL_GPIO_WritePin(P_0, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(P_1, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(P_2, GPIO_PIN_RESET);
-}
-
-static void init_control_gpio() {
-	PIN_Init(IO_UPDATE);
-	PIN_Init(IO_RESET);
-	
-	HAL_GPIO_WritePin(IO_UPDATE, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(IO_RESET, GPIO_PIN_RESET);
-}
-
-void drctl_software_controlled() {
-	HAL_GPIO_DeInit(DR_CTL);
-	PIN_Init(DR_CTL);
-}
-
-void drhold_software_controlled() {
-	HAL_GPIO_DeInit(DR_HOLD);
-	PIN_Init(DR_HOLD);
-}
-
-void drctl_timer_controlled() {
-	HAL_GPIO_DeInit(DR_CTL);
-	PIN_AF_Init(DR_CTL, GPIO_MODE_AF_PP, GPIO_PULLDOWN, GPIO_AF1_TIM2); // TIM2_CH4
-}
-
-void drhold_timer_controlled() {
-	HAL_GPIO_DeInit(DR_HOLD);
-	PIN_AF_Init(DR_HOLD, GPIO_MODE_AF_PP, GPIO_PULLDOWN, GPIO_AF1_TIM2); // TIM2_CH3
+	HAL_GPIO_WritePin(P_0, profile_id & 0b001 ? GPIO_PIN_SET : GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(P_1, profile_id & 0b010 ? GPIO_PIN_SET : GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(P_2, profile_id & 0b100 ? GPIO_PIN_SET : GPIO_PIN_RESET);
 }
 
 void ad_init_gpio() {
-	//init_profile_gpio(); - управляются таймером
-	init_control_gpio();
+	PIN_Init(P_0);
+	PIN_Init(P_1);
+	PIN_Init(P_2);
 
-	drctl_software_controlled();
-	drhold_software_controlled();
+	PIN_Init(IO_UPDATE);
+	PIN_Init(IO_RESET);
+
+	PIN_Init(DR_CTL);
+	PIN_Init(DR_HOLD);
+}
+
+// Передать управление входами AD9910 процессору (или DMA)
+void ad_slave_to_arm() {
+	ad_init_gpio();
+}
+
+// Передать управление входами AD9910 таймерам
+// TODO: пусть AD9910 всегда управляется таймерами
+void ad_slave_to_tim() {
+	logic_blaster_init_gpio();
 }
 
 // Установить направление хода Digital Ramp генератора
