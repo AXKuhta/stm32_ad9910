@@ -63,13 +63,23 @@ typedef struct logic_t {
 // };
 // ```
 static logic_level_sequence_t lower_logic_sequence(logic_t states[]) {
-	double timer_eps = 1.0 / HAL_RCC_GetSysClockFreq();
+	double timer_mhz = HAL_RCC_GetSysClockFreq() / 1000 / 1000;
 	int slots_used = 0;
+
+	// Деление ранее и умножение далее чтобы сохранить точность
+	// >>> u = 216000000
+	// >>> v = 300/1000/1000
+	// >>> u*v
+	// 64799.99999999999 - плохо
+	// >>> u/1000/1000*v*1000*1000
+	// 64800.0 - лучше
+	//
+	// FIXME: а вот с 30/1000/1000 не работает
 
 	// Проход 1: определить необходимый запас слотов времени
 	// Триалим количество разбивок
 	for (size_t i = 0; states[i].hold; i++) {
-		double timer_mu_real = (double)states[i].hold / timer_eps;
+		double timer_mu_real = (double)states[i].hold * timer_mhz * 1000.0 * 1000.0;
 		uint32_t timer_mu = timer_mu_real;
 
 		// Не можем точно представить время?
@@ -110,7 +120,7 @@ static logic_level_sequence_t lower_logic_sequence(logic_t states[]) {
 		uint8_t b4 = state & IO_UPDATE ? set_hi : set_lo;
 
 		// Заново найти количество разбивок
-		double timer_mu_real = (double)states[i].hold / timer_eps;
+		double timer_mu_real = (double)states[i].hold * timer_mhz * 1000.0 * 1000.0;
 		uint32_t timer_mu = timer_mu_real;
 
 		int slots = 1;
