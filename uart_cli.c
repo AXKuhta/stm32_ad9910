@@ -44,7 +44,7 @@ extern uint8_t ad_default_fsc;
 #define PROFILE7  (P_2 | P_1 | P_0)
 
 typedef struct logic_t {
-	double hold;
+	uint32_t hold_ns;
 	uint8_t state;
 } logic_t;
 
@@ -56,35 +56,24 @@ typedef struct logic_t {
 // ```
 // seq_entry_t pulse = {
 //     .logic_level_sequence = lower_logic_sequence((logic_t[]){
-//         { .hold = .0009, .state = P_0 }, // Излучение
-//         { .hold = .0001, .state = 0 }, // Парковка
+//         { .hold_ns = 900*1000, .state = P_0 }, // Излучение
+//         { .hold_ns = 1*1000, .state = 0 }, // Парковка
 //         { 0, 0 } // Терминатор
 //     })
 // };
 // ```
 static logic_level_sequence_t lower_logic_sequence(logic_t states[]) {
-	double timer_mhz = HAL_RCC_GetSysClockFreq() / 1000 / 1000;
+	uint32_t timer_mhz = HAL_RCC_GetSysClockFreq() / 1000 / 1000;
 	int slots_used = 0;
-
-	// Деление ранее и умножение далее чтобы сохранить точность
-	// >>> u = 216000000
-	// >>> v = 300/1000/1000
-	// >>> u*v
-	// 64799.99999999999 - плохо
-	// >>> u/1000/1000*v*1000*1000
-	// 64800.0 - лучше
-	//
-	// FIXME: а вот с 30/1000/1000 не работает
 
 	// Проход 1: определить необходимый запас слотов времени
 	// Триалим количество разбивок
-	for (size_t i = 0; states[i].hold; i++) {
-		double timer_mu_real = (double)states[i].hold * timer_mhz * 1000.0 * 1000.0;
-		uint32_t timer_mu = timer_mu_real;
+	for (size_t i = 0; states[i].hold_ns; i++) {
+		uint32_t timer_mu = states[i].hold_ns * timer_mhz / 1000;
 
 		// Не можем точно представить время?
 		// TODO: сообщение об ошибке
-		assert(timer_mu == timer_mu_real);
+		assert(states[i].hold_ns * timer_mhz % 1000 == 0);
 
 		int slots = 1;
 
@@ -103,11 +92,13 @@ static logic_level_sequence_t lower_logic_sequence(logic_t states[]) {
 	uint32_t* slave_b_stream = malloc(2 * sizeof(uint32_t) * slots_used);
 	uint16_t* hold_time = malloc(sizeof(uint16_t) * slots_used);
 
+	// см. "Output compare 1 mode"
+	// https://www.st.com/resource/en/reference_manual/rm0385-stm32f75xxx-and-stm32f74xxx-advanced-armbased-32bit-mcus-stmicroelectronics.pdf
 	const uint8_t set_hi = 0b00010000;
 	const uint8_t set_lo = 0b00100000;
 
 	// Проход 2: делаем машинные коды
-	for (size_t i = 0, j = 0; states[i].hold; i++) {
+	for (size_t i = 0, j = 0; states[i].hold_ns; i++) {
 		uint8_t state = states[i].state;
 
 		uint8_t a1 = state & DR_CTL ? set_hi : set_lo;		// PC6
@@ -120,8 +111,7 @@ static logic_level_sequence_t lower_logic_sequence(logic_t states[]) {
 		uint8_t b4 = state & IO_UPDATE ? set_hi : set_lo;	// PD15
 
 		// Заново найти количество разбивок
-		double timer_mu_real = (double)states[i].hold * timer_mhz * 1000.0 * 1000.0;
-		uint32_t timer_mu = timer_mu_real;
+		uint32_t timer_mu = states[i].hold_ns * timer_mhz / 1000;
 
 		int slots = 1;
 
@@ -288,7 +278,6 @@ void basic_pulse_cmd(const char* str) {
 	uint32_t freq_hz = parse_freq(freq, f_unit);
 	uint32_t offset_ns = parse_time(offset, o_unit);
 	uint32_t duration_ns = parse_time(duration, d_unit);
-	double emit_sec = duration_ns / 1000.0 / 1000.0 / 1000.0; // TODO: переделать логичнее, parse_time -> time_factor
 
 	if (freq_hz == 0) {
 		return;
@@ -342,8 +331,8 @@ void basic_pulse_cmd(const char* str) {
 		.ram_destination = AD_RAM_DESTINATION_POLAR,
 		.ram_secondary_params = { .ftw =  ad_calc_ftw(freq_hz) },
 		.logic_level_sequence = lower_logic_sequence((logic_t[]){
-			{ .hold = emit_sec, .state = PROFILE1 },
-			{ .hold = .000001, .state = PROFILE0 },
+			{ .hold_ns = duration_ns, .state = PROFILE1 },
+			{ .hold_ns = 1*1000, .state = PROFILE0 },
 			{ 0, 0 }
 		})
 	};
@@ -378,7 +367,6 @@ static void sequencer_add_sweep_internal(const char* str, const char* fstr, cons
 	uint32_t fc_hz = parse_freq(fc, fc_unit);
 	uint32_t offset_ns = parse_time(offset, o_unit);
 	uint32_t duration_ns = parse_time(duration, d_unit);
-	double emit_sec = duration_ns / 1000.0 / 1000.0 / 1000.0;
 
 	if (b < 1) {
 		printf("Invalid b; must be greater than 0\n");
@@ -493,8 +481,8 @@ static void sequencer_add_sweep_internal(const char* str, const char* fstr, cons
 		.ram_image = { .buffer = (uint32_t*)ram, .size = element_count + 1 },
 		.ram_destination = AD_RAM_DESTINATION_POLAR,
 		.logic_level_sequence = lower_logic_sequence((logic_t[]){
-			{ .hold = emit_sec, .state = PROFILE1 },
-			{ .hold = .000001, .state = PROFILE0 },
+			{ .hold_ns = duration_ns, .state = PROFILE1 },
+			{ .hold_ns = 1*1000, .state = PROFILE0 },
 			{ 0, 0 }
 		})
 	};
@@ -564,19 +552,18 @@ void xmitdata_fsk_cmd(const char* str) {
 	uint32_t f2_hz = parse_freq(f2, f2_unit);
 	uint32_t offset_ns = parse_time(offset, o_unit);
 	uint32_t tstep_ns = parse_time(tstep, ts_unit);
-	double step = tstep_ns / 1000.0 / 1000.0 / 1000.0;
 
 	vec_t(uint8_t)* vec = scan_uint8_data(str + data_offset);
 	vec_t(logic_t)* v2 = init_vec(logic_t);
 
 	for (size_t i = 0; i < vec->size; i++) {
 		vec_push(v2, (logic_t){
-			.hold = step,
+			.hold_ns = tstep_ns,
 			.state = vec->elements[i] ? PROFILE2 : PROFILE3
 		});
 	}
 
-	vec_push(v2, (logic_t){ .hold = .000001, .state = PROFILE0 } );
+	vec_push(v2, (logic_t){ .hold_ns = 1*1000, .state = PROFILE0 } );
 	vec_push(v2, (logic_t){ 0 });
 
 	uint32_t duration_ns = tstep_ns * vec->size;
@@ -638,19 +625,18 @@ void xmitdata_psk_cmd(const char* str) {
 	uint32_t freq_hz = parse_freq(freq, f_unit);
 	uint32_t offset_ns = parse_time(offset, o_unit);
 	uint32_t tstep_ns = parse_time(tstep, ts_unit);
-	double step = tstep_ns / 1000.0 / 1000.0 / 1000.0;
 
 	vec_t(uint8_t)* vec = scan_uint8_data(str + data_offset);
 	vec_t(logic_t)* v2 = init_vec(logic_t);
 
 	for (size_t i = 0; i < vec->size; i++) {
 		vec_push(v2, (logic_t){
-			.hold = step,
+			.hold_ns = tstep_ns,
 			.state = vec->elements[i] ? PROFILE2 : PROFILE3
 		});
 	}
 
-	vec_push(v2, (logic_t){ .hold = .000001, .state = 0 } );
+	vec_push(v2, (logic_t){ .hold_ns = 1*1000, .state = 0 } );
 	vec_push(v2, (logic_t){ 0 });
 
 	uint32_t duration_ns = tstep_ns * vec->size;
@@ -712,19 +698,18 @@ void xmitdata_zc_psk_cmd(const char* str) {
 	uint32_t freq_hz = parse_freq(freq, f_unit);
 	uint32_t offset_ns = parse_time(offset, o_unit);
 	uint32_t tstep_ns = parse_time(tstep, ts_unit);
-	double step = tstep_ns / 1000.0 / 1000.0 / 1000.0;
 
 	vec_t(uint8_t)* vec = scan_uint8_data(str + data_offset);
 	vec_t(logic_t)* v2 = init_vec(logic_t);
 
 	for (size_t i = 0; i < vec->size; i++) {
 		vec_push(v2, (logic_t){
-			.hold = step,
+			.hold_ns = tstep_ns,
 			.state = vec->elements[i] ? PROFILE2 : PROFILE3
 		});
 	}
 
-	vec_push(v2, (logic_t){ .hold = .000001, .state = 0 } );
+	vec_push(v2, (logic_t){ .hold_ns = 1*1000, .state = 0 } );
 	vec_push(v2, (logic_t){ 0 });
 
 	uint32_t duration_ns = tstep_ns * vec->size;
@@ -821,7 +806,6 @@ void xmitdata_ram_psk_cmd(const char* str) {
 	uint32_t offset_ns = parse_time(offset, o_unit);
 	uint32_t tstep_ns = parse_time(tstep, ts_unit);
 	uint32_t duration_ns = tstep_ns * element_count;
-	double emit_sec = duration_ns / 1000.0 / 1000.0 / 1000.0;
 
 	if (freq_hz == 0) {
 		return;
@@ -863,8 +847,8 @@ void xmitdata_ram_psk_cmd(const char* str) {
 		.ram_destination = AD_RAM_DESTINATION_POLAR,
 		.ram_secondary_params = { .ftw =  ftw },
 		.logic_level_sequence = lower_logic_sequence((logic_t[]){
-			{ .hold = emit_sec, .state = PROFILE1 },
-			{ .hold = .000001, .state = PROFILE0 },
+			{ .hold_ns = duration_ns, .state = PROFILE1 },
+			{ .hold_ns = 1*1000, .state = PROFILE0 },
 			{ 0, 0 }
 		})
 	};
@@ -915,7 +899,6 @@ void sequencer_add_pulse_cmd(const char* str) {
 	uint32_t freq_hz 		= parse_freq(freq, f_unit);
 	uint32_t offset_ns 		= parse_time(offset, o_unit);
 	uint32_t duration_ns 	= parse_time(duration, d_unit);
-	double emit_sec = duration_ns / 1000.0 / 1000.0 / 1000.0;
 
 	if (freq_hz == 0) {
 		return;
@@ -934,8 +917,8 @@ void sequencer_add_pulse_cmd(const char* str) {
 		.profiles[0] = { .ftw = 0, .asf = 0 },
 		.profiles[1] = { .ftw = ad_calc_ftw(freq_hz), .asf = ad_default_asf },
 		.logic_level_sequence = lower_logic_sequence((logic_t[]){
-			{ .hold = emit_sec, .state = PROFILE1 },
-			{ .hold = .000001, .state = PROFILE0 },
+			{ .hold_ns = duration_ns, .state = PROFILE1 },
+			{ .hold_ns = 1*1000, .state = PROFILE0 },
 			{ 0, 0 }
 		})
 	};
