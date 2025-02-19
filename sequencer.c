@@ -250,6 +250,11 @@ void sequencer_run() {
 
 	seq_index = 0;
 
+	if (sequence->size == 0) {
+		printf("Sequencer is empty\n");
+		return;
+	}
+
 	// Полный сброс + активация таймеров
 	timer_restart();
 
