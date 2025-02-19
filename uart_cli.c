@@ -866,6 +866,8 @@ void radar_emulator_cmd(const char* str) {
 #define DDC_EARLY_INDICATOR 	GPIOE, GPIO_PIN_2
 
 void wait_mcast_packet() {
+	run("radar_emulator 0 0 0 0 0");
+	run("seq pulse 0 us 900 us 158 MHz");
 	run("radar_emulator 25 hz 1 ms");
 
 	PIN_Init(DDC_EARLY_INDICATOR);
