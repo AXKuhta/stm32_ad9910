@@ -1,7 +1,7 @@
 {
     "configurations": [
         {
-            "name": "stm32",
+            "name": "Win32",
             "includePath": [
                 "${workspaceFolder}/**"
             ],
@@ -16,6 +16,19 @@
             "intelliSenseMode": "windows-gcc-arm",
             "compilerPath": "C:/msys64/mingw64/bin/arm-none-eabi-gcc.exe",
             "compilerArgs": []
+        },
+        {
+            "name": "Linux",
+            "includePath": [
+                "${workspaceFolder}/**"
+            ],
+            "defines": [
+                "STM32F746xx"
+            ],
+            "cStandard": "c17",
+            "cppStandard": "c++14",
+            "intelliSenseMode": "linux-gcc-arm",
+            "compilerPath": "/usr/bin/arm-none-eabi-gcc"
         }
     ],
     "version": 4
