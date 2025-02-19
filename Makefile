@@ -81,6 +81,9 @@ flash: firmware.elf
 	openocd -f board/st_nucleo_f7.cfg -c "reset_config connect_assert_srst" -c "program firmware.elf verify reset exit"
 
 debug:
+	@openocd -f board/st_nucleo_f7.cfg -c "reset_config connect_assert_srst" & gdb-multiarch ./firmware.elf -ex "target extended-remote :3333" -ex "monitor [target current] configure -event gdb-detach {shutdown}" -ex "monitor [target current] configure -rtos auto"
+
+debug_win:
 	/mingw64.exe openocd -f board/st_nucleo_f7.cfg -c "reset_config connect_assert_srst"
 	/mingw64.exe winpty gdb-multiarch ./firmware.elf -ex "target extended-remote :3333"
 
