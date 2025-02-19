@@ -998,6 +998,50 @@ void radar_emulator_cmd(const char* str) {
 	radar_emulator_start(freq_hz, duration_ns / 1000.0 / 1000.0 / 1000.0, limit);
 }
 
+#include "FreeRTOS_IP.h"
+
+void wait_mcast_packet() {
+	Socket_t socket = FreeRTOS_socket(FREERTOS_AF_INET, FREERTOS_SOCK_DGRAM, 0);
+
+	assert(socket != FREERTOS_INVALID_SOCKET);
+
+	struct freertos_sockaddr addr = {
+		.sin_port = FreeRTOS_htons(25000),
+		.sin_address.ulIP_IPv4 = FreeRTOS_inet_addr("234.5.6.7")
+	};
+
+	// По умолчанию таймаут 5 секунд (см. ipconfigSOCK_DEFAULT_RECEIVE_BLOCK_TIME)
+	//static const TickType_t receive_timeout = portMAX_DELAY;
+	//FreeRTOS_setsockopt(socket, 0, FREERTOS_SO_RCVTIMEO, &receive_timeout, sizeof(receive_timeout));
+
+	assert( FreeRTOS_bind(socket, &addr, sizeof(addr)) == 0 );
+
+	while (1) {
+		struct freertos_sockaddr from = {0};
+		socklen_t from_sz = sizeof(from);
+		char buf;
+
+		printf("Waiting\n");
+
+		BaseType_t status = FreeRTOS_recvfrom(socket, &buf, 1, 0, &from, &from_sz);
+
+		if (status == -pdFREERTOS_ERRNO_EWOULDBLOCK) {
+			continue;
+		} else if (status < 0) {
+			FreeRTOS_closesocket(socket);
+			printf("recvfrom error %ld\n", status);
+			return;
+		}
+
+		if (status > 0)
+			break;
+	}
+
+	FreeRTOS_closesocket(socket);
+
+	sequencer_run();
+}
+
 void run(const char* str) {
 	char cmd[32] = {0};
 
@@ -1022,6 +1066,7 @@ void run(const char* str) {
 	if (strcmp(cmd, "basic_sweep") == 0) return basic_sweep_cmd(str);
 	if (strcmp(cmd, "basic_xmitdata") == 0) return basic_xmitdata_cmd(str);
 	if (strcmp(cmd, "radar_emulator") == 0) return radar_emulator_cmd(str);
+	if (strcmp(cmd, "wait") == 0) return wait_mcast_packet();
 
 	printf("Unknown command: [%s]\n", cmd);
 }
