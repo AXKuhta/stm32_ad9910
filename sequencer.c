@@ -265,6 +265,10 @@ void sequencer_run() {
 void spi_write_entry(seq_entry_t entry) {
 	ad_slave_to_arm();
 
+	// Настроить DRG (если используется ЛЧМ)
+	// Т.к. включен static reset DRG, он начнёт отсчитывать только после:
+	// - вызова ad_safety_off() и затем...
+	// - ...принятия изменений от смены профиля
 	if (entry.sweep.fstep_ftw > 0) {
 		ad_enable_ramp();
 
@@ -299,9 +303,10 @@ void spi_write_entry(seq_entry_t entry) {
 
 	ad_set_full_scale_current(entry.fsc);
 
+	// FIXME: Почему ему нужен *фронт* а не уровень DR_CTL? Не понимаю...
 	ad_write_all();
 	set_ramp_direction(0);
-	ad_pulse_io_update(); // !! Большая задержка
+	ad_pulse_io_update();
 	set_ramp_direction(1);
 }
 

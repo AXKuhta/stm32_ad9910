@@ -61,10 +61,9 @@ void ad_init() {
 	ad_enable_pll(25*1000*1000, 40);
 	
 	r01[0] = 0b00000001; // Enable amplitude scale from single tone profiles
-	r00[2] = 0b00001000; // Phase static reset
+	r00[2] = 0b00011000; // Phase static reset + DRG static reset
 	r01[3] = 0b10000000; // Matched latency
 	r00[1] = 0b00000001; // Sine output
-
 
 	// Записать измененные регистры
 	ad_write(0x00, r00, 4);

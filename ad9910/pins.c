@@ -64,17 +64,16 @@ void my_delay(uint32_t delay) {
 	}
 }
 
-// Хоть какая-то задержка должна присутствовать
-// Без неё импульса вообще не возникнет
+// Подержать IO_RESET высоким 1 мс
 void ad_pulse_io_reset() {
 	HAL_GPIO_WritePin(IO_RESET, GPIO_PIN_SET);
-	//HAL_Delay(1);
+	HAL_Delay(1);
 	HAL_GPIO_WritePin(IO_RESET, GPIO_PIN_RESET);
-	//HAL_Delay(1);
 }	
 
+// Подержать IO_UPDATE высоким 1мс
 void ad_pulse_io_update() {
 	HAL_GPIO_WritePin(IO_UPDATE, GPIO_PIN_SET);
-	//HAL_Delay(1);
+	HAL_Delay(1);
 	HAL_GPIO_WritePin(IO_UPDATE, GPIO_PIN_RESET);
 }
