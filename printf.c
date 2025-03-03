@@ -48,6 +48,7 @@ int printf(const char *restrict fmt, ...) {
 
 		// Не получилось отправить? Предупредить вызывающего
 		if (result != size) {
+			free(buf);
 			return -1;
 		}
 	} else {
@@ -55,7 +56,6 @@ int printf(const char *restrict fmt, ...) {
 	}
 
 	free(buf);
-
 	return i;
 }
 
