@@ -9,7 +9,14 @@
 #include "server.h"
 
 #include "FreeRTOS.h"
+#include "FreeRTOS_IP.h"
 #include "task.h"
+
+// Перенаправить printf в сокет
+// Нулевая позиция в Thread Local Storage зарезервирована под указатель на сокет
+void printf_redirect(void* socket) {
+	vTaskSetThreadLocalStoragePointer(NULL, 0, socket);
+}
 
 // Перенаправляемый printf
 int printf(const char *restrict fmt, ...) {
@@ -29,15 +36,22 @@ int printf(const char *restrict fmt, ...) {
 	i = vasprintf(&buf, fmt, ap);
 	va_end(ap);
 
+	BaseType_t size = strlen(buf);
+
 	// Достать указатель на сокет (или NULL)
-	void* sock = pvTaskGetThreadLocalStoragePointer(NULL, 0);
+	Socket_t sock = pvTaskGetThreadLocalStoragePointer(NULL, 0);
 
 	// NULL = выводим в последовательный порт
 	// Не NULL = отправляем в сокет
 	if (sock) {
-		send_all(sock, buf, strlen(buf));
+		BaseType_t result = FreeRTOS_send(sock, buf, size, FREERTOS_MSG_DONTWAIT);
+
+		// Не получилось отправить? Предупредить вызывающего
+		if (result != size) {
+			return -1;
+		}
 	} else {
-		_write(1, buf, strlen(buf));
+		_write(1, buf, size);
 	}
 
 	free(buf);
@@ -47,17 +61,25 @@ int printf(const char *restrict fmt, ...) {
 
 // Вызов puts() вставляется компилятором вместо вызовов printf() в тех случаях, когда печатается строка без подстановок (Но с \n в конце!)
 int puts(const char* str) {
-	void* sock = pvTaskGetThreadLocalStoragePointer(NULL, 0);
+	Socket_t sock = pvTaskGetThreadLocalStoragePointer(NULL, 0);
+	BaseType_t size = strlen(str);
 
 	if (sock) {
-		send_all(sock, str, strlen(str));
-		send_all(sock, "\n", 1);
+		BaseType_t result = FreeRTOS_send(sock, str, size, FREERTOS_MSG_DONTWAIT);
+
+		if (result < 0)
+			return EOF;
+
+		result = FreeRTOS_send(sock, "\n", 1, FREERTOS_MSG_DONTWAIT);
+
+		if (result < 0)
+			return EOF;
 	} else {
-		_write(1, str, strlen(str));
+		_write(1, str, size);
 		_write(1, "\n", 1);
 	}
 
-	return 1;
+	return size;
 }
 
 // Реализация assert()

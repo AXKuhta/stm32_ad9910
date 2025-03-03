@@ -7,7 +7,7 @@
 #include "FreeRTOS_IP.h"
 #include "uart_cli.h"
 
-// Отправить большой буффер
+// Отправить большой буфер
 void send_all(void* client, const char* data, size_t size) {
 	size_t pending = size;
 
@@ -30,7 +30,7 @@ void send_all(void* client, const char* data, size_t size) {
 }
 
 static void read_lines(Socket_t client) {
-	char buffer[128] = {0}; // Буффер строки
+	char buffer[128] = {0}; // Буфер строки
 	size_t last = 0;
 
 	BaseType_t status;
@@ -70,12 +70,14 @@ static void read_lines(Socket_t client) {
 }
 
 static void client_task(void* params) {
-	vTaskSetThreadLocalStoragePointer(NULL, 0, params);
 	Socket_t client = params;
 
-	send_all(client, "Hello!\n> ", 9);
+	printf_redirect(client);
 
+	send_all(client, "Hello!\n> ", 9);
 	read_lines(client);
+
+	printf_redirect(NULL);
 
 	vTaskSetThreadLocalStoragePointer(NULL, 0, 0);
 

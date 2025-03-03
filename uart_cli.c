@@ -1021,7 +1021,12 @@ void wait_mcast_packet() {
 		socklen_t from_sz = sizeof(from);
 		char buf;
 
-		printf("Waiting\n");
+		int rc = printf("Waiting\n");
+
+		if (rc < 0) { // Не можем отправить "waiting"? значит TCP клиент разорвал сессию
+			FreeRTOS_closesocket(socket);
+			return;
+		}
 
 		BaseType_t status = FreeRTOS_recvfrom(socket, &buf, 1, 0, &from, &from_sz);
 
