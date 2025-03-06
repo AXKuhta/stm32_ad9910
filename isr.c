@@ -144,13 +144,9 @@ void DMA1_Stream1_IRQHandler() {
 	RECORD_INTERRUPT();
 }
 
+// Эти двое не срабатывают
 void DMA1_Stream2_IRQHandler() {
 	HAL_DMA_IRQHandler(&dma_slave_timer_a_up);
-	RECORD_INTERRUPT();
-}
-
-void DMA1_Stream4_IRQHandler() {
-	HAL_DMA_IRQHandler(&dma_slave_timer_a_cc1);
 	RECORD_INTERRUPT();
 }
 
@@ -159,29 +155,38 @@ void DMA1_Stream6_IRQHandler() {
 	RECORD_INTERRUPT();
 }
 
+// Эти двое срабатывают на DMA start и stop
+// Воспользуемся таймером A для остановки
+void DMA1_Stream4_IRQHandler() {
+	// Статус сменился на READY? значит данные закончились
+	// - Пакровочный профиль принудительно не выставляем; верим, что всё нормально
+	// - Таймеры останавливаем
+	// - Выполняем планирование записи параметров следующего импульса
+	//if (dma_slave_timer_a_cc1.State == HAL_DMA_STATE_READY){
+	if (__HAL_DMA_GET_IT_SOURCE(&dma_slave_timer_a_cc1, DMA_IT_TC) != RESET){
+		__HAL_TIM_CLEAR_IT(&master_timer, TIM_IT_CC1);
+		__HAL_TIM_CLEAR_IT(&master_timer, TIM_IT_TRIGGER);
+		master_timer.Instance->CCR1 = 0;
+
+		// В __HAL_TIM_DISABLE проверка на отключение каналов, только нам это зачем??
+		slave_timer_a.Instance->CR1 &= ~(TIM_CR1_CEN);
+		slave_timer_b.Instance->CR1 &= ~(TIM_CR1_CEN);
+
+		extern void pulse_complete_callback();
+		run_later(pulse_complete_callback);
+	}
+
+	HAL_DMA_IRQHandler(&dma_slave_timer_a_cc1);
+	RECORD_INTERRUPT();
+}
+
 void DMA1_Stream0_IRQHandler() {
 	HAL_DMA_IRQHandler(&dma_slave_timer_b_cc1);
 	RECORD_INTERRUPT();
 }
 
-extern uint8_t parking_profile;
-extern void pulse_complete_callback();
-
-int idx = 0;
-
-// Конец излучения
 void TIM2_IRQHandler() {
-	set_profile(parking_profile);						// 4. Выставить нулевой профиль принудительно
-	run_later(pulse_complete_callback);					// 5. Запланировать запись параметров следующего импульса
-
 	HAL_TIM_IRQHandler(&master_timer);
-
-	// В __HAL_TIM_DISABLE проверка на отключение каналов, только нам это зачем??
-	slave_timer_a.Instance->CR1 &= ~(TIM_CR1_CEN);
-	slave_timer_b.Instance->CR1 &= ~(TIM_CR1_CEN);
-
-	idx = 0;
-
 	RECORD_INTERRUPT();
 }
 

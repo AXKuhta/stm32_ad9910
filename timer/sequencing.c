@@ -82,21 +82,18 @@ void timer_init() {
 		}
 	};
 
-	// Два канала сравнения:
-	// OC3	Начало излучения
-	// OC4	Конец излучения
-	HAL_TIM_OC_Init(&master_timer);
-	HAL_TIM_OC_ConfigChannel(&master_timer, &(TIM_OC_InitTypeDef) { .OCMode = TIM_OCMODE_PWM2, .Pulse = 0 }, TIM_CHANNEL_3);
-	HAL_TIM_OC_ConfigChannel(&master_timer, &(TIM_OC_InitTypeDef) { .OCMode = TIM_OCMODE_PWM2, .Pulse = 0 }, TIM_CHANNEL_4);
+	// Первый канал ловит триггер
+	// Запоминает время получения
+	HAL_TIM_IC_Init(&master_timer);
+	HAL_TIM_IC_ConfigChannel(&master_timer, &(TIM_IC_InitTypeDef){
+		.ICPolarity = TIM_ICPOLARITY_FALLING,
+		.ICSelection = TIM_ICSELECTION_DIRECTTI
+	}, TIM_CHANNEL_1 );
 	
-	// Настроить внешний триггер для TIM2
-	// TIM_TS_TI1FP1 наиболее прямой способ получить триггер?
-	HAL_TIM_SlaveConfigSynchronization(&master_timer, &(TIM_SlaveConfigTypeDef) {
-		.SlaveMode = TIM_SLAVEMODE_COMBINED_RESETTRIGGER,
-		.InputTrigger = TIM_TS_TI1FP1,
-		.TriggerPolarity = TIM_TRIGGERPOLARITY_FALLING
-	});
-	
+	// Канал выбран как источник триггерного выхода
+	// ...в чём разница между TIM_TRGO_OC1 и TIM_TRGO_OC1REF?
+	HAL_TIMEx_MasterConfigSynchronization(&master_timer, &(TIM_MasterConfigTypeDef){ .MasterOutputTrigger = TIM_TRGO_OC1 });
+
 	// ====================================================================================
 	// TIM3 - Slave A
 	// ====================================================================================
@@ -164,6 +161,8 @@ void timer_init() {
 
 	// Взаимодействует с очередями FreeRTOS
 	// Приоритет должен быть больше или равен configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY
+	// FIXME: уже не взаимодействует
+	// TODO: вынести все включения прерываний в isr.c
 	HAL_NVIC_SetPriority(TIM2_IRQn, 7, 0);
 	HAL_NVIC_EnableIRQ(TIM2_IRQn);
 
@@ -175,8 +174,15 @@ void timer_init() {
 	// HAL_NVIC_EnableIRQ(TIM4_IRQn);
 	
 	// Запуск требуется даже при настроенном триггере
-	HAL_TIM_OC_Start(&master_timer, TIM_CHANNEL_3);
-	HAL_TIM_OC_Start_IT(&master_timer, TIM_CHANNEL_4);
+	//HAL_TIM_OC_Start(&master_timer, TIM_CHANNEL_3);
+	//HAL_TIM_OC_Start_IT(&master_timer, TIM_CHANNEL_4);
+
+	// Мастер не настроен - таймер сразу побежит
+	// Запуск немного неуклюжий:
+	// - IC Start включит канал 1 и enable таймера
+	// - Base Start IT включит прерывание по переполнению, повторно enable, выставит статус BUSY
+	HAL_TIM_IC_Start(&master_timer, DMA_CHANNEL_1);
+	HAL_TIM_Base_Start_IT(&master_timer);
 
 	HAL_TIM_Base_Init(&slave_timer_a);
 	HAL_TIM_Base_Init(&slave_timer_b);
@@ -205,13 +211,13 @@ void timer_init() {
 
 // Обычный режим, отступ > 0
 void timer2_trgo_on_ch3() {
-	HAL_TIMEx_MasterConfigSynchronization(&master_timer, &(TIM_MasterConfigTypeDef){ .MasterOutputTrigger = TIM_TRGO_OC3REF });
+	
 }
 
 // Особый режим для ситуаций, когда отступ = 0
 // В чём отличие TIM_TRGO_RESET от TIM_TRGO_UPDATE?
 void timer2_trgo_on_reset() {
-	HAL_TIMEx_MasterConfigSynchronization(&master_timer, &(TIM_MasterConfigTypeDef){ .MasterOutputTrigger = TIM_TRGO_RESET });
+	//HAL_TIMEx_MasterConfigSynchronization(&master_timer, &(TIM_MasterConfigTypeDef){ .MasterOutputTrigger = TIM_TRGO_RESET });
 }
 
 void timer_stop() {	

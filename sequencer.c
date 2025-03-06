@@ -194,6 +194,7 @@ void pulse_complete_callback() {
 
 	// Если t1 == 0, то TIM2 CH3 не сможет сгенерировать событие для запуска таймера модуляции
 	// Пересесть на TIM2 RESET в таких ситуациях
+	// FIXME: удалить
 	if (entry.t1 > 0) {
 		timer2_trgo_on_ch3();
 	} else {
@@ -237,10 +238,9 @@ void pulse_complete_callback() {
 	slave_timer_a.Instance->CNT = 1;
 	slave_timer_b.Instance->CNT = 1;
 
-	// Принудительно закинуть в таймер очень большое значение, чтобы он случайно не пересёк те точки, которые мы вот вот запишем
-	master_timer.Instance->CNT = 0x7FFFFFFF;
-	master_timer.Instance->CCR3 = entry.t1;
-	master_timer.Instance->CCR4 = entry.t2;
+	// wtf
+	assert( (slave_timer_a.Instance->CR1 & TIM_CR1_CEN) == 0);
+	assert( (slave_timer_b.Instance->CR1 & TIM_CR1_CEN) == 0);
 
 	ad_slave_to_tim();
 }

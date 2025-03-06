@@ -138,6 +138,7 @@ static void logic_level_blaster_dma_init() {
 	assert(HAL_DMA_Init(&dma_slave_timer_b_cc1) == HAL_OK);
 
 	// FIXME: вынести в isr.c
+	// configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY
 	HAL_NVIC_SetPriority(DMA1_Stream2_IRQn, 7, 0);
 	HAL_NVIC_SetPriority(DMA1_Stream4_IRQn, 7, 0);
 	HAL_NVIC_SetPriority(DMA1_Stream6_IRQn, 7, 0);
