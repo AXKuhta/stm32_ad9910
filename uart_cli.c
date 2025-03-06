@@ -998,53 +998,46 @@ void radar_emulator_cmd(const char* str) {
 	radar_emulator_start(freq_hz, duration_ns / 1000.0 / 1000.0 / 1000.0, limit);
 }
 
-#include "FreeRTOS_IP.h"
+#include "FreeRTOS.h"
+#include "queue.h"
+#include "ack.h"
 
+#define DISCARD &(uint32_t[1]){0}
+
+// Режим следования за DDC
+// Получение UDP пакетов было вынесено в ack.c внутрь демона событий DDC
 void wait_mcast_packet() {
-	Socket_t socket = FreeRTOS_socket(FREERTOS_AF_INET, FREERTOS_SOCK_DGRAM, 0);
+	// Опустошить очередь
+	xQueueReset(ddc_ack_queue);
 
-	assert(socket != FREERTOS_INVALID_SOCKET);
+	// Ждать
+	do {
+		int rc = printf("Waiting...\n");
 
-	struct freertos_sockaddr addr = {
-		.sin_port = FreeRTOS_htons(25000),
-		.sin_address.ulIP_IPv4 = FreeRTOS_inet_addr("234.5.6.7")
-	};
-
-	// По умолчанию таймаут 5 секунд (см. ipconfigSOCK_DEFAULT_RECEIVE_BLOCK_TIME)
-	//static const TickType_t receive_timeout = portMAX_DELAY;
-	//FreeRTOS_setsockopt(socket, 0, FREERTOS_SO_RCVTIMEO, &receive_timeout, sizeof(receive_timeout));
-
-	assert( FreeRTOS_bind(socket, &addr, sizeof(addr)) == 0 );
-
-	while (1) {
-		struct freertos_sockaddr from = {0};
-		socklen_t from_sz = sizeof(from);
-		char buf;
-
-		int rc = printf("Waiting\n");
-
-		if (rc < 0) { // Не можем отправить "waiting"? значит TCP клиент разорвал сессию
-			FreeRTOS_closesocket(socket);
+		if (rc < 0) // Не можем отправить "waiting"? значит TCP клиент разорвал сессию
 			return;
-		}
+	} while (xQueueReceive(ddc_ack_queue, DISCARD, 1000) != pdPASS);
 
-		BaseType_t status = FreeRTOS_recvfrom(socket, &buf, 1, 0, &from, &from_sz);
+	printf("Running...\n");
 
-		if (status == -pdFREERTOS_ERRNO_EWOULDBLOCK) {
-			continue;
-		} else if (status < 0) {
-			FreeRTOS_closesocket(socket);
-			printf("recvfrom error %ld\n", status);
-			return;
-		}
-
-		if (status > 0)
-			break;
-	}
-
-	FreeRTOS_closesocket(socket);
+	// Как может работать механизм следования за DDC?
+	// - [СЕЙЧАС ТАК] Запуск при первом пакете от DDC, остановка при остутствии пакетов в течение 1000 мс
+	//	- Запуск при первом пакете, остановка если последнее событие ранее последних *двух* триггеров
 
 	sequencer_run();
+
+	uint32_t ack_time;
+
+	while (xQueueReceive(ddc_ack_queue, &ack_time, 1000) == pdPASS) {
+		int rc = printf("[%lu] DDC ACK\n", ack_time);
+
+		if (rc < 0)
+			break;
+	};
+
+	printf("Stop\n");
+
+	sequencer_stop();
 }
 
 void run(const char* str) {

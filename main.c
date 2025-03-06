@@ -10,6 +10,7 @@
 #include "FreeRTOS.h"
 #include "FreeRTOS_IP.h"
 #include "task.h"
+#include "ack.h"
 
 static void init_task(void* params) {
 	(void)params;
@@ -18,6 +19,7 @@ static void init_task(void* params) {
 	init_deferred_daemon();
 
 	xTaskCreate( server_task, "srv", configMINIMAL_STACK_SIZE*4, NULL, 1, NULL);
+	xTaskCreate( ack_damenon_task, "ack_daemon", configMINIMAL_STACK_SIZE*4, NULL, 1, NULL);
 
 	while (1) {
 		isr_recorder_sync();
