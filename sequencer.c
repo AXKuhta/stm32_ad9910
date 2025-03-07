@@ -6,6 +6,7 @@
 
 #ifndef STANDALONE_CLI_APP
 #include "stm32f7xx_hal.h"
+#include "stm32f7xx_ll_tim.h"
 #endif
 
 #include "timer/sequencing.h"
@@ -187,7 +188,10 @@ void pulse_complete_callback() {
 	seq_entry_t entry = sequence->elements[seq_index++ % sequence->size];
 
 	// FIXME: Logic Level Sequence empty
-	dma_abort();	
+	dma_abort();
+
+	LL_TIM_DisableCounter(slave_timer_a.Instance);
+	LL_TIM_DisableCounter(slave_timer_b.Instance);
 
 	spi_write_entry(entry);
 	ad_safety_off(entry.ram_image.size > 0);

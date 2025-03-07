@@ -159,18 +159,9 @@ void DMA1_Stream6_IRQHandler() {
 // Воспользуемся таймером A для остановки
 void DMA1_Stream4_IRQHandler() {
 	// Данные закончились?
-	// - Таймеры останавливаем
+	// - DMA в данный момент времени должен быть инертным
 	// - Выполняем планирование записи параметров следующего импульса
-	//if (dma_slave_timer_a_cc1.State == HAL_DMA_STATE_READY){
 	if (dma_slave_timer_a_cc1.Instance->NDTR == 0){
-		__HAL_TIM_CLEAR_IT(&master_timer, TIM_IT_CC1);
-		__HAL_TIM_CLEAR_IT(&master_timer, TIM_IT_TRIGGER);
-		master_timer.Instance->CCR1 = 0;
-
-		// В __HAL_TIM_DISABLE проверка на отключение каналов, только нам это зачем??
-		slave_timer_a.Instance->CR1 &= ~(TIM_CR1_CEN);
-		slave_timer_b.Instance->CR1 &= ~(TIM_CR1_CEN);
-
 		extern void pulse_complete_callback();
 		run_later(pulse_complete_callback);
 	}
