@@ -48,6 +48,14 @@ typedef struct logic_t {
 	uint8_t state;
 } logic_t;
 
+// Терминатор должен быть именно такой
+// Первый элемент - парковочный профиль
+// Второй элемент - оттянуть момент NDTR == 0 до конца излучения
+// Третий элемент - терминатор
+#define TERMINATOR 	{ .hold_ns = 1*1000, .state = 0 }, \
+					{ .hold_ns = 1*1000, .state = 0 }, \
+					{ 0, 0 }
+
 // Спуск последовательности состояний в машинные коды
 // Выделит и вернёт три массива для DMA
 //
@@ -58,7 +66,7 @@ typedef struct logic_t {
 //     .logic_level_sequence = lower_logic_sequence((logic_t[]){
 //         { .hold_ns = 900*1000, .state = P_0 }, // Излучение
 //         { .hold_ns = 1*1000, .state = 0 }, // Парковка
-//         { 0, 0 } // Терминатор
+//         TERMINATOR // Терминатор
 //     })
 // };
 // ```
@@ -332,8 +340,7 @@ void basic_pulse_cmd(const char* str) {
 		.ram_secondary_params = { .ftw =  ad_calc_ftw(freq_hz) },
 		.logic_level_sequence = lower_logic_sequence((logic_t[]){
 			{ .hold_ns = duration_ns, .state = PROFILE1 },
-			{ .hold_ns = 1*1000, .state = PROFILE0 },
-			{ 0, 0 }
+			TERMINATOR
 		})
 	};
 
@@ -482,8 +489,7 @@ static void sequencer_add_sweep_internal(const char* str, const char* fstr, cons
 		.ram_destination = AD_RAM_DESTINATION_POLAR,
 		.logic_level_sequence = lower_logic_sequence((logic_t[]){
 			{ .hold_ns = duration_ns, .state = PROFILE1 },
-			{ .hold_ns = 1*1000, .state = PROFILE0 },
-			{ 0, 0 }
+			TERMINATOR
 		})
 	};
 
@@ -848,8 +854,7 @@ void xmitdata_ram_psk_cmd(const char* str) {
 		.ram_secondary_params = { .ftw =  ftw },
 		.logic_level_sequence = lower_logic_sequence((logic_t[]){
 			{ .hold_ns = duration_ns, .state = PROFILE1 },
-			{ .hold_ns = 1*1000, .state = PROFILE0 },
-			{ 0, 0 }
+			TERMINATOR
 		})
 	};
 
@@ -918,8 +923,7 @@ void sequencer_add_pulse_cmd(const char* str) {
 		.profiles[1] = { .ftw = ad_calc_ftw(freq_hz), .asf = ad_default_asf },
 		.logic_level_sequence = lower_logic_sequence((logic_t[]){
 			{ .hold_ns = duration_ns, .state = PROFILE1 },
-			{ .hold_ns = 1*1000, .state = PROFILE0 },
-			{ 0, 0 }
+			TERMINATOR
 		})
 	};
 
