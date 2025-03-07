@@ -158,12 +158,11 @@ void DMA1_Stream6_IRQHandler() {
 // Эти двое срабатывают на DMA start и stop
 // Воспользуемся таймером A для остановки
 void DMA1_Stream4_IRQHandler() {
-	// Статус сменился на READY? значит данные закончились
-	// - Пакровочный профиль принудительно не выставляем; верим, что всё нормально
+	// Данные закончились?
 	// - Таймеры останавливаем
 	// - Выполняем планирование записи параметров следующего импульса
 	//if (dma_slave_timer_a_cc1.State == HAL_DMA_STATE_READY){
-	if (__HAL_DMA_GET_IT_SOURCE(&dma_slave_timer_a_cc1, DMA_IT_TC) != RESET){
+	if (dma_slave_timer_a_cc1.Instance->NDTR == 0){
 		__HAL_TIM_CLEAR_IT(&master_timer, TIM_IT_CC1);
 		__HAL_TIM_CLEAR_IT(&master_timer, TIM_IT_TRIGGER);
 		master_timer.Instance->CCR1 = 0;
