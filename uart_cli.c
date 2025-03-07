@@ -65,8 +65,7 @@ typedef struct logic_t {
 // seq_entry_t pulse = {
 //     .logic_level_sequence = lower_logic_sequence((logic_t[]){
 //         { .hold_ns = 900*1000, .state = P_0 }, // Излучение
-//         { .hold_ns = 1*1000, .state = 0 }, // Парковка
-//         TERMINATOR // Терминатор
+//         TERMINATOR // Парковка + терминатор
 //     })
 // };
 // ```
