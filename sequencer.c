@@ -103,15 +103,6 @@ static void print_profile_modulation_buffer(uint8_t* buffer, size_t size) {
 static void debug_print_entry(seq_entry_t* entry) {
 	printf(" === seq_entry_t ===\n");
 
-	char* t1_str = time_unit(timer_ns(entry->t1) / 1000.0 / 1000.0 / 1000.0);
-	char* t2_str = time_unit(timer_ns(entry->t2) / 1000.0 / 1000.0 / 1000.0);
-
-	printf(" t1: %lu (%s)\n", entry->t1, t1_str);
-	printf(" t2: %lu (%s)\n", entry->t2, t2_str);
-
-	free(t1_str);
-	free(t2_str);
-
 	if (entry->sweep.fstep_ftw > 0)
 		print_sweep(entry);
 

@@ -319,8 +319,6 @@ void basic_pulse_cmd(const char* str) {
 	memset(ram + element_count*4, 0, 4);
 
 	seq_entry_t pulse = {
-		.t1 = timer_mu(offset_ns),
-		.t2 = timer_mu(offset_ns + duration_ns),
 		.fsc = ad_default_fsc,
 		.ram_profiles[0] = {
 			.start = element_count,
@@ -337,10 +335,16 @@ void basic_pulse_cmd(const char* str) {
 		.ram_image = { .buffer = (uint32_t*)ram, .size = element_count + 1 },
 		.ram_destination = AD_RAM_DESTINATION_POLAR,
 		.ram_secondary_params = { .ftw =  ad_calc_ftw(freq_hz) },
-		.logic_level_sequence = lower_logic_sequence((logic_t[]){
-			{ .hold_ns = duration_ns, .state = PROFILE1 },
-			TERMINATOR
-		})
+		.logic_level_sequence = lower_logic_sequence(
+			offset_ns ? (logic_t[]){
+				{ .hold_ns = offset_ns, .state = 0 },
+				{ .hold_ns = duration_ns, .state = PROFILE1 },
+				TERMINATOR
+			} : (logic_t[]){
+				{ .hold_ns = duration_ns, .state = PROFILE1 },
+				TERMINATOR
+			}
+		)
 	};
 
 	sequencer_reset();
@@ -469,8 +473,6 @@ static void sequencer_add_sweep_internal(const char* str, const char* fstr, cons
 			.lower_ftw = lower_ftw,
 			.upper_ftw = upper_ftw
 		},
-		.t1 = timer_mu(offset_ns),
-		.t2 = timer_mu(offset_ns + duration_ns),
 		.fsc = ad_default_fsc,
 		.ram_profiles[0] = {
 			.start = element_count,
@@ -486,10 +488,16 @@ static void sequencer_add_sweep_internal(const char* str, const char* fstr, cons
 		},
 		.ram_image = { .buffer = (uint32_t*)ram, .size = element_count + 1 },
 		.ram_destination = AD_RAM_DESTINATION_POLAR,
-		.logic_level_sequence = lower_logic_sequence((logic_t[]){
-			{ .hold_ns = duration_ns, .state = PROFILE1 },
-			TERMINATOR
-		})
+		.logic_level_sequence = lower_logic_sequence(
+			offset_ns ? (logic_t[]){
+				{ .hold_ns = offset_ns, .state = 0 },
+				{ .hold_ns = duration_ns, .state = PROFILE1 },
+				TERMINATOR
+			} : (logic_t[]){
+				{ .hold_ns = duration_ns, .state = PROFILE1 },
+				TERMINATOR
+			}
+		)
 	};
 
 	if (run) {
@@ -561,6 +569,9 @@ void xmitdata_fsk_cmd(const char* str) {
 	vec_t(uint8_t)* vec = scan_uint8_data(str + data_offset);
 	vec_t(logic_t)* v2 = init_vec(logic_t);
 
+	if (offset_ns)
+		vec_push(v2, (logic_t){ .hold_ns = offset_ns, .state = 0 } );
+
 	for (size_t i = 0; i < vec->size; i++) {
 		vec_push(v2, (logic_t){
 			.hold_ns = tstep_ns,
@@ -592,8 +603,6 @@ void xmitdata_fsk_cmd(const char* str) {
 	free(verif_duration_ns);
 
 	seq_entry_t pulse = {
-		.t1 = timer_mu(offset_ns),
-		.t2 = timer_mu(offset_ns + duration_ns),
 		.fsc = ad_default_fsc,
 		.profiles[0] = { .ftw = 0, .asf = 0 },
 		.profiles[2] = { .ftw = ad_calc_ftw(f1_hz), .asf = ad_default_asf },
@@ -634,6 +643,9 @@ void xmitdata_psk_cmd(const char* str) {
 	vec_t(uint8_t)* vec = scan_uint8_data(str + data_offset);
 	vec_t(logic_t)* v2 = init_vec(logic_t);
 
+	if (offset_ns)
+		vec_push(v2, (logic_t){ .hold_ns = offset_ns, .state = 0 } );
+
 	for (size_t i = 0; i < vec->size; i++) {
 		vec_push(v2, (logic_t){
 			.hold_ns = tstep_ns,
@@ -665,8 +677,6 @@ void xmitdata_psk_cmd(const char* str) {
 	uint32_t ftw = ad_calc_ftw(freq_hz);
 
 	seq_entry_t pulse = {
-		.t1 = timer_mu(offset_ns),
-		.t2 = timer_mu(offset_ns + duration_ns),
 		.fsc = ad_default_fsc,
 		.profiles[0] = { .ftw = 0, .asf = 0 },
 		.profiles[2] = { .ftw = ftw, .pow = 0x0000, .asf = ad_default_asf },
@@ -706,6 +716,9 @@ void xmitdata_zc_psk_cmd(const char* str) {
 
 	vec_t(uint8_t)* vec = scan_uint8_data(str + data_offset);
 	vec_t(logic_t)* v2 = init_vec(logic_t);
+
+	if (offset_ns)
+		vec_push(v2, (logic_t){ .hold_ns = offset_ns, .state = 0 } );
 
 	for (size_t i = 0; i < vec->size; i++) {
 		vec_push(v2, (logic_t){
@@ -748,8 +761,6 @@ void xmitdata_zc_psk_cmd(const char* str) {
 	memcpy(ram, bpsk_ram_image, 12);
 
 	seq_entry_t pulse = {
-		.t1 = timer_mu(offset_ns),
-		.t2 = timer_mu(offset_ns + duration_ns),
 		.fsc = ad_default_fsc,
 		.ram_profiles[0] = { .start = 0, .end = 0, .rate = 0, .mode = AD_RAM_PROFILE_MODE_ZEROCROSSING },
 		.ram_profiles[2] = { .start = 1, .end = 1, .rate = 0, .mode = AD_RAM_PROFILE_MODE_ZEROCROSSING },
@@ -833,8 +844,6 @@ void xmitdata_ram_psk_cmd(const char* str) {
 	uint32_t ftw = ad_calc_ftw(freq_hz);
 
 	seq_entry_t pulse = {
-		.t1 = timer_mu(offset_ns),
-		.t2 = timer_mu(offset_ns + duration_ns),
 		.fsc = ad_default_fsc,
 		.ram_profiles[0] = {
 			.start = element_count,
@@ -851,10 +860,16 @@ void xmitdata_ram_psk_cmd(const char* str) {
 		.ram_image = { .buffer = (uint32_t*)ram, .size = element_count + 1 },
 		.ram_destination = AD_RAM_DESTINATION_POLAR,
 		.ram_secondary_params = { .ftw =  ftw },
-		.logic_level_sequence = lower_logic_sequence((logic_t[]){
-			{ .hold_ns = duration_ns, .state = PROFILE1 },
-			TERMINATOR
-		})
+		.logic_level_sequence = lower_logic_sequence(
+			offset_ns ? (logic_t[]){
+				{ .hold_ns = offset_ns, .state = 0 },
+				{ .hold_ns = duration_ns, .state = PROFILE1 },
+				TERMINATOR
+			} : (logic_t[]){
+				{ .hold_ns = duration_ns, .state = PROFILE1 },
+				TERMINATOR
+			}
+		)
 	};
 
 	sequencer_reset();
@@ -915,15 +930,19 @@ void sequencer_add_pulse_cmd(const char* str) {
 	printf("Sequence basic pulse at %s, offset %s, duration %s\n", verif_freq, verif_offset, verif_duration);
 
 	seq_entry_t pulse = {
-		.t1 = timer_mu(offset_ns),
-		.t2 = timer_mu(offset_ns + duration_ns),
 		.fsc = ad_default_fsc,
 		.profiles[0] = { .ftw = 0, .asf = 0 },
 		.profiles[1] = { .ftw = ad_calc_ftw(freq_hz), .asf = ad_default_asf },
-		.logic_level_sequence = lower_logic_sequence((logic_t[]){
-			{ .hold_ns = duration_ns, .state = PROFILE1 },
-			TERMINATOR
-		})
+		.logic_level_sequence = lower_logic_sequence(
+			offset_ns ? (logic_t[]){
+				{ .hold_ns = offset_ns, .state = 0 },
+				{ .hold_ns = duration_ns, .state = PROFILE1 },
+				TERMINATOR
+			} : (logic_t[]){
+				{ .hold_ns = duration_ns, .state = PROFILE1 },
+				TERMINATOR
+			}
+		)
 	};
 
 	sequencer_add(pulse);

@@ -43,8 +43,6 @@ typedef struct logic_level_sequence_t {
 // Универсальная структура данных для описания импульса
 // Pulse Descriptor, иначе
 typedef struct seq_entry_t {
-	uint32_t t1;
-	uint32_t t2;
 	sweep_t sweep;
 	logic_level_sequence_t logic_level_sequence;
 	struct {
