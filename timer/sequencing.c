@@ -179,7 +179,7 @@ void timer_init() {
 	// Запуск немного неуклюжий:
 	// - IC Start включит канал 1 и enable таймера
 	// - Base Start IT включит прерывание по переполнению, повторно enable, выставит статус BUSY
-	HAL_TIM_IC_Start(&master_timer, DMA_CHANNEL_1);
+	HAL_TIM_IC_Start(&master_timer, TIM_CHANNEL_1);
 	HAL_TIM_Base_Start_IT(&master_timer);
 
 	HAL_TIM_Base_Init(&slave_timer_a);
