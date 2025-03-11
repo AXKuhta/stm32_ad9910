@@ -1,6 +1,8 @@
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "stm32f7xx_ll_tim.h"
 #include "stm32f7xx_hal.h"
 #include "pin_init.h"
 #include "timer.h"
@@ -50,7 +52,7 @@ extern DMA_HandleTypeDef dma_slave_timer_b_up;  // Slave B, Перезапись
 extern DMA_HandleTypeDef dma_slave_timer_b_cc1; // Slave B, Перезапись CCMR1 и CCMR2
 
 void logic_blaster_init_gpio() {
-	PIN_AF_Init(A0, GPIO_MODE_AF_PP, GPIO_PULLDOWN, GPIO_AF1_TIM2);
+	PIN_AF_Init(A0, GPIO_MODE_AF_PP, GPIO_PULLDOWN, GPIO_AF1_TIM2); // FIXME - нет необходимости переинициализировать A0
 
 	PIN_AF_Init(PC6, GPIO_MODE_AF_PP, GPIO_PULLDOWN, GPIO_AF2_TIM3);
 	PIN_AF_Init(PC7, GPIO_MODE_AF_PP, GPIO_PULLDOWN, GPIO_AF2_TIM3);
@@ -89,10 +91,6 @@ void timer_init() {
 		.ICPolarity = TIM_ICPOLARITY_FALLING,
 		.ICSelection = TIM_ICSELECTION_DIRECTTI
 	}, TIM_CHANNEL_1 );
-	
-	// Канал выбран как источник триггерного выхода
-	// ...в чём разница между TIM_TRGO_OC1 и TIM_TRGO_OC1REF?
-	HAL_TIMEx_MasterConfigSynchronization(&master_timer, &(TIM_MasterConfigTypeDef){ .MasterOutputTrigger = TIM_TRGO_OC1 });
 
 	// ====================================================================================
 	// TIM3 - Slave A
@@ -209,15 +207,22 @@ void timer_init() {
 	__HAL_LINKDMA(&slave_timer_b, hdma[TIM_DMA_ID_CC1], dma_slave_timer_b_cc1);
 }
 
-// Обычный режим, отступ > 0
-void timer2_trgo_on_ch3() {
-	
+// Разрешить старт Источника Логической Последовательности
+void logic_blaster_arm() {
+	assert( LL_TIM_IsEnabledCounter(slave_timer_a.Instance) == 0 );
+	assert( LL_TIM_IsEnabledCounter(slave_timer_b.Instance) == 0 );
+
+	// Канал выбран как источник триггерного выхода
+	// ...в чём разница между TIM_TRGO_OC1 и TIM_TRGO_OC1REF?
+	HAL_TIMEx_MasterConfigSynchronization(&master_timer, &(TIM_MasterConfigTypeDef){ .MasterOutputTrigger = TIM_TRGO_OC1 });
 }
 
-// Особый режим для ситуаций, когда отступ = 0
-// В чём отличие TIM_TRGO_RESET от TIM_TRGO_UPDATE?
-void timer2_trgo_on_reset() {
-	//HAL_TIMEx_MasterConfigSynchronization(&master_timer, &(TIM_MasterConfigTypeDef){ .MasterOutputTrigger = TIM_TRGO_RESET });
+// Приостановить + запретить старт Источника Логической Последовательности
+void logic_blaster_disarm() {
+	LL_TIM_DisableCounter(slave_timer_a.Instance);
+	LL_TIM_DisableCounter(slave_timer_b.Instance);
+
+	HAL_TIMEx_MasterConfigSynchronization(&master_timer, &(TIM_MasterConfigTypeDef){ .MasterOutputTrigger = TIM_TRGO_RESET });
 }
 
 void timer_stop() {	

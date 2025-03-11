@@ -6,7 +6,6 @@
 
 #ifndef STANDALONE_CLI_APP
 #include "stm32f7xx_hal.h"
-#include "stm32f7xx_ll_tim.h"
 #endif
 
 #include "timer/sequencing.h"
@@ -154,11 +153,6 @@ void sequencer_add(seq_entry_t entry) {
 
 #ifndef STANDALONE_CLI_APP
 
-// Глобальные переменные
-uint8_t parking_profile = 0;
-uint8_t tone_profile = GPIO_PIN_13 >> 8;
-
-
 extern TIM_HandleTypeDef master_timer;
 extern TIM_HandleTypeDef slave_timer_a;
 extern TIM_HandleTypeDef slave_timer_b;
@@ -187,23 +181,13 @@ static void dma_abort() {
 void pulse_complete_callback() {
 	seq_entry_t entry = sequence->elements[seq_index++ % sequence->size];
 
+	logic_blaster_disarm();
+
 	// FIXME: Logic Level Sequence empty
 	dma_abort();
 
-	LL_TIM_DisableCounter(slave_timer_a.Instance);
-	LL_TIM_DisableCounter(slave_timer_b.Instance);
-
 	spi_write_entry(entry);
 	ad_safety_off(entry.ram_image.size > 0);
-
-	// Если t1 == 0, то TIM2 CH3 не сможет сгенерировать событие для запуска таймера модуляции
-	// Пересесть на TIM2 RESET в таких ситуациях
-	// FIXME: удалить
-	if (entry.t1 > 0) {
-		timer2_trgo_on_ch3();
-	} else {
-		timer2_trgo_on_reset();
-	}
 
 	// Конфигурация генератора последовательностей логических уровней
 	assert(HAL_DMA_Start(&dma_slave_timer_a_up, (uint32_t)entry.logic_level_sequence.hold_time, (uint32_t)&slave_timer_a.Instance->ARR, entry.logic_level_sequence.count) == HAL_OK);
@@ -242,11 +226,9 @@ void pulse_complete_callback() {
 	slave_timer_a.Instance->CNT = 1;
 	slave_timer_b.Instance->CNT = 1;
 
-	// wtf
-	assert( (slave_timer_a.Instance->CR1 & TIM_CR1_CEN) == 0);
-	assert( (slave_timer_b.Instance->CR1 & TIM_CR1_CEN) == 0);
-
 	ad_slave_to_tim();
+
+	logic_blaster_arm();
 }
 
 void sequencer_run() {
@@ -262,7 +244,6 @@ void sequencer_run() {
 	// Полный сброс + активация таймеров
 	timer_restart();
 
-	// А что произойдёт, если внешний триггер придёт между timer2_restart() и pulse_complete_callback()?
 	pulse_complete_callback();
 }
 
