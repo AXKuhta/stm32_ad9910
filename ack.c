@@ -6,10 +6,9 @@
 
 #include "FreeRTOS_IP.h"
 
+#include "timer/sequencing.h"
+#include "events.h"
 #include "ack.h"
-
-// DDC Trigger Acknowledgement queue
-QueueHandle_t ddc_ack_queue = NULL;
 
 // DDC Trigger Acknowledment receiver task
 void ack_damenon_task(void* params) {
@@ -28,8 +27,6 @@ void ack_damenon_task(void* params) {
 
 	assert( FreeRTOS_bind(socket, &addr, sizeof(addr)) == 0 );
 
-	ddc_ack_queue = xQueueCreate( 32, sizeof(uint32_t) );
-
 	while (1) {
 		struct freertos_sockaddr from = {0};
 		socklen_t from_sz = sizeof(from);
@@ -42,16 +39,11 @@ void ack_damenon_task(void* params) {
 		} else if (status < 0) {
 			FreeRTOS_closesocket(socket);
 			printf("recvfrom error %ld\n", status);
-			return;
+			assert(0);
 		}
 
-		// Прокрутка очереди
 		if (status > 0) {
-			if (uxQueueSpacesAvailable(ddc_ack_queue) == 0) {
-				xQueueReceive(ddc_ack_queue, &(uint32_t[1]){0}, 0);
-			}
-
-			assert( xQueueSend(ddc_ack_queue, &(uint32_t[1]){ xTaskGetTickCount() }, 0) == pdPASS );
+			event_queue_push((event_t) { .origin = DDC_ACK_EVENT, .timestamp = logic_blaster_hrtime() });
 		}
 	}
 

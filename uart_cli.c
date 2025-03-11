@@ -1022,44 +1022,82 @@ void radar_emulator_cmd(const char* str) {
 
 #include "FreeRTOS.h"
 #include "queue.h"
-#include "ack.h"
 
-#define DISCARD &(uint32_t[1]){0}
+#include "events.h"
+#include "ack.h"
 
 // Режим следования за DDC
 // Получение UDP пакетов было вынесено в ack.c внутрь демона событий DDC
+//
+// Принцип действия:
+// - [РАНЬШЕ] Запуск при первом пакете от DDC, остановка при остутствии пакетов в течение 1000 мс
+// - [СЕЙЧАС] Запуск при первом пакете, остановка если два непризнанных триггера - или если нет событий в течение 1000 мс
+//
+// Любой пакет (пакетов за раз много) от DDC считается признанием всех триггеров
+//
 void wait_mcast_packet() {
-	// Опустошить очередь
-	xQueueReset(ddc_ack_queue);
+	uint32_t triggers_unacknowledged = 99;
+	event_t evt;
 
-	// Ждать
+	extern QueueHandle_t event_queue;
+
+	// Опустошить очередь
+	xQueueReset(event_queue);
+
+	// Ждём первый Acknowledgement
 	do {
 		int rc = printf("Waiting...\n");
 
 		if (rc < 0) // Не можем отправить "waiting"? значит TCP клиент разорвал сессию
 			return;
-	} while (xQueueReceive(ddc_ack_queue, DISCARD, 1000) != pdPASS);
+
+		while (xQueueReceive(event_queue, &evt, 1000) == pdPASS) {
+			if (evt.origin == DDC_ACK_EVENT) {
+				triggers_unacknowledged = 0;
+				break; // Чтобы не застрять - события пойдут плотным потоком
+			}
+		}
+	} while (triggers_unacknowledged);
+
+	// Повторно опустошить
+	xQueueReset(event_queue);
+
+	// Запуск
+	sequencer_run();
 
 	printf("Running...\n");
 
-	// Как может работать механизм следования за DDC?
-	// - [СЕЙЧАС ТАК] Запуск при первом пакете от DDC, остановка при остутствии пакетов в течение 1000 мс
-	//	- Запуск при первом пакете, остановка если последнее событие ранее последних *двух* триггеров
+	// Разбираем события
+	while (xQueueReceive(event_queue, &evt, 1000) == pdPASS) {
+		int rc = 0;
 
-	sequencer_run();
+		switch (evt.origin) {
+			case TRIGGER_EVENT:
+				rc = printf("[%llu] TRIG\n", evt.timestamp);
+				break;
+			case READY_EVENT:
+				rc = printf("[%llu] READY\n", evt.timestamp);
+				break;
+			case DDC_ACK_EVENT:
+				if (triggers_unacknowledged)
+					rc = printf("[%llu] DDC ACK\n", evt.timestamp);
+				triggers_unacknowledged = 0;
+				break;
+		
+			default:
+				assert(0);
+		}
 
-	uint32_t ack_time;
-
-	while (xQueueReceive(ddc_ack_queue, &ack_time, 1000) == pdPASS) {
-		int rc = printf("[%lu] DDC ACK\n", ack_time);
+		if (triggers_unacknowledged >= 2)
+			break;
 
 		if (rc < 0)
 			break;
-	};
-
-	printf("Stop\n");
+	}
 
 	sequencer_stop();
+
+	printf("Stop\n");
 }
 
 void run(const char* str) {

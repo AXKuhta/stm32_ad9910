@@ -5,6 +5,7 @@
 #include "stm32f7xx_ll_tim.h"
 #include "stm32f7xx_hal.h"
 #include "pin_init.h"
+#include "events.h"
 #include "timer.h"
 #include "units.h"
 
@@ -65,6 +66,30 @@ void logic_blaster_init_gpio() {
 	PIN_AF_Init(PD15, GPIO_MODE_AF_PP, GPIO_PULLDOWN, GPIO_AF2_TIM4);
 }
 
+// Счетчик переполнений TIM2 - для получения времени с высоким разрешением
+// Началом времени считается запуск секвенсора
+static uint32_t master_timer_up = 0;
+
+uint64_t logic_blaster_hrtime() {
+	return ((0ull + master_timer_up) << 32) + master_timer.Instance->CNT;
+}
+
+// Использует очереди
+void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim) {
+	if (htim != &master_timer) return;
+
+	event_queue_push_isr((event_t){
+		.origin = TRIGGER_EVENT,
+		.timestamp = ((0ull + master_timer_up) << 32) + master_timer.Instance->CCR1
+	});
+}
+
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
+	if (htim != &master_timer) return;
+
+	master_timer_up++;
+}
+
 void timer_init() {
 	__HAL_RCC_TIM2_CLK_ENABLE();
 	__HAL_RCC_TIM3_CLK_ENABLE();
@@ -91,6 +116,8 @@ void timer_init() {
 		.ICPolarity = TIM_ICPOLARITY_FALLING,
 		.ICSelection = TIM_ICSELECTION_DIRECTTI
 	}, TIM_CHANNEL_1 );
+
+	master_timer_up = 0;
 
 	// ====================================================================================
 	// TIM3 - Slave A
@@ -157,9 +184,7 @@ void timer_init() {
 	HAL_TIM_OC_ConfigChannel(&slave_timer_b, &(TIM_OC_InitTypeDef){ .OCMode = TIM_OCMODE_FORCED_INACTIVE, .Pulse = 0 }, TIM_CHANNEL_3);
 	HAL_TIM_OC_ConfigChannel(&slave_timer_b, &(TIM_OC_InitTypeDef){ .OCMode = TIM_OCMODE_FORCED_INACTIVE, .Pulse = 0 }, TIM_CHANNEL_4);
 
-	// Взаимодействует с очередями FreeRTOS
-	// Приоритет должен быть больше или равен configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY
-	// FIXME: уже не взаимодействует
+	// Взаимодействует с очередями FreeRTOS - приоритет должен быть больше или равен configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY
 	// TODO: вынести все включения прерываний в isr.c
 	HAL_NVIC_SetPriority(TIM2_IRQn, 7, 0);
 	HAL_NVIC_EnableIRQ(TIM2_IRQn);
@@ -177,9 +202,9 @@ void timer_init() {
 
 	// Мастер не настроен - таймер сразу побежит
 	// Запуск немного неуклюжий:
-	// - IC Start включит канал 1 и enable таймера
+	// - IC Start IT включит канал 1, прерывание по первому каналу и enable таймера
 	// - Base Start IT включит прерывание по переполнению, повторно enable, выставит статус BUSY
-	HAL_TIM_IC_Start(&master_timer, TIM_CHANNEL_1);
+	HAL_TIM_IC_Start_IT(&master_timer, TIM_CHANNEL_1);
 	HAL_TIM_Base_Start_IT(&master_timer);
 
 	HAL_TIM_Base_Init(&slave_timer_a);

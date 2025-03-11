@@ -9,6 +9,7 @@
 
 #include "FreeRTOS.h"
 #include "FreeRTOS_IP.h"
+#include "events.h"
 #include "task.h"
 #include "ack.h"
 
@@ -16,6 +17,7 @@ static void init_task(void* params) {
 	(void)params;
 
 	system_init();
+	event_queue_init();
 	init_deferred_daemon();
 
 	xTaskCreate( server_task, "srv", configMINIMAL_STACK_SIZE*4, NULL, 1, NULL);

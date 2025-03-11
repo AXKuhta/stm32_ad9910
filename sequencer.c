@@ -12,6 +12,7 @@
 #include "timer.h"
 #include "ad9910.h"
 #include "sequencer.h"
+#include "events.h"
 #include "units.h"
 #include "algos.h"
 #include "vec.h"
@@ -220,6 +221,8 @@ void pulse_complete_callback() {
 	ad_slave_to_tim();
 
 	logic_blaster_arm();
+
+	event_queue_push((event_t) { .origin = READY_EVENT, .timestamp = logic_blaster_hrtime() });
 }
 
 void sequencer_run() {
