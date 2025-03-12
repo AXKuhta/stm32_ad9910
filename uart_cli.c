@@ -1074,6 +1074,7 @@ void wait_mcast_packet() {
 		switch (evt.origin) {
 			case TRIGGER_EVENT:
 				rc = printf("[%llu] TRIG\n", evt.timestamp);
+				triggers_unacknowledged++;
 				break;
 			case READY_EVENT:
 				rc = printf("[%llu] READY\n", evt.timestamp);
