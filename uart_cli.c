@@ -1065,7 +1065,7 @@ void wait_mcast_packet() {
 	// Запуск
 	sequencer_run();
 
-	printf("Running...\n");
+	printf("Running\n");
 
 	// Разбираем события
 	while (xQueueReceive(event_queue, &evt, 1000) == pdPASS) {
@@ -1073,15 +1073,15 @@ void wait_mcast_packet() {
 
 		switch (evt.origin) {
 			case TRIGGER_EVENT:
-				rc = printf("[%llu] TRIG\n", evt.timestamp);
+				rc = printf("%llu\tTRIG\n", evt.timestamp);
 				triggers_unacknowledged++;
 				break;
 			case READY_EVENT:
-				rc = printf("[%llu] READY\n", evt.timestamp);
+				rc = printf("%llu\tREADY\n", evt.timestamp);
 				break;
 			case DDC_ACK_EVENT:
 				if (triggers_unacknowledged)
-					rc = printf("[%llu] DDC ACK\n", evt.timestamp);
+					rc = printf("%llu\tDDC ACK\n", evt.timestamp);
 				triggers_unacknowledged = 0;
 				break;
 		
