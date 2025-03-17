@@ -953,30 +953,100 @@ void sequencer_add_pulse_cmd(const char* str) {
 	free(verif_duration);
 }
 
+static void _json_load_ram_profiles(const char* json, seq_entry_t* pulse) {
+	int offset = json_query_location( json, (const char* []){"v2", "ram_profiles", NULL} );
+
+	assert(offset != - 1);
+
+	int count = json_query_count( json+offset, (const char* []){NULL} );
+
+	assert(count > 0);
+	assert(count < 8);
+
+	for (int i = 0; i < count; i++) {
+		const char idx[2] = {'0' + i, 0};
+
+		pulse->ram_profiles[i] = (ram_profile_t) {
+			.start = json_query_i32(json+offset, (const char* []){idx, "start", NULL} ),
+			.end = json_query_i32(json+offset, (const char* []){idx, "end", NULL} ),
+			.mode = json_query_i32(json+offset, (const char* []){idx, "mode", NULL} ),
+			.rate = json_query_i32(json+offset, (const char* []){idx, "rate", NULL} )
+		};
+	}
+}
+
+static void _json_load_tone_profiles(const char* json, seq_entry_t* pulse) {
+	int offset = json_query_location( json, (const char* []){"v2", "profiles", NULL} );
+
+	assert(offset != -1);
+
+	int count = json_query_count( json+offset, (const char* []){NULL} );
+
+	assert(count > 0);
+	assert(count < 8);
+
+	for (int i = 0; i < count; i++) {
+		const char idx[2] = {'0' + i, 0};
+
+		pulse->profiles[i] = (profile_t) {
+			.asf = json_query_i32(json+offset, (const char* []){idx, "asf", NULL} ),
+			.ftw = json_query_i32(json+offset, (const char* []){idx, "ftw", NULL} ),
+			.pow = json_query_i32(json+offset, (const char* []){idx, "pow", NULL} )
+		};
+	}
+}
+
+static void _json_load_logic_level_sequence(const char* json, seq_entry_t* pulse) {
+	int offset = json_query_location( json, (const char* []) {"v2", "logic_level_sequence", NULL} );
+
+	assert(offset != -1);
+
+	int count = json_query_count( json+offset, (const char* []){NULL} );
+
+	assert(count > 0);
+	assert(count < 16383 - 2);
+
+	vec_t(logic_t)* vec = init_vec(logic_t);
+
+	for (int i = 0; i < count; i++) {
+		char idx[6] = {0};
+
+		sprintf(idx, "%d", i);
+
+		vec_push(vec, (logic_t){
+			.hold_ns = json_query_i32(json+offset, (const char* []){idx, "hold_ns", NULL} ),
+			.state = json_query_i32(json+offset, (const char* []){idx, "state", NULL} )
+		});
+	}
+
+	// FIXME: Нужно обновить терминатор в других местах с vec_push
+	vec_push(vec, (logic_t){ .hold_ns = 1*1000, .state = 0 } );
+	vec_push(vec, (logic_t){ .hold_ns = 1*1000, .state = 0 } );
+	vec_push(vec, (logic_t){ 0 });
+
+	pulse->logic_level_sequence = lower_logic_sequence(vec->elements);
+
+	free_vec(vec);
+}
+
 void sequencer_add_json_cmd(const char* str) {
 	const char* json = str + 8;
 
-	printf("Take it: %s\n", json);
-
 	int ram = json_query_count( json, (const char* []) {"v2", "ram", NULL} );
 
+	seq_entry_t pulse = {
+		.fsc = ad_default_fsc
+	};
+
 	if (ram > 0) {
-		int offset = json_query_location( json, (const char* []) {"v2", "ram", "0",  NULL}  );
-
-		printf("ram image detected: %d elements at +%d\n", ram, offset);
-
-		const char* start = json + offset;
-		const char* end = NULL;
-
-		for (int i = 0; i < ram; i++) {
-			int v = strtol(start, &end, 0);
-			printf("%d ", v);
-
-			start = end + 1;
-		}
+		_json_load_ram_profiles(json, &pulse);
 	} else {
-		printf("No ram image found\n");
+		_json_load_tone_profiles(json, &pulse);
 	}
+
+	_json_load_logic_level_sequence(json, &pulse);
+
+	sequencer_add(pulse);
 }
 
 void sequencer_cmd(const char* str) {

@@ -465,3 +465,18 @@ int json_query_count(const char* json, const char* query[]) {
 
 	return extra.status;
 }
+
+int json_query_i32(const char* json, const char* query[]) {
+	int loc = json_query_location(json, query);
+
+	assert(loc != -1);
+
+	const char* start = json + loc;
+	char* end = NULL;
+
+	int result = strtol(start, &end, 0);
+
+	assert(start != end);
+
+	return result;
+}
