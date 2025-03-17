@@ -15,6 +15,7 @@
 #include "timer/emulator.h"
 #include "sequencer.h"
 #include "algos.h"
+#include "json.h"
 #include "vec.h"
 
 extern uint32_t ad_system_clock;
@@ -952,6 +953,32 @@ void sequencer_add_pulse_cmd(const char* str) {
 	free(verif_duration);
 }
 
+void sequencer_add_json_cmd(const char* str) {
+	const char* json = str + 8;
+
+	printf("Take it: %s\n", json);
+
+	int ram = json_query_count( json, (const char* []) {"v2", "ram", NULL} );
+
+	if (ram > 0) {
+		int offset = json_query_location( json, (const char* []) {"v2", "ram", "0",  NULL}  );
+
+		printf("ram image detected: %d elements at +%d\n", ram, offset);
+
+		const char* start = json + offset;
+		const char* end = NULL;
+
+		for (int i = 0; i < ram; i++) {
+			int v = strtol(start, &end, 0);
+			printf("%d ", v);
+
+			start = end + 1;
+		}
+	} else {
+		printf("No ram image found\n");
+	}
+}
+
 void sequencer_cmd(const char* str) {
 	char cmd[32] = {0};
 
@@ -963,6 +990,7 @@ void sequencer_cmd(const char* str) {
 		printf("Usage: seq show\n");
 		printf("Usage: seq pulse ...\n");
 		printf("Usage: seq sweep ...\n");
+		printf("Usage: seq json ...\n");
 		printf("Usage: seq run\n");
 		printf("Usage: seq stop\n");
 		return;
@@ -972,6 +1000,7 @@ void sequencer_cmd(const char* str) {
 	if (strcmp(cmd, "show") == 0) return sequencer_show();
 	if (strcmp(cmd, "pulse") == 0) return sequencer_add_pulse_cmd(str);
 	if (strcmp(cmd, "sweep") == 0) return sequencer_add_sweep_cmd(str);
+	if (strcmp(cmd, "json") == 0) return sequencer_add_json_cmd(str);
 	if (strcmp(cmd, "run") == 0) return sequencer_run();
 	if (strcmp(cmd, "stop") == 0) return sequencer_stop();
 

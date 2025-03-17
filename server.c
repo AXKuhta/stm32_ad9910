@@ -1,6 +1,8 @@
 
+#define _GNU_SOURCE // Прототип memmem()
 #include <assert.h>
 #include <string.h>
+#include <stdlib.h>
 
 #include "FreeRTOS.h"
 #include "task.h"
@@ -30,6 +32,8 @@ void send_all(void* client, const char* data, size_t size) {
 	}
 }
 
+// Получение + запуск команд
+// Огромный буфер для удержания JSON объектов
 static void read_lines(Socket_t client) {
 	char* buffer = malloc(16383);
 	size_t capacity = 16383;

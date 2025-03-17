@@ -38,8 +38,11 @@ unused static void _double_capacity(void_vec_t* vec) {
 	assert(vec->elements != NULL);
 }
 
-#define init_vec(type) (void*)_init_vec(sizeof(type));
+#define init_vec(type) (void*)_init_vec(sizeof(type))
 #define vec_push(vec, ...) (vec->size == vec->capacity ? _double_capacity((void_vec_t*)vec) : 0, vec->elements[vec->size++] = __VA_ARGS__)
+#define vec_pop(vec) vec->elements[assert(vec->size > 0), --vec->size]
+#define vec_head(vec) vec->elements[assert(vec->size > 0), 0]
+#define vec_tail(vec) vec->elements[assert(vec->size > 0), vec->size - 1]
 #define free_vec(vec) _free_vec((void_vec_t*)vec)
 #define clear_vec(vec) _clear_vec((void_vec_t*)vec)
 #define for_every_entry(vec, fn) for (size_t i = 0; i < vec->size; i++) fn(vec->elements + i)
