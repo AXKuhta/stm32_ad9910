@@ -1,5 +1,6 @@
 
 #include <assert.h>
+#include <string.h>
 
 #include "FreeRTOS.h"
 #include "task.h"
@@ -31,40 +32,32 @@ void send_all(void* client, const char* data, size_t size) {
 
 static void read_lines(Socket_t client) {
 	char buffer[128] = {0}; // Буфер строки
-	size_t last = 0;
+	size_t capacity = 128;
+	size_t size = 0;
 
 	BaseType_t status;
 
 	while (1) {
-		size_t avail = 128 - last;
-
-		assert(avail >= 1);
-
-		status = FreeRTOS_recv(client, buffer + last, avail, 0);
+		status = FreeRTOS_recv(client, buffer + size, capacity - size, 0);
 
 		if (status < 0)
 			return;
 
-		last += status;
+		size += status;
 
-		size_t i = 0;
+		// Поиск \n или \r\n
+		char* loc = memmem(buffer, size, "\n", 1);
 
-		// Поиск \r\n
-		while (last >= 1) {
-			int found = (memcmp(buffer + i, "\n", 1) == 0);
+		if (loc) {
+			*loc = 0;
 
-			if (found) {
-				buffer[i] = 0;
+			run(buffer);
+			send_all(client, "> ", 2);
 
-				run(buffer);
-				send_all(client, "> ", 2);
-				memmove(buffer, buffer + i + 1, 128 - i - 1);
+			// Прокрутка
+			memmove(buffer, loc + 1, loc - buffer + 1);
 
-				last -= i + 1;
-				i = 0;
-			} else {
-				i++;
-			}
+			size -= (loc - buffer + 1);
 		}
 	}
 }
