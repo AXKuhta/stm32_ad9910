@@ -79,8 +79,6 @@ static void client_task(void* params) {
 
 	printf_redirect(NULL);
 
-	vTaskSetThreadLocalStoragePointer(NULL, 0, 0);
-
 	printf("End of data\n");
 
 	FreeRTOS_shutdown(client, FREERTOS_SHUT_RDWR);
