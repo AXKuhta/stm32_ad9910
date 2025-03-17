@@ -983,7 +983,7 @@ static void _json_load_tone_profiles(const char* json, seq_entry_t* pulse) {
 	int count = json_query_count( json+offset, (const char* []){NULL} );
 
 	assert(count > 0);
-	assert(count < 8);
+	assert(count <= 8);
 
 	for (int i = 0; i < count; i++) {
 		const char idx[2] = {'0' + i, 0};
