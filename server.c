@@ -31,8 +31,8 @@ void send_all(void* client, const char* data, size_t size) {
 }
 
 static void read_lines(Socket_t client) {
-	char buffer[128] = {0}; // Буфер строки
-	size_t capacity = 128;
+	char* buffer = malloc(16383);
+	size_t capacity = 16383;
 	size_t size = 0;
 
 	BaseType_t status;
@@ -59,7 +59,11 @@ static void read_lines(Socket_t client) {
 
 			size -= (loc - buffer + 1);
 		}
+
+		assert(capacity - size > 0);
 	}
+
+	free(buffer);
 }
 
 static void client_task(void* params) {
