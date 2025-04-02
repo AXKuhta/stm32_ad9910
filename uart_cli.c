@@ -157,7 +157,7 @@ static logic_level_sequence_t lower_logic_sequence(logic_t states[]) {
 // #define OUTPUT_RATIO_CAL 0.9120108394
 
 // 10^(-.2 dBm/10)		should match G4-218 (158 MHz tone)
-#define OUTPUT_RATIO_CAL 0.954992586
+#define OUTPUT_RATIO_CAL 1.0
 
 void set_level_cmd(const char* str) {
 	char unit[4] = {0};
@@ -184,7 +184,7 @@ void set_level_cmd(const char* str) {
 	int success = best_asf_fsc(voltage_vrms / OUTPUT_RATIO_CAL, &asf, &fsc);
 
 	if (!success) {
-		printf("Unable; try a voltage below 300 mV\n");
+		printf("Unable; try a voltage below 270 mV\n");
 		return;
 	}
 
@@ -193,7 +193,7 @@ void set_level_cmd(const char* str) {
 		return;
 	}
 
-	double backconv_voltage = ad_voltage_vrms_from_asf_fsc(asf, fsc) * OUTPUT_RATIO_CAL;
+	double backconv_voltage = ad_vrms(asf, fsc) * OUTPUT_RATIO_CAL;
 
 	// Assume 50 ohms load
 	double watts = backconv_voltage * backconv_voltage / 50.0;
@@ -222,7 +222,7 @@ void dbg_level_cmd(const char* str) {
 		return;
 	}
 
-	double backconv_voltage = ad_voltage_vrms_from_asf_fsc(asf, fsc) * OUTPUT_RATIO_CAL;
+	double backconv_voltage = ad_vrms(asf, fsc) * OUTPUT_RATIO_CAL;
 
 	// Assume 50 ohms load
 	double watts = backconv_voltage * backconv_voltage / 50.0;

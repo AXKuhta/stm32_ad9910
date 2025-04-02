@@ -34,7 +34,8 @@ double ad_fsc_i(uint8_t fsc) {
 	return (86.4 / 10000) * (1 + (fsc/96.0));
 }
 
+// Получить уровень сигнала на выходе синтезатора - без учета потерь в фильтре низких частот и кабелях
 // Предполагает нагрузку 50 ом на выходе платы синтезатора
-double ad_voltage_vrms_from_asf_fsc(uint16_t asf, uint8_t fsc) {
-	return asf * ad_fsc_i(fsc) * (50.0/3.0 / 1.41421356237309504 / 16383);
+double ad_vrms(uint16_t asf, uint8_t fsc) {
+	return asf * ad_fsc_i(fsc) * (12.5 / SQRT2 / 16383);
 }

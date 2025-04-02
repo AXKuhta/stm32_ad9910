@@ -184,7 +184,7 @@ uint16_t fit_time(uint32_t time_ns) {
 //
 int best_asf_fsc(double voltage_vrms, uint16_t* asfp, uint8_t* fscp) {
 	for (int fsc = 0; fsc < 256; fsc++) {
-		double cost =  ad_fsc_i(fsc) * (50.0/3.0 / 1.41421356237309504 / 16383);
+		double cost =  ad_vrms(1, fsc);
 		double asf = voltage_vrms / cost;
 		
 		if (asf <= 16383) {
