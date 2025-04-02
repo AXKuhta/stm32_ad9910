@@ -77,8 +77,18 @@ syscalls.o: syscalls.c
 	@echo " [AS]" $<
 	@$(CC) $(FLAGS) -o $@ $<
 
+# Flashing and debugging
+# When using onboard stlink:
+# openocd -f board/st_nucleo_f7.cfg -c "reset_config connect_assert_srst" -c "program firmware.elf verify reset exit"
+#
+# When using external stlink:
+# openocd -f interface/stlink-v2.cfg -f target/stm32f7x.cfg -c "program firmware.elf verify exit"
+#
+# When using external debugprobe-on-pico:
+# - Put 100 ohms between SWDIO and GND
+# openocd -f interface/cmsis-dap.cfg -f target/stm32f7x.cfg -c "adapter speed 100" -c "program firmware.elf verify exit"
 flash: firmware.elf
-	openocd -f board/st_nucleo_f7.cfg -c "reset_config connect_assert_srst" -c "program firmware.elf verify reset exit"
+	@openocd -f interface/cmsis-dap.cfg -f target/stm32f7x.cfg -c "adapter speed 100" -c "program firmware.elf verify exit"
 
 debug:
 	@openocd -f board/st_nucleo_f7.cfg -c '$$_TARGETNAME configure -rtos FreeRTOS' & gdb-multiarch ./firmware.elf -ex "target extended-remote :3333" -ex "monitor [target current] configure -event gdb-detach {shutdown}"
