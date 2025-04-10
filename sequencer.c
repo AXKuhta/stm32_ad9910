@@ -8,6 +8,7 @@
 #include "stm32f7xx_hal.h"
 #endif
 
+#include "leds.h"
 #include "timer/sequencing.h"
 #include "timer.h"
 #include "ad9910.h"
@@ -235,6 +236,8 @@ void sequencer_run() {
 		return;
 	}
 
+	led_arm_set();
+
 	// Полный сброс + активация таймеров
 	timer_restart();
 
@@ -305,11 +308,15 @@ void enter_rfkill_mode() {
 	ad_pulse_io_update();
 
 	set_profile(0);
+
+	led_arm_reset();
 }
 
 // Подавать непрерывный сигнал
 void enter_test_tone_mode(uint32_t freq_hz) {
 	enter_rfkill_mode();
+
+	led_arm_set();
 
 	ad_set_profile_freq(1, ad_calc_ftw(freq_hz));
 	ad_set_profile_amplitude(1, ad_default_asf);

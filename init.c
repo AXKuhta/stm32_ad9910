@@ -1,6 +1,7 @@
 #include <stdio.h>
 
 #include "stm32f7xx_hal.h"
+#include "leds.h"
 #include "uart.h"
 #include "uart_cli.h"
 #include "dma.h"
@@ -207,6 +208,7 @@ void system_init() {
 	__HAL_RCC_GPIOF_CLK_ENABLE();
 	__HAL_RCC_GPIOG_CLK_ENABLE();
 
+	leds_init();
 	usart3_init();
 
 	print_startup_info();
@@ -223,4 +225,6 @@ void system_init() {
 	enter_rfkill_mode();
 	uart_cli_init();
 	network_init();
+
+	led_power_set();
 }
