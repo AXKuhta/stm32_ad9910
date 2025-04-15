@@ -44,8 +44,10 @@ static void read_lines(Socket_t client) {
 	while (1) {
 		status = FreeRTOS_recv(client, buffer + size, capacity - size, 0);
 
-		if (status < 0)
+		if (status < 0) {
+			free(buffer);
 			return;
+		}
 
 		size += status;
 
