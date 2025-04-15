@@ -1196,7 +1196,8 @@ void wait_mcast_packet() {
 			break;
 	}
 
-	sequencer_stop();
+	// Здесь делаем сброс чтобы противодействовать фрагментации
+	sequencer_reset();
 
 	printf("Stop\n");
 }
