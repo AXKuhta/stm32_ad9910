@@ -1228,6 +1228,7 @@ void run(const char* str) {
 	if (strcmp(cmd, "basic_xmitdata") == 0) return basic_xmitdata_cmd(str);
 	if (strcmp(cmd, "radar_emulator") == 0) return radar_emulator_cmd(str);
 	if (strcmp(cmd, "wait") == 0) return wait_mcast_packet();
+	if (strcmp(cmd, "reboot") == 0) return NVIC_SystemReset();
 
 	printf("Unknown command: [%s]\n", cmd);
 }
