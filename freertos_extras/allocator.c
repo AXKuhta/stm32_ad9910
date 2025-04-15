@@ -36,11 +36,11 @@ void print_mem() {
 
 	vPortGetHeapStats(&stats);
 
-	printf("Heap unused: %d bytes\n", stats.xAvailableHeapSpaceInBytes);
-	printf("Low water mark: %d bytes\n", stats.xMinimumEverFreeBytesRemaining);
-	printf("Fragments: %d\n", stats.xNumberOfFreeBlocks);
-	printf("Alloc count: %d\n", stats.xNumberOfSuccessfulAllocations);
-	printf("Free count: %d\n", stats.xNumberOfSuccessfulFrees);
-	printf("Largest available block: %d bytes\n", stats.xSizeOfLargestFreeBlockInBytes);
-	printf("Smallest available block: %d bytes\n", stats.xSizeOfSmallestFreeBlockInBytes);
+	printf("%10d bytes free total\n", stats.xAvailableHeapSpaceInBytes);
+	printf("%10d bytes low water mark\n", stats.xMinimumEverFreeBytesRemaining);
+	printf("%10d fragments\n", stats.xNumberOfFreeBlocks);
+	printf("%10d malloc calls\n", stats.xNumberOfSuccessfulAllocations);
+	printf("%10d free calls\n", stats.xNumberOfSuccessfulFrees);
+	printf("%10d bytes largest available block\n", stats.xSizeOfLargestFreeBlockInBytes);
+	printf("%10d bytes smallest available block\n", stats.xSizeOfSmallestFreeBlockInBytes);
 }
