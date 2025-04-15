@@ -1,5 +1,6 @@
 
 #include <stddef.h>
+#include <stdio.h>
 
 #include "FreeRTOS.h"
 
@@ -28,4 +29,18 @@ void* malloc(size_t size) {
 
 void free(void* memory) {
 	vPortFree(memory);
+}
+
+void print_mem() {
+	HeapStats_t stats = {0};
+
+	vPortGetHeapStats(&stats);
+
+	printf("Heap unused: %d bytes\n", stats.xAvailableHeapSpaceInBytes);
+	printf("Low water mark: %d bytes\n", stats.xMinimumEverFreeBytesRemaining);
+	printf("Fragments: %d\n", stats.xNumberOfFreeBlocks);
+	printf("Alloc count: %d\n", stats.xNumberOfSuccessfulAllocations);
+	printf("Free count: %d\n", stats.xNumberOfSuccessfulFrees);
+	printf("Largest available block: %d bytes\n", stats.xSizeOfLargestFreeBlockInBytes);
+	printf("Smallest available block: %d bytes\n", stats.xSizeOfSmallestFreeBlockInBytes);
 }

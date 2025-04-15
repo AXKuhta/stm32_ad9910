@@ -7,6 +7,7 @@
 
 #include "stm32f7xx_hal.h"
 
+#include "freertos_extras/allocator.h"
 #include "isr.h"
 #include "performance.h"
 #include "ad9910.h"
@@ -1211,6 +1212,7 @@ void run(const char* str) {
 	}
 
 	if (strcmp(cmd, "isr") == 0) return print_it();
+	if (strcmp(cmd, "mem") == 0) return print_mem();
 	if (strcmp(cmd, "seq") == 0) return sequencer_cmd(str);
 	if (strcmp(cmd, "perf") == 0) return print_perf();
 	if (strcmp(cmd, "write") == 0) return ad_write_all();

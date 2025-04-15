@@ -1,6 +1,7 @@
 #include <assert.h>
 #include <stdio.h>
 
+#include "freertos_extras/allocator.h"
 #include "freertos_extras/deferred.h"
 #include "stm32f7xx_hal.h"
 #include "server.h"
