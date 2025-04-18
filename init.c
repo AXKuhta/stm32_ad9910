@@ -134,8 +134,11 @@ static void run_from_hse(void) {
 		}
 	};
 	
+	// This will fail if HSE times out
+	// Assume external clock failure
+	// And keep restarting until it goes away
 	if(HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK) {
-		while(1) {};
+		NVIC_SystemReset();
 	}
 	
 	if(HAL_PWREx_EnableOverDrive() != HAL_OK) {
