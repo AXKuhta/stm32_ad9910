@@ -6,6 +6,7 @@
 #include "stm32f7xx_hal.h"
 #include "pin_init.h"
 #include "events.h"
+#include "state.h"
 #include "timer.h"
 #include "units.h"
 
@@ -113,7 +114,7 @@ void timer_init() {
 	// Запоминает время получения
 	HAL_TIM_IC_Init(&master_timer);
 	HAL_TIM_IC_ConfigChannel(&master_timer, &(TIM_IC_InitTypeDef){
-		.ICPolarity = TIM_ICPOLARITY_FALLING,
+		.ICPolarity = state.trigger == TRIG_FALL ? TIM_ICPOLARITY_FALLING : TIM_ICPOLARITY_RISING,
 		.ICSelection = TIM_ICSELECTION_DIRECTTI
 	}, TIM_CHANNEL_1 );
 

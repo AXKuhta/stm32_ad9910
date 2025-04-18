@@ -1119,6 +1119,29 @@ void radar_emulator_cmd(const char* str) {
 	radar_emulator_start(freq_hz, duration_ns / 1000.0 / 1000.0 / 1000.0, limit);
 }
 
+void trig_cmd(const char* str) {
+	char mode[5] = {0};
+
+	int rc = sscanf(str, "%*s %4s", mode);
+
+	if (rc != 1) {
+		printf("Invalid arguments\n");
+		printf("Usage: trig mode\n");
+		printf("Modes are: rise, fall\n");
+		return;
+	}
+
+	if (strcmp(mode, "rise") == 0) {
+		state.trigger = TRIG_RISE;
+		printf("Trigger set to rising\n");
+	} else if (strcmp(mode, "fall") == 0) {
+		state.trigger = TRIG_FALL;
+		printf("Trigger set to falling\n");
+	} else {
+		printf("Invalid mode; valid are: rise, fall\n");
+	}
+}
+
 #include "FreeRTOS.h"
 #include "queue.h"
 
@@ -1227,6 +1250,7 @@ void run(const char* str) {
 	if (strcmp(cmd, "basic_xmitdata") == 0) return basic_xmitdata_cmd(str);
 	if (strcmp(cmd, "radar_emulator") == 0) return radar_emulator_cmd(str);
 	if (strcmp(cmd, "wait") == 0) return wait_mcast_packet();
+	if (strcmp(cmd, "trig") == 0) return trig_cmd(str);
 	if (strcmp(cmd, "reboot") == 0) return NVIC_SystemReset();
 
 	printf("Unknown command: [%s]\n", cmd);
