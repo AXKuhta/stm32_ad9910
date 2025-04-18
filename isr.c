@@ -62,6 +62,7 @@ void isr_recorder_sync() {
 // =============================================================================
 
 void NMI_Handler(void) {
+	HAL_RCC_NMI_IRQHandler();
 }
 
 void HardFault_Handler(void)

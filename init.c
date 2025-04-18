@@ -106,6 +106,10 @@ static void run_from_hsi(void) {
 	source_sysclk_from_pll();
 }
 
+void HAL_RCC_CSSCallback(void) {
+	NVIC_SystemReset();
+}
+
 // Run from 25 MHz external clock
 static void run_from_hse(void) {
 	source_sysclk_from_hsi();
@@ -137,6 +141,8 @@ static void run_from_hse(void) {
 	if(HAL_PWREx_EnableOverDrive() != HAL_OK) {
 		while(1) {};
 	}
+
+	HAL_RCC_EnableCSS();
 
 	source_sysclk_from_pll();
 }
