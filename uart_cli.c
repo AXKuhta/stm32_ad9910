@@ -11,6 +11,7 @@
 #include "isr.h"
 #include "performance.h"
 #include "ad9910.h"
+#include "state.h"
 #include "units.h"
 #include "timer.h"
 #include "timer/emulator.h"
@@ -20,8 +21,6 @@
 #include "vec.h"
 
 extern uint32_t ad_system_clock;
-extern uint16_t ad_default_asf;
-extern uint8_t ad_default_fsc;
 
 #define ABS(x) (x < 0 ? -x : x)
 
@@ -202,8 +201,8 @@ void set_level_cmd(const char* str) {
 
 	char* verif_voltage = volts_unit( backconv_voltage );
 
-	ad_default_asf = asf;
-	ad_default_fsc = fsc;
+	state.asf = asf;
+	state.fsc = fsc;
 
 	printf("Set ASF=%u FSC=%u which is %s rms or %.1lf dBm\n", asf, fsc, verif_voltage, dbm);
 
@@ -233,8 +232,8 @@ void dbg_level_cmd(const char* str) {
 
 	printf("Set ASF=%u FSC=%u which is %s rms or %.1lf dBm\n", asf, fsc, verif_voltage, dbm);
 
-	ad_default_asf = asf;
-	ad_default_fsc = fsc;
+	state.asf = asf;
+	state.fsc = fsc;
 
 	free(verif_voltage);
 }
@@ -314,14 +313,14 @@ void basic_pulse_cmd(const char* str) {
 	for (size_t i = 0; i < element_count; i++) {
 		ram[4*i + 0] = 0x00;
 		ram[4*i + 1] = 0x00;
-		ram[4*i + 2] = (ad_default_asf >> 6);
-		ram[4*i + 3] = (ad_default_asf << 2) & 0xFF;
+		ram[4*i + 2] = (state.asf >> 6);
+		ram[4*i + 3] = (state.asf << 2) & 0xFF;
 	}
 
 	memset(ram + element_count*4, 0, 4);
 
 	seq_entry_t pulse = {
-		.fsc = ad_default_fsc,
+		.fsc = state.fsc,
 		.ram_profiles[0] = {
 			.start = element_count,
 			.end = element_count,
@@ -452,8 +451,8 @@ static void sequencer_add_sweep_internal(const char* str, const char* fstr, cons
 	for (size_t i = 0; i < element_count; i++) {
 		ram[4*i + 0] = compensation >> 8;
 		ram[4*i + 1] = compensation & 0xFF;
-		ram[4*i + 2] = (ad_default_asf >> 6);
-		ram[4*i + 3] = (ad_default_asf << 2) & 0xFF;
+		ram[4*i + 2] = (state.asf >> 6);
+		ram[4*i + 3] = (state.asf << 2) & 0xFF;
 	}
 
 	memset(ram + element_count*4, 0, 4);
@@ -475,7 +474,7 @@ static void sequencer_add_sweep_internal(const char* str, const char* fstr, cons
 			.lower_ftw = lower_ftw,
 			.upper_ftw = upper_ftw
 		},
-		.fsc = ad_default_fsc,
+		.fsc = state.fsc,
 		.ram_profiles[0] = {
 			.start = element_count,
 			.end = element_count,
@@ -605,10 +604,10 @@ void xmitdata_fsk_cmd(const char* str) {
 	free(verif_duration_ns);
 
 	seq_entry_t pulse = {
-		.fsc = ad_default_fsc,
+		.fsc = state.fsc,
 		.profiles[0] = { .ftw = 0, .asf = 0 },
-		.profiles[2] = { .ftw = ad_calc_ftw(f1_hz), .asf = ad_default_asf },
-		.profiles[3] = { .ftw = ad_calc_ftw(f2_hz), .asf = ad_default_asf },
+		.profiles[2] = { .ftw = ad_calc_ftw(f1_hz), .asf = state.asf },
+		.profiles[3] = { .ftw = ad_calc_ftw(f2_hz), .asf = state.asf },
 		.logic_level_sequence = lower_logic_sequence(v2->elements)
 	};
 
@@ -679,10 +678,10 @@ void xmitdata_psk_cmd(const char* str) {
 	uint32_t ftw = ad_calc_ftw(freq_hz);
 
 	seq_entry_t pulse = {
-		.fsc = ad_default_fsc,
+		.fsc = state.fsc,
 		.profiles[0] = { .ftw = 0, .asf = 0 },
-		.profiles[2] = { .ftw = ftw, .pow = 0x0000, .asf = ad_default_asf },
-		.profiles[3] = { .ftw = ftw, .pow = 0x7FFF, .asf = ad_default_asf },
+		.profiles[2] = { .ftw = ftw, .pow = 0x0000, .asf = state.asf },
+		.profiles[3] = { .ftw = ftw, .pow = 0x7FFF, .asf = state.asf },
 		.logic_level_sequence = lower_logic_sequence(v2->elements)
 	};
 
@@ -754,8 +753,8 @@ void xmitdata_zc_psk_cmd(const char* str) {
 
 	uint8_t bpsk_ram_image[12] = {
 		0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, (ad_default_asf >> 6), (ad_default_asf << 2) & 0xFF,
-		0x7F, 0xFF, (ad_default_asf >> 6), (ad_default_asf << 2) & 0xFF
+		0x00, 0x00, (state.asf >> 6), (state.asf << 2) & 0xFF,
+		0x7F, 0xFF, (state.asf >> 6), (state.asf << 2) & 0xFF
 	};
 
 	uint8_t* ram = malloc(12);
@@ -763,7 +762,7 @@ void xmitdata_zc_psk_cmd(const char* str) {
 	memcpy(ram, bpsk_ram_image, 12);
 
 	seq_entry_t pulse = {
-		.fsc = ad_default_fsc,
+		.fsc = state.fsc,
 		.ram_profiles[0] = { .start = 0, .end = 0, .rate = 0, .mode = AD_RAM_PROFILE_MODE_ZEROCROSSING },
 		.ram_profiles[2] = { .start = 1, .end = 1, .rate = 0, .mode = AD_RAM_PROFILE_MODE_ZEROCROSSING },
 		.ram_profiles[3] = { .start = 2, .end = 2, .rate = 0, .mode = AD_RAM_PROFILE_MODE_ZEROCROSSING },
@@ -808,13 +807,13 @@ void xmitdata_ram_psk_cmd(const char* str) {
 		if (vec->elements[i] == 0) {
 			ram[4*i + 0] = 0x00;
 			ram[4*i + 1] = 0x00;
-			ram[4*i + 2] = (ad_default_asf >> 6);
-			ram[4*i + 3] = (ad_default_asf << 2) & 0xFF;
+			ram[4*i + 2] = (state.asf >> 6);
+			ram[4*i + 3] = (state.asf << 2) & 0xFF;
 		} else {
 			ram[4*i + 0] = 0x7F;
 			ram[4*i + 1] = 0xFF;
-			ram[4*i + 2] = (ad_default_asf >> 6);
-			ram[4*i + 3] = (ad_default_asf << 2) & 0xFF;
+			ram[4*i + 2] = (state.asf >> 6);
+			ram[4*i + 3] = (state.asf << 2) & 0xFF;
 		}
 	}
 
@@ -846,7 +845,7 @@ void xmitdata_ram_psk_cmd(const char* str) {
 	uint32_t ftw = ad_calc_ftw(freq_hz);
 
 	seq_entry_t pulse = {
-		.fsc = ad_default_fsc,
+		.fsc = state.fsc,
 		.ram_profiles[0] = {
 			.start = element_count,
 			.end = element_count,
@@ -932,9 +931,9 @@ void sequencer_add_pulse_cmd(const char* str) {
 	printf("Sequence basic pulse at %s, offset %s, duration %s\n", verif_freq, verif_offset, verif_duration);
 
 	seq_entry_t pulse = {
-		.fsc = ad_default_fsc,
+		.fsc = state.fsc,
 		.profiles[0] = { .ftw = 0, .asf = 0 },
-		.profiles[1] = { .ftw = ad_calc_ftw(freq_hz), .asf = ad_default_asf },
+		.profiles[1] = { .ftw = ad_calc_ftw(freq_hz), .asf = state.asf },
 		.logic_level_sequence = lower_logic_sequence(
 			offset_ns ? (logic_t[]){
 				{ .hold_ns = offset_ns, .state = 0 },
@@ -1036,7 +1035,7 @@ void sequencer_add_json_cmd(const char* str) {
 	int ram = json_query_count( json, (const char* []) {"v2", "ram", NULL} );
 
 	seq_entry_t pulse = {
-		.fsc = ad_default_fsc
+		.fsc = state.fsc
 	};
 
 	if (ram > 0) {

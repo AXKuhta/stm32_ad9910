@@ -11,15 +11,13 @@
 #include "leds.h"
 #include "timer/sequencing.h"
 #include "timer.h"
+#include "state.h"
 #include "ad9910.h"
 #include "sequencer.h"
 #include "events.h"
 #include "units.h"
 #include "algos.h"
 #include "vec.h"
-
-extern uint16_t ad_default_asf;
-extern uint8_t ad_default_fsc;
 
 // "Приватные" глобальные переменные
 static vec_t(seq_entry_t)* sequence;
@@ -325,8 +323,8 @@ void enter_test_tone_mode(uint32_t freq_hz) {
 	led_arm_set();
 
 	ad_set_profile_freq(1, ad_calc_ftw(freq_hz));
-	ad_set_profile_amplitude(1, ad_default_asf);
-	ad_set_full_scale_current(ad_default_fsc);
+	ad_set_profile_amplitude(1, state.asf);
+	ad_set_full_scale_current(state.fsc);
 	ad_write_all();
 	ad_safety_off(0);
 	set_profile(1);
