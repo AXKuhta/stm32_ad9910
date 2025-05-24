@@ -9,9 +9,9 @@ const uint8_t MAC[6] = {0x00, 0x11, 0x22, 0x33, 0x44, 0x55};
 /* Define the network addressing.  These parameters will be used if either
 ipconfigUDE_DHCP is 0 or if ipconfigUSE_DHCP is 1 but DHCP auto configuration
 failed. */
-const uint8_t IP[4] = {10, 15, 15, 250};
+const uint8_t IP[4] = {192, 168, 0, 12};
 const uint8_t Mask[4] = {255, 255, 255, 0};
-const uint8_t Gateway[4] = {10, 15, 15, 1};
+const uint8_t Gateway[4] = {192, 168, 0, 1};
 const uint8_t DNSServer[4] = {1, 1, 1, 1};
 
 //
