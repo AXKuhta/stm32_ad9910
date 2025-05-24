@@ -9,6 +9,9 @@ typedef enum event_origin_t {
 typedef struct event_t {
 	event_origin_t origin;
 	uint64_t timestamp;
+
+	int orda_type;
+	int orda_size;
 } event_t;
 
 void event_queue_init();

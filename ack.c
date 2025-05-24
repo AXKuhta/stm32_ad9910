@@ -30,9 +30,9 @@ void ack_damenon_task(void* params) {
 	while (1) {
 		struct freertos_sockaddr from = {0};
 		socklen_t from_sz = sizeof(from);
-		char buf;
+		char buf[9];
 
-		BaseType_t status = FreeRTOS_recvfrom(socket, &buf, 1, 0, &from, &from_sz);
+		BaseType_t status = FreeRTOS_recvfrom(socket, &buf, 9, 0, &from, &from_sz);
 
 		if (status == -pdFREERTOS_ERRNO_EWOULDBLOCK) {
 			continue;
@@ -42,8 +42,16 @@ void ack_damenon_task(void* params) {
 			assert(0);
 		}
 
+		int type = -1;
+		int sz = -1;
+
+		if (memcmp(buf, "ORDA", 4) == 0) {
+			type = (unsigned char)buf[4];
+			sz = *(int*)(buf+5);
+		}
+
 		if (status > 0) {
-			event_queue_push((event_t) { .origin = DDC_ACK_EVENT, .timestamp = logic_blaster_hrtime() });
+			event_queue_push((event_t) { .origin = DDC_ACK_EVENT, .timestamp = logic_blaster_hrtime(), .orda_type = type, .orda_size = sz });
 		}
 	}
 
