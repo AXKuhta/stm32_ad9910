@@ -21,7 +21,7 @@
 
 // "Приватные" глобальные переменные
 static vec_t(seq_entry_t)* sequence;
-static int seq_index;
+int seq_index;
 
 void sequencer_init() {
 	sequence = init_vec(seq_entry_t);
@@ -176,7 +176,7 @@ static void dma_abort() {
 }
 
 void pulse_complete_callback() {
-	seq_entry_t entry = sequence->elements[seq_index++ % sequence->size];
+	seq_entry_t entry = sequence->elements[seq_index % sequence->size];
 
 	logic_blaster_disarm();
 

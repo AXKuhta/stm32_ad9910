@@ -1159,6 +1159,8 @@ void trig_cmd(const char* str) {
 //
 void wait_mcast_packet() {
 	uint32_t triggers_unacknowledged = 99;
+	uint32_t trig_seqn = 0;
+	uint32_t ack_seqn = 0;
 	event_t evt;
 
 	extern QueueHandle_t event_queue;
@@ -1195,24 +1197,33 @@ void wait_mcast_packet() {
 
 		switch (evt.origin) {
 			case TRIGGER_EVENT:
-				rc = printf("%llu\tTRIG\n", evt.timestamp);
+				rc = printf("%llu\tTRIG %lu\n", evt.timestamp, trig_seqn);
 				triggers_unacknowledged++;
+				trig_seqn++;
 				break;
 			case READY_EVENT:
 				rc = printf("%llu\tREADY\n", evt.timestamp);
 				break;
 			case DDC_ACK_EVENT:
-				if (triggers_unacknowledged)
-					rc = printf("%llu\tDDC ACK\n", evt.timestamp);
-				triggers_unacknowledged = 0;
+				if (triggers_unacknowledged) {
+					rc = printf("%llu\tDDC ACK %lu type %d size %d\n", evt.timestamp, ack_seqn, evt.orda_type, evt.orda_size);
+					triggers_unacknowledged = 0;
+					ack_seqn++;
+
+					extern int seq_index;
+					seq_index++;
+
+					extern void pulse_complete_callback();
+					run_later(pulse_complete_callback);
+				}
 				break;
 		
 			default:
 				assert(0);
 		}
 
-		if (triggers_unacknowledged >= 2)
-			break;
+		//if (triggers_unacknowledged >= 2)
+		//	break;
 
 		if (rc < 0)
 			break;
