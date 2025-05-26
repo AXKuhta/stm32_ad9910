@@ -1,4 +1,6 @@
 # stm32_ad9910
-Attaching AD9910 evaluation board to a NUCLEO-F746ZG
-![PXL_20220629_084435269](https://user-images.githubusercontent.com/11133304/176845140-7fc92829-ddc9-4d46-82ec-bac10280c785.jpg)
-![PXL_20220629_084618428](https://user-images.githubusercontent.com/11133304/176845170-6c3a840f-de99-4e0f-9de4-4cf9d23f76bf.jpg)
+
+A rack-mounted signal generator built around an AD9910 evaluation board and a NUCLEO-F746ZG
+
+![siggen_outside_gamma2](https://github.com/user-attachments/assets/14b973f9-f099-428b-99ee-0b29a2ff1d70)
+![siggen_insides_gamma2](https://github.com/user-attachments/assets/34265ae7-20c7-4da3-a2b3-d5dbde02b12d)
