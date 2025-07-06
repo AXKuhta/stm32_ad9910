@@ -374,7 +374,7 @@
         TickType_t uxNow = xTaskGetTickCount();
         TickType_t uxDiff = uxNow - pxTimer->uxBorn;
 
-        return ( uint32_t ) ( uxDiff * portTICK_PERIOD_MS );
+        return ( uint32_t ) pdTICKS_TO_MS( uxDiff );
     }
 /*-----------------------------------------------------------*/
 
@@ -446,10 +446,10 @@
                     * nulled already.  Set the owner to a segment descriptor. */
 
                     #if ( configUSE_LIST_DATA_INTEGRITY_CHECK_BYTES == 1 )
-                        {
-                            vListInitialiseItem( &( xTCPSegments[ xIndex ].xSegmentItem ) );
-                            vListInitialiseItem( &( xTCPSegments[ xIndex ].xQueueItem ) );
-                        }
+                    {
+                        vListInitialiseItem( &( xTCPSegments[ xIndex ].xSegmentItem ) );
+                        vListInitialiseItem( &( xTCPSegments[ xIndex ].xQueueItem ) );
+                    }
                     #endif
 
                     listSET_LIST_ITEM_OWNER( &( xTCPSegments[ xIndex ].xSegmentItem ), ( void * ) &( xTCPSegments[ xIndex ] ) );
@@ -571,15 +571,15 @@
                 pxSegment->lDataLength = lCount;
                 pxSegment->ulSequenceNumber = ulSequenceNumber;
                 #if ( ipconfigHAS_DEBUG_PRINTF != 0 )
-                    {
-                        static UBaseType_t xLowestLength = ipconfigTCP_WIN_SEG_COUNT;
-                        UBaseType_t xLength = listCURRENT_LIST_LENGTH( &xSegmentList );
+                {
+                    static UBaseType_t xLowestLength = ipconfigTCP_WIN_SEG_COUNT;
+                    UBaseType_t xLength = listCURRENT_LIST_LENGTH( &xSegmentList );
 
-                        if( xLowestLength > xLength )
-                        {
-                            xLowestLength = xLength;
-                        }
+                    if( xLowestLength > xLength )
+                    {
+                        xLowestLength = xLength;
                     }
+                }
                 #endif /* ipconfigHAS_DEBUG_PRINTF */
             }
 
@@ -777,34 +777,36 @@
  * @param[in] ulSequenceNumber The first sequence number.
  * @param[in] ulMSS The MSS of the connection.
  */
-    void vTCPWindowCreate( TCPWindow_t * pxWindow,
-                           uint32_t ulRxWindowLength,
-                           uint32_t ulTxWindowLength,
-                           uint32_t ulAckNumber,
-                           uint32_t ulSequenceNumber,
-                           uint32_t ulMSS )
+    BaseType_t xTCPWindowCreate( TCPWindow_t * pxWindow,
+                                 uint32_t ulRxWindowLength,
+                                 uint32_t ulTxWindowLength,
+                                 uint32_t ulAckNumber,
+                                 uint32_t ulSequenceNumber,
+                                 uint32_t ulMSS )
     {
+        BaseType_t xReturn = pdPASS;
+
         /* Create and initialize a window. */
 
         #if ( ipconfigUSE_TCP_WIN == 1 )
+        {
+            if( xTCPSegments == NULL )
             {
-                if( xTCPSegments == NULL )
-                {
-                    ( void ) prvCreateSectors();
-                }
-
-                vListInitialise( &( pxWindow->xTxSegments ) );
-                vListInitialise( &( pxWindow->xRxSegments ) );
-
-                vListInitialise( &( pxWindow->xPriorityQueue ) ); /* Priority queue: segments which must be sent immediately */
-                vListInitialise( &( pxWindow->xTxQueue ) );       /* Transmit queue: segments queued for transmission */
-                vListInitialise( &( pxWindow->xWaitQueue ) );     /* Waiting queue:  outstanding segments */
+                xReturn = prvCreateSectors();
             }
+
+            vListInitialise( &( pxWindow->xTxSegments ) );
+            vListInitialise( &( pxWindow->xRxSegments ) );
+
+            vListInitialise( &( pxWindow->xPriorityQueue ) ); /* Priority queue: segments which must be sent immediately */
+            vListInitialise( &( pxWindow->xTxQueue ) );       /* Transmit queue: segments queued for transmission */
+            vListInitialise( &( pxWindow->xWaitQueue ) );     /* Waiting queue:  outstanding segments */
+        }
         #endif /* ipconfigUSE_TCP_WIN == 1 */
 
         if( xTCPWindowLoggingLevel != 0 )
         {
-            FreeRTOS_debug_printf( ( "vTCPWindowCreate: for WinLen = Rx/Tx: %u/%u\n",
+            FreeRTOS_debug_printf( ( "xTCPWindowCreate: for WinLen = Rx/Tx: %u/%u\n",
                                      ( unsigned ) ulRxWindowLength, ( unsigned ) ulTxWindowLength ) );
         }
 
@@ -812,6 +814,8 @@
         pxWindow->xSize.ulTxWindowLength = ulTxWindowLength;
 
         vTCPWindowInit( pxWindow, ulAckNumber, ulSequenceNumber, ulMSS );
+
+        return xReturn;
     }
 /*-----------------------------------------------------------*/
 
@@ -848,9 +852,9 @@
         }
 
         #if ( ipconfigUSE_TCP_WIN == 0 )
-            {
-                pxWindow->xTxSegment.lMaxLength = ( int32_t ) pxWindow->usMSS;
-            }
+        {
+            pxWindow->xTxSegment.lMaxLength = ( int32_t ) pxWindow->usMSS;
+        }
         #endif /* ipconfigUSE_TCP_WIN == 1 */
 
         /*Start with a timeout of 2 * 500 ms (1 sec). */
@@ -896,7 +900,7 @@
                 xTCPSegments = NULL;
             }
         }
-    #endif /* ipconfgiUSE_TCP_WIN == 1 */
+    #endif /* ipconfigUSE_TCP_WIN == 1 */
 /*-----------------------------------------------------------*/
 
 /*=============================================================================
@@ -983,7 +987,7 @@
 
             return pxBest;
         }
-    #endif /* ipconfgiUSE_TCP_WIN == 1 */
+    #endif /* ipconfigUSE_TCP_WIN == 1 */
 /*-----------------------------------------------------------*/
 
     #if ( ipconfigUSE_TCP_WIN == 1 )
@@ -1059,7 +1063,7 @@
 
             pxWindow->rx.ulCurrentSequenceNumber = ulCurrentSequenceNumber;
         }
-    #endif /* ipconfgiUSE_TCP_WIN == 1 */
+    #endif /* ipconfigUSE_TCP_WIN == 1 */
 /*-----------------------------------------------------------*/
 
     #if ( ipconfigUSE_TCP_WIN == 1 )
@@ -1085,7 +1089,7 @@
             /* See if there is more data in a contiguous block to make the
              * SACK describe a longer range of data. */
 
-            /* TODO: SACK's may also be delayed for a short period
+            /* SACK's may also be delayed for a short period
              * This is useful because subsequent packets will be SACK'd with
              * single one message
              */
@@ -1158,7 +1162,6 @@
                                                  pxWindow->usOurPortNumber,
                                                  ( unsigned ) ( ulSequenceNumber - pxWindow->rx.ulFirstSequenceNumber ),
                                                  ( unsigned ) listCURRENT_LIST_LENGTH( &pxWindow->xRxSegments ) ) );
-                        FreeRTOS_flush_logging();
                     }
 
                     /* Return a positive value.  The packet may be accepted
@@ -1170,7 +1173,7 @@
 
             return lReturn;
         }
-    #endif /* ipconfgiUSE_TCP_WIN == 1 */
+    #endif /* ipconfigUSE_TCP_WIN == 1 */
 /*-----------------------------------------------------------*/
 
     #if ( ipconfigUSE_TCP_WIN == 1 )
@@ -1300,7 +1303,7 @@
 
             return lReturn;
         }
-    #endif /* ipconfgiUSE_TCP_WIN == 1 */
+    #endif /* ipconfigUSE_TCP_WIN == 1 */
 /*-----------------------------------------------------------*/
 
 /*=============================================================================
@@ -1391,7 +1394,6 @@
                                          ( int ) pxSegment->lDataLength,
                                          ( unsigned ) ( pxWindow->ulNextTxSequenceNumber - pxWindow->tx.ulFirstSequenceNumber ),
                                          ( int ) pxSegment->lStreamPos ) );
-                FreeRTOS_flush_logging();
             }
 
             return lToWrite;
@@ -1703,7 +1705,6 @@
                                                  ( int ) pxSegment->lDataLength,
                                                  ( unsigned ) ( pxSegment->ulSequenceNumber - pxWindow->tx.ulFirstSequenceNumber ),
                                                  ( unsigned ) pxSegment->ulSequenceNumber ) );
-                        FreeRTOS_flush_logging();
                     }
                 }
                 else
@@ -1776,7 +1777,6 @@
                                              ( int ) pxSegment->lDataLength,
                                              ( unsigned ) ( pxSegment->ulSequenceNumber - pxWindow->tx.ulFirstSequenceNumber ),
                                              ( unsigned ) ulWindowSize ) );
-                    FreeRTOS_flush_logging();
                 }
             }
 
@@ -1823,7 +1823,6 @@
                                              ( int ) pxSegment->lDataLength,
                                              ( unsigned ) ( pxSegment->ulSequenceNumber - pxWindow->tx.ulFirstSequenceNumber ),
                                              ( unsigned ) ulWindowSize ) );
-                    FreeRTOS_flush_logging();
                 }
             }
             else
@@ -1902,17 +1901,32 @@
                                                      const TCPSegment_t * pxSegment )
         {
             int32_t mS = ( int32_t ) ulTimerGetAge( &( pxSegment->xTransmitTimer ) );
+            int32_t lSum = 0;
+            int32_t lWeight = 0;
+            int32_t lDivisor = 0;
+
+            mS = ( mS < 0 ) ? ipINT32_MAX_VALUE : mS;
 
             if( pxWindow->lSRTT >= mS )
             {
                 /* RTT becomes smaller: adapt slowly. */
-                pxWindow->lSRTT = ( ( winSRTT_DECREMENT_NEW * mS ) + ( winSRTT_DECREMENT_CURRENT * pxWindow->lSRTT ) ) / ( winSRTT_DECREMENT_NEW + winSRTT_DECREMENT_CURRENT );
+                lWeight = winSRTT_DECREMENT_CURRENT;
+                lDivisor = winSRTT_DECREMENT_NEW + winSRTT_DECREMENT_CURRENT;
+                mS = FreeRTOS_multiply_int32( mS,
+                                              winSRTT_DECREMENT_NEW );
             }
             else
             {
                 /* RTT becomes larger: adapt quicker */
-                pxWindow->lSRTT = ( ( winSRTT_INCREMENT_NEW * mS ) + ( winSRTT_INCREMENT_CURRENT * pxWindow->lSRTT ) ) / ( winSRTT_INCREMENT_NEW + winSRTT_INCREMENT_CURRENT );
+                lWeight = winSRTT_INCREMENT_CURRENT;
+                lDivisor = winSRTT_INCREMENT_NEW + winSRTT_INCREMENT_CURRENT;
+                mS = FreeRTOS_multiply_int32( mS,
+                                              winSRTT_INCREMENT_NEW );
             }
+
+            lSum = FreeRTOS_multiply_int32( pxWindow->lSRTT, lWeight );
+            lSum = FreeRTOS_add_int32( lSum, mS );
+            pxWindow->lSRTT = lSum / lDivisor;
 
             /* Cap to the minimum of 50ms. */
             if( pxWindow->lSRTT < winSRTT_CAP_mS )
@@ -1947,7 +1961,7 @@
             const ListItem_t * pxIterator;
 
             /* MISRA Ref 11.3.1 [Misaligned access] */
-/* More details at: https://github.com/FreeRTOS/FreeRTOS-Plus-TCP/blob/main/MISRA.md#rule-113 */
+            /* More details at: https://github.com/FreeRTOS/FreeRTOS-Plus-TCP/blob/main/MISRA.md#rule-113 */
             /* coverity[misra_c_2012_rule_11_3_violation] */
             const ListItem_t * pxEnd = ( ( const ListItem_t * ) &( pxWindow->xTxSegments.xListEnd ) );
             BaseType_t xDoUnlink;
@@ -2010,16 +2024,16 @@
                          * AAAAAAA BBBBBBB << acked
                          * aaaaaaa aaaa    << sent */
                         #if ( ipconfigHAS_DEBUG_PRINTF != 0 )
-                            {
-                                uint32_t ulFirstSeq = pxSegment->ulSequenceNumber - pxWindow->tx.ulFirstSequenceNumber;
-                                FreeRTOS_debug_printf( ( "prvTCPWindowTxCheckAck[%u.%u]: %u - %u Partial sequence number %u - %u\n",
-                                                         pxWindow->usPeerPortNumber,
-                                                         pxWindow->usOurPortNumber,
-                                                         ( unsigned ) ( ulFirstSeq - pxWindow->tx.ulFirstSequenceNumber ),
-                                                         ( unsigned ) ( ulLast - pxWindow->tx.ulFirstSequenceNumber ),
-                                                         ( unsigned ) ulFirstSeq,
-                                                         ( unsigned ) ( ulFirstSeq + ulDataLength ) ) );
-                            }
+                        {
+                            uint32_t ulFirstSeq = pxSegment->ulSequenceNumber - pxWindow->tx.ulFirstSequenceNumber;
+                            FreeRTOS_debug_printf( ( "prvTCPWindowTxCheckAck[%u.%u]: %u - %u Partial sequence number %u - %u\n",
+                                                     pxWindow->usPeerPortNumber,
+                                                     pxWindow->usOurPortNumber,
+                                                     ( unsigned ) ( ulFirstSeq - pxWindow->tx.ulFirstSequenceNumber ),
+                                                     ( unsigned ) ( ulLast - pxWindow->tx.ulFirstSequenceNumber ),
+                                                     ( unsigned ) ulFirstSeq,
+                                                     ( unsigned ) ( ulFirstSeq + ulDataLength ) ) );
+                        }
                         #endif /* ( ipconfigHAS_DEBUG_PRINTF != 0 ) */
 
                         break;
@@ -2137,7 +2151,6 @@
                                 FreeRTOS_debug_printf( ( "prvTCPWindowFastRetransmit: Requeue sequence number %u < %u\n",
                                                          ( unsigned ) ( pxSegment->ulSequenceNumber - pxWindow->tx.ulFirstSequenceNumber ),
                                                          ( unsigned ) ( ulFirst - pxWindow->tx.ulFirstSequenceNumber ) ) );
-                                FreeRTOS_flush_logging();
                             }
 
                             /* Remove it from xWaitQueue. */
@@ -2222,7 +2235,6 @@
                                          ( unsigned ) ( ulFirst - pxWindow->tx.ulFirstSequenceNumber ),
                                          ( unsigned ) ( ulLast - pxWindow->tx.ulFirstSequenceNumber ),
                                          ( unsigned ) ( pxWindow->tx.ulCurrentSequenceNumber - pxWindow->tx.ulFirstSequenceNumber ) ) );
-                FreeRTOS_flush_logging();
             }
 
             return ulAckCount;

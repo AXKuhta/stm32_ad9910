@@ -1,5 +1,5 @@
 /*
- * FreeRTOS+TCP V2.3.1
+ * FreeRTOS+TCP <DEVELOPMENT BRANCH>
  * Copyright (C) 2020 Amazon.com, Inc. or its affiliates.  All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
@@ -41,7 +41,6 @@
 #include "FreeRTOS_IP.h"
 #include "FreeRTOS_Sockets.h"
 #include "FreeRTOS_IP_Private.h"
-#include "FreeRTOS_ARP.h"
 #include "FreeRTOS_UDP_IP.h"
 #include "FreeRTOS_Routing.h"
 #include "FreeRTOS_ND.h"
@@ -74,22 +73,19 @@
     #define ndMAX_CACHE_AGE_BEFORE_NEW_ND_SOLICITATION    ( 3U )
 
 /** @brief All nodes on the local network segment: IP address. */
-    /* MISRA Ref 8.9.1 [File scoped variables] */
-    /* More details at: https://github.com/FreeRTOS/FreeRTOS-Plus-TCP/blob/main/MISRA.md#rule-89 */
-    /* coverity[misra_c_2012_rule_8_9_violation] */
-    static const uint8_t pcLOCAL_ALL_NODES_MULTICAST_IP[ ipSIZE_OF_IPv6_ADDRESS ] = { 0xff, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01 }; /* ff02:1 */
+    const uint8_t pcLOCAL_ALL_NODES_MULTICAST_IP[ ipSIZE_OF_IPv6_ADDRESS ] = { 0xffU, 0x02U, 0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x01U }; /* ff02::1 */
 /** @brief All nodes on the local network segment: MAC address. */
-    static const uint8_t pcLOCAL_ALL_NODES_MULTICAST_MAC[ ipMAC_ADDRESS_LENGTH_BYTES ] = { 0x33, 0x33, 0x00, 0x00, 0x00, 0x01 };
+    const uint8_t pcLOCAL_ALL_NODES_MULTICAST_MAC[ ipMAC_ADDRESS_LENGTH_BYTES ] = { 0x33U, 0x33U, 0x00U, 0x00U, 0x00U, 0x01U };
 
 /** @brief See if the MAC-address can be resolved because it is a multi-cast address. */
-    static eARPLookupResult_t prvMACResolve( const IPv6_Address_t * pxAddressToLookup,
-                                             MACAddress_t * const pxMACAddress,
-                                             NetworkEndPoint_t ** ppxEndPoint );
+    static eResolutionLookupResult_t prvMACResolve( const IPv6_Address_t * pxAddressToLookup,
+                                                    MACAddress_t * const pxMACAddress,
+                                                    NetworkEndPoint_t ** ppxEndPoint );
 
 /** @brief Lookup an MAC address in the ND cache from the IP address. */
-    static eARPLookupResult_t prvNDCacheLookup( const IPv6_Address_t * pxAddressToLookup,
-                                                MACAddress_t * const pxMACAddress,
-                                                NetworkEndPoint_t ** ppxEndPoint );
+    static eResolutionLookupResult_t prvNDCacheLookup( const IPv6_Address_t * pxAddressToLookup,
+                                                       MACAddress_t * const pxMACAddress,
+                                                       NetworkEndPoint_t ** ppxEndPoint );
 
     #if ( ipconfigHAS_PRINTF == 1 )
         static const char * pcMessageType( BaseType_t xType );
@@ -100,6 +96,13 @@
 
 /** @brief The ND cache. */
     static NDCacheRow_t xNDCache[ ipconfigND_CACHE_ENTRIES ];
+
+/** @brief  The time at which the last unsolicited ND was sent. Unsolicited NDs are used
+ * to ensure ND tables are up to date and to detect IP address conflicts. */
+/* MISRA Ref 8.9.1 [File scoped variables] */
+/* More details at: https://github.com/FreeRTOS/FreeRTOS-Plus-TCP/blob/main/MISRA.md#rule-89 */
+/* coverity[misra_c_2012_rule_8_9_violation] */
+    static TickType_t xLastUnsolicitedNDTime = 0U;
 
 /*-----------------------------------------------------------*/
 
@@ -144,13 +147,13 @@
  * @param[out] pxMACAddress The resulting MAC-address is stored here.
  * @param[out] ppxEndPoint A pointer to an end-point pointer where the end-point will be stored.
  *
- * @return An enum, either eARPCacheHit or eARPCacheMiss.
+ * @return An enum, either eResolutionCacheHit or eResolutionCacheMiss.
  */
-    static eARPLookupResult_t prvMACResolve( const IPv6_Address_t * pxAddressToLookup,
-                                             MACAddress_t * const pxMACAddress,
-                                             NetworkEndPoint_t ** ppxEndPoint )
+    static eResolutionLookupResult_t prvMACResolve( const IPv6_Address_t * pxAddressToLookup,
+                                                    MACAddress_t * const pxMACAddress,
+                                                    NetworkEndPoint_t ** ppxEndPoint )
     {
-        eARPLookupResult_t eReturn;
+        eResolutionLookupResult_t eReturn;
 
         /* Mostly used multi-cast address is ff02::. */
         if( xIsIPv6AllowedMulticast( pxAddressToLookup ) != pdFALSE )
@@ -162,12 +165,12 @@
                 *ppxEndPoint = pxFindLocalEndpoint();
             }
 
-            eReturn = eARPCacheHit;
+            eReturn = eResolutionCacheHit;
         }
         else
         {
             /* Not a multicast IP address. */
-            eReturn = eARPCacheMiss;
+            eReturn = eResolutionCacheMiss;
         }
 
         return eReturn;
@@ -182,30 +185,30 @@
  * @param[out] pxMACAddress The MAC-address found.
  * @param[out] ppxEndPoint A pointer to a pointer to an end-point, where the end-point will be stored.
  *
- * @return An enum which says whether the address was found: eARPCacheHit or eARPCacheMiss.
+ * @return An enum which says whether the address was found: eResolutionCacheHit or eResolutionCacheMiss.
  */
-    eARPLookupResult_t eNDGetCacheEntry( IPv6_Address_t * pxIPAddress,
-                                         MACAddress_t * const pxMACAddress,
-                                         struct xNetworkEndPoint ** ppxEndPoint )
+    eResolutionLookupResult_t eNDGetCacheEntry( IPv6_Address_t * pxIPAddress,
+                                                MACAddress_t * const pxMACAddress,
+                                                struct xNetworkEndPoint ** ppxEndPoint )
     {
-        eARPLookupResult_t eReturn;
+        eResolutionLookupResult_t eReturn;
         NetworkEndPoint_t * pxEndPoint;
 
         /* Multi-cast addresses can be resolved immediately. */
         eReturn = prvMACResolve( pxIPAddress, pxMACAddress, ppxEndPoint );
 
-        if( eReturn == eARPCacheMiss )
+        if( eReturn == eResolutionCacheMiss )
         {
             /* See if the IP-address has an entry in the cache. */
             eReturn = prvNDCacheLookup( pxIPAddress, pxMACAddress, ppxEndPoint );
         }
 
-        if( eReturn == eARPCacheMiss )
+        if( eReturn == eResolutionCacheMiss )
         {
             FreeRTOS_printf( ( "eNDGetCacheEntry: lookup %pip miss\n", ( void * ) pxIPAddress->ucBytes ) );
         }
 
-        if( eReturn == eARPCacheMiss )
+        if( eReturn == eResolutionCacheMiss )
         {
             IPv6_Type_t eIPType = xIPv6_GetIPType( pxIPAddress );
 
@@ -240,7 +243,7 @@
                     }
 
                     FreeRTOS_printf( ( "eNDGetCacheEntry: LinkLocal %pip \"%s\"\n", ( void * ) pxIPAddress->ucBytes,
-                                       ( eReturn == eARPCacheHit ) ? "hit" : "miss" ) );
+                                       ( eReturn == eResolutionCacheHit ) ? "hit" : "miss" ) );
                 }
                 else
                 {
@@ -285,6 +288,8 @@
     {
         BaseType_t x;
         BaseType_t xFreeEntry = -1, xEntryFound = -1;
+        uint16_t xOldestValue = ipconfigMAX_ND_AGE + 1;
+        BaseType_t xOldestEntry = 0;
 
         /* For each entry in the ND cache table. */
         for( x = 0; x < ipconfigND_CACHE_ENTRIES; x++ )
@@ -304,29 +309,45 @@
             else
             {
                 /* Entry is valid but the IP-address doesn't match. */
+
+                /* Keep track of the oldest entry in case we need to overwrite it. The problem we are trying to avoid is
+                 * that there may be a queued packet in pxNDWaitingNetworkBuffer and we may have just received the
+                 * neighbor advertisement needed for that packet. If we don't store this network advertisement in cache,
+                 * the parting of the frame from pxNDWaitingNetworkBuffer will cause the sending of neighbor solicitation
+                 * and stores the frame in pxNDWaitingNetworkBuffer. This becomes a vicious circle with thousands of
+                 * neighbor solicitation/advertisement packets going back and forth because the ND cache is full.
+                 * Overwriting the oldest cache entry is not a fool-proof solution, but it's something. */
+                if( xNDCache[ x ].ucAge < xOldestValue )
+                {
+                    xOldestValue = xNDCache[ x ].ucAge;
+                    xOldestEntry = x;
+                }
             }
         }
 
         if( xEntryFound < 0 )
         {
             /* The IP-address was not found, use the first free location. */
-            xEntryFound = xFreeEntry;
+            if( xFreeEntry >= 0 )
+            {
+                xEntryFound = xFreeEntry;
+            }
+            else
+            {
+                /* No free location. Overwrite the oldest. */
+                xEntryFound = xOldestEntry;
+                FreeRTOS_printf( ( "vNDRefreshCacheEntry: Cache FULL! Overwriting oldest entry %i with %02X-%02X-%02X-%02X-%02X-%02X\n", ( int ) xEntryFound, pxMACAddress->ucBytes[ 0 ], pxMACAddress->ucBytes[ 1 ], pxMACAddress->ucBytes[ 2 ], pxMACAddress->ucBytes[ 3 ], pxMACAddress->ucBytes[ 4 ], pxMACAddress->ucBytes[ 5 ] ) );
+            }
         }
 
-        if( xEntryFound >= 0 )
-        {
-            /* Copy the IP-address. */
-            ( void ) memcpy( xNDCache[ xEntryFound ].xIPAddress.ucBytes, pxIPAddress->ucBytes, ipSIZE_OF_IPv6_ADDRESS );
-            /* Copy the MAC-address. */
-            ( void ) memcpy( xNDCache[ xEntryFound ].xMACAddress.ucBytes, pxMACAddress->ucBytes, sizeof( MACAddress_t ) );
-            xNDCache[ xEntryFound ].pxEndPoint = pxEndPoint;
-            xNDCache[ xEntryFound ].ucAge = ( uint8_t ) ipconfigMAX_ARP_AGE;
-            xNDCache[ xEntryFound ].ucValid = ( uint8_t ) pdTRUE;
-        }
-        else
-        {
-            FreeRTOS_printf( ( "vNDRefreshCacheEntry: %pip not found\n", ( void * ) pxIPAddress->ucBytes ) );
-        }
+        /* At this point, xEntryFound is always a valid index. */
+        /* Copy the IP-address. */
+        ( void ) memcpy( xNDCache[ xEntryFound ].xIPAddress.ucBytes, pxIPAddress->ucBytes, ipSIZE_OF_IPv6_ADDRESS );
+        /* Copy the MAC-address. */
+        ( void ) memcpy( xNDCache[ xEntryFound ].xMACAddress.ucBytes, pxMACAddress->ucBytes, sizeof( MACAddress_t ) );
+        xNDCache[ xEntryFound ].pxEndPoint = pxEndPoint;
+        xNDCache[ xEntryFound ].ucAge = ( uint8_t ) ipconfigMAX_ND_AGE;
+        xNDCache[ xEntryFound ].ucValid = ( uint8_t ) pdTRUE;
     }
 /*-----------------------------------------------------------*/
 
@@ -399,11 +420,28 @@
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Clear the Neighbour Discovery cache.
+ * @brief A call to this function will clear the ND cache.
+ * @param[in] pxEndPoint only clean entries with this end-point, or when NULL,
+ *                        clear the entire ND cache.
  */
-    void FreeRTOS_ClearND( void )
+    void FreeRTOS_ClearND( const struct xNetworkEndPoint * pxEndPoint )
     {
-        ( void ) memset( xNDCache, 0, sizeof( xNDCache ) );
+        if( pxEndPoint != NULL )
+        {
+            BaseType_t x;
+
+            for( x = 0; x < ipconfigND_CACHE_ENTRIES; x++ )
+            {
+                if( xNDCache[ x ].pxEndPoint == pxEndPoint )
+                {
+                    ( void ) memset( &( xNDCache[ x ] ), 0, sizeof( NDCacheRow_t ) );
+                }
+            }
+        }
+        else
+        {
+            ( void ) memset( xNDCache, 0, sizeof( xNDCache ) );
+        }
     }
 /*-----------------------------------------------------------*/
 
@@ -414,14 +452,14 @@
  * @param[out] pxMACAddress The resulting MAC-address will be stored here.
  * @param[out] ppxEndPoint A pointer to a pointer to an end-point, where the end-point will be stored.
  *
- * @return An enum: either eARPCacheHit or eARPCacheMiss.
+ * @return An enum: either eResolutionCacheHit or eResolutionCacheMiss.
  */
-    static eARPLookupResult_t prvNDCacheLookup( const IPv6_Address_t * pxAddressToLookup,
-                                                MACAddress_t * const pxMACAddress,
-                                                NetworkEndPoint_t ** ppxEndPoint )
+    static eResolutionLookupResult_t prvNDCacheLookup( const IPv6_Address_t * pxAddressToLookup,
+                                                       MACAddress_t * const pxMACAddress,
+                                                       NetworkEndPoint_t ** ppxEndPoint )
     {
         BaseType_t x;
-        eARPLookupResult_t eReturn = eARPCacheMiss;
+        eResolutionLookupResult_t eReturn = eResolutionCacheMiss;
 
         /* For each entry in the ND cache table. */
         for( x = 0; x < ipconfigND_CACHE_ENTRIES; x++ )
@@ -433,7 +471,7 @@
             else if( memcmp( xNDCache[ x ].xIPAddress.ucBytes, pxAddressToLookup->ucBytes, ipSIZE_OF_IPv6_ADDRESS ) == 0 )
             {
                 ( void ) memcpy( pxMACAddress->ucBytes, xNDCache[ x ].xMACAddress.ucBytes, sizeof( MACAddress_t ) );
-                eReturn = eARPCacheHit;
+                eReturn = eResolutionCacheHit;
 
                 if( ppxEndPoint != NULL )
                 {
@@ -457,7 +495,7 @@
             }
         }
 
-        if( eReturn == eARPCacheMiss )
+        if( eReturn == eResolutionCacheMiss )
         {
             FreeRTOS_printf( ( "prvNDCacheLookup %pip Miss\n", ( void * ) pxAddressToLookup->ucBytes ) );
 
@@ -482,7 +520,7 @@
             char pcBuffer[ 40 ];
 
             /* Loop through each entry in the ND cache. */
-            for( x = 0; x < ipconfigARP_CACHE_ENTRIES; x++ )
+            for( x = 0; x < ipconfigND_CACHE_ENTRIES; x++ )
             {
                 if( xNDCache[ x ].ucValid != ( uint8_t ) 0U )
                 {
@@ -503,7 +541,7 @@
                 }
             }
 
-            FreeRTOS_printf( ( "Arp has %ld entries\n", xCount ) );
+            FreeRTOS_printf( ( "ND has %ld entries\n", xCount ) );
         }
 
     #endif /* ( ipconfigHAS_PRINTF != 0 ) || ( ipconfigHAS_DEBUG_PRINTF != 0 ) */
@@ -533,16 +571,16 @@
         pxNetworkBuffer->xDataLength = ( size_t ) ( ipSIZE_OF_ETH_HEADER + ipSIZE_OF_IPv6_HEADER + uxICMPSize );
 
         #if ( ipconfigDRIVER_INCLUDED_TX_IP_CHECKSUM == 0 )
-            {
-                /* calculate the ICMPv6 checksum for outgoing package */
-                ( void ) usGenerateProtocolChecksum( pxNetworkBuffer->pucEthernetBuffer, pxNetworkBuffer->xDataLength, pdTRUE );
-            }
+        {
+            /* calculate the ICMPv6 checksum for outgoing package */
+            ( void ) usGenerateProtocolChecksum( pxNetworkBuffer->pucEthernetBuffer, pxNetworkBuffer->xDataLength, pdTRUE );
+        }
         #else
-            {
-                /* Many EMAC peripherals will only calculate the ICMP checksum
-                 * correctly if the field is nulled beforehand. */
-                pxICMPPacket->xICMPHeaderIPv6.usChecksum = 0;
-            }
+        {
+            /* Many EMAC peripherals will only calculate the ICMP checksum
+             * correctly if the field is nulled beforehand. */
+            pxICMPPacket->xICMPHeaderIPv6.usChecksum = 0;
+        }
         #endif
 
         /* This function will fill in the Ethernet addresses and send the packet */
@@ -574,6 +612,7 @@
         MACAddress_t xMultiCastMacAddress;
         NetworkBufferDescriptor_t * pxDescriptor = pxNetworkBuffer;
         NetworkBufferDescriptor_t * pxNewDescriptor = NULL;
+        BaseType_t xReleased = pdFALSE;
 
         if( ( pxEndPoint != NULL ) && ( pxEndPoint->bits.bIPv6 != pdFALSE_UNSIGNED ) )
         {
@@ -643,21 +682,27 @@
 
                 /* Checksums. */
                 #if ( ipconfigDRIVER_INCLUDED_TX_IP_CHECKSUM == 0 )
-                    {
-                        /* calculate the ICMPv6 checksum for outgoing package */
-                        ( void ) usGenerateProtocolChecksum( pxDescriptor->pucEthernetBuffer, pxDescriptor->xDataLength, pdTRUE );
-                    }
+                {
+                    /* calculate the ICMPv6 checksum for outgoing package */
+                    ( void ) usGenerateProtocolChecksum( pxDescriptor->pucEthernetBuffer, pxDescriptor->xDataLength, pdTRUE );
+                }
                 #else
-                    {
-                        /* Many EMAC peripherals will only calculate the ICMP checksum
-                         * correctly if the field is nulled beforehand. */
-                        pxICMPHeader_IPv6->usChecksum = 0U;
-                    }
+                {
+                    /* Many EMAC peripherals will only calculate the ICMP checksum
+                     * correctly if the field is nulled beforehand. */
+                    pxICMPHeader_IPv6->usChecksum = 0U;
+                }
                 #endif
 
                 /* This function will fill in the eth addresses and send the packet */
                 vReturnEthernetFrame( pxDescriptor, pdTRUE );
+                xReleased = pdTRUE;
             }
+        }
+
+        if( ( pxDescriptor != NULL ) && ( xReleased == pdFALSE ) )
+        {
+            vReleaseNetworkBufferAndDescriptor( pxDescriptor );
         }
     }
 /*-----------------------------------------------------------*/
@@ -783,6 +828,7 @@
                     ( void ) memcpy( pxNetworkBuffer->xIPAddress.xIP_IPv6.ucBytes, pxIPAddress->ucBytes, ipSIZE_OF_IPv6_ADDRESS );
                     /* Let vProcessGeneratedUDPPacket() know that this is an ICMP packet. */
                     pxNetworkBuffer->usPort = ipPACKET_CONTAINS_ICMP_DATA;
+                    pxNetworkBuffer->ucMaximumHops = ipconfigICMP_TIME_TO_LIVE;
                     /* 'uxPacketLength' is initialised due to the flow of the program. */
                     pxNetworkBuffer->xDataLength = uxPacketLength;
 
@@ -842,8 +888,8 @@
                     pcReturn = "PACKET_TOO_BIG";
                     break;
 
-                case ipICMP_TIME_EXEEDED_IPv6:
-                    pcReturn = "TIME_EXEEDED";
+                case ipICMP_TIME_EXCEEDED_IPv6:
+                    pcReturn = "TIME_EXCEEDED";
                     break;
 
                 case ipICMP_PARAMETER_PROBLEM_IPv6:
@@ -885,7 +931,7 @@
 /*-----------------------------------------------------------*/
 
 /**
- * @brief When a neighbour advertisement has been received, check if 'pxARPWaitingNetworkBuffer'
+ * @brief When a neighbour advertisement has been received, check if 'pxNDWaitingNetworkBuffer'
  *        was waiting for this new address look-up. If so, feed it to the IP-task as a new
  *        incoming packet.
  */
@@ -894,31 +940,32 @@
         /* MISRA Ref 11.3.1 [Misaligned access] */
         /* More details at: https://github.com/FreeRTOS/FreeRTOS-Plus-TCP/blob/main/MISRA.md#rule-113 */
         /* coverity[misra_c_2012_rule_11_3_violation] */
-        const IPPacket_IPv6_t * pxIPPacket = ( ( IPPacket_IPv6_t * ) pxARPWaitingNetworkBuffer->pucEthernetBuffer );
+        const IPPacket_IPv6_t * pxIPPacket = ( ( IPPacket_IPv6_t * ) pxNDWaitingNetworkBuffer->pucEthernetBuffer );
         const IPHeader_IPv6_t * pxIPHeader = &( pxIPPacket->xIPHeader );
 
         if( memcmp( pxIPv6Address->ucBytes, pxIPHeader->xSourceAddress.ucBytes, ipSIZE_OF_IPv6_ADDRESS ) == 0 )
         {
-            FreeRTOS_printf( ( "Waiting done\n" ) );
             IPStackEvent_t xEventMessage;
             const TickType_t xDontBlock = ( TickType_t ) 0;
 
+            FreeRTOS_debug_printf( ( "ND resolution waiting done\n" ) );
+
             xEventMessage.eEventType = eNetworkRxEvent;
-            xEventMessage.pvData = ( void * ) pxARPWaitingNetworkBuffer;
+            xEventMessage.pvData = ( void * ) pxNDWaitingNetworkBuffer;
 
             if( xSendEventStructToIPTask( &xEventMessage, xDontBlock ) != pdPASS )
             {
                 /* Failed to send the message, so release the network buffer. */
-                vReleaseNetworkBufferAndDescriptor( BUFFER_FROM_WHERE_CALL( 140 ) pxARPWaitingNetworkBuffer );
+                vReleaseNetworkBufferAndDescriptor( BUFFER_FROM_WHERE_CALL( 140 ) pxNDWaitingNetworkBuffer );
             }
 
             /* Clear the buffer. */
-            pxARPWaitingNetworkBuffer = NULL;
+            pxNDWaitingNetworkBuffer = NULL;
 
-            /* Found an ARP resolution, disable ARP resolution timer. */
-            vIPSetARPResolutionTimerEnableState( pdFALSE );
+            /* Found an ND resolution, disable ND resolution timer. */
+            vIPSetNDResolutionTimerEnableState( pdFALSE );
 
-            iptrace_DELAYED_ARP_REQUEST_REPLIED();
+            iptrace_DELAYED_ND_REQUEST_REPLIED();
         }
     }
 /*-----------------------------------------------------------*/
@@ -938,31 +985,32 @@
         ICMPPacket_IPv6_t * pxICMPPacket = ( ( ICMPPacket_IPv6_t * ) pxNetworkBuffer->pucEthernetBuffer );
         /* coverity[misra_c_2012_rule_11_3_violation] */
         ICMPHeader_IPv6_t * pxICMPHeader_IPv6 = ( ( ICMPHeader_IPv6_t * ) &( pxICMPPacket->xICMPHeaderIPv6 ) );
+        /* Note: pxNetworkBuffer->pxEndPoint is already verified to be non-NULL in prvProcessEthernetPacket() */
         NetworkEndPoint_t * pxEndPoint = pxNetworkBuffer->pxEndPoint;
         size_t uxNeededSize;
 
         #if ( ipconfigHAS_PRINTF == 1 )
+        {
+            if( pxICMPHeader_IPv6->ucTypeOfMessage != ipICMP_PING_REQUEST_IPv6 )
             {
-                if( pxICMPHeader_IPv6->ucTypeOfMessage != ipICMP_PING_REQUEST_IPv6 )
-                {
-                    char pcAddress[ 40 ];
-                    FreeRTOS_printf( ( "ICMPv6_recv %d (%s) from %pip to %pip end-point = %s\n",
-                                       pxICMPHeader_IPv6->ucTypeOfMessage,
-                                       pcMessageType( ( BaseType_t ) pxICMPHeader_IPv6->ucTypeOfMessage ),
-                                       ( void * ) pxICMPPacket->xIPHeader.xSourceAddress.ucBytes,
-                                       ( void * ) pxICMPPacket->xIPHeader.xDestinationAddress.ucBytes,
-                                       pcEndpointName( pxEndPoint, pcAddress, sizeof( pcAddress ) ) ) );
-                }
+                char pcAddress[ 40 ];
+                FreeRTOS_printf( ( "ICMPv6_recv %d (%s) from %pip to %pip end-point = %s\n",
+                                   pxICMPHeader_IPv6->ucTypeOfMessage,
+                                   pcMessageType( ( BaseType_t ) pxICMPHeader_IPv6->ucTypeOfMessage ),
+                                   ( void * ) pxICMPPacket->xIPHeader.xSourceAddress.ucBytes,
+                                   ( void * ) pxICMPPacket->xIPHeader.xDestinationAddress.ucBytes,
+                                   pcEndpointName( pxEndPoint, pcAddress, sizeof( pcAddress ) ) ) );
             }
+        }
         #endif /* ( ipconfigHAS_PRINTF == 1 ) */
 
-        if( ( pxEndPoint != NULL ) && ( pxEndPoint->bits.bIPv6 != pdFALSE_UNSIGNED ) )
+        if( pxEndPoint->bits.bIPv6 != pdFALSE_UNSIGNED )
         {
             switch( pxICMPHeader_IPv6->ucTypeOfMessage )
             {
                 case ipICMP_DEST_UNREACHABLE_IPv6:
                 case ipICMP_PACKET_TOO_BIG_IPv6:
-                case ipICMP_TIME_EXEEDED_IPv6:
+                case ipICMP_TIME_EXCEEDED_IPv6:
                 case ipICMP_PARAMETER_PROBLEM_IPv6:
                     /* These message types are not implemented. They are logged here above. */
                     break;
@@ -984,6 +1032,10 @@
                        }
 
                        pxICMPHeader_IPv6->ucTypeOfMessage = ipICMP_PING_REPLY_IPv6;
+
+                       /* MISRA Ref 4.14.1 [The validity of values received from external sources]. */
+                       /* More details at: https://github.com/FreeRTOS/FreeRTOS-Plus-TCP/blob/main/MISRA.md#directive-414. */
+                       /* coverity[misra_c_2012_directive_4_14_violation] */
                        prvReturnICMP_IPv6( pxNetworkBuffer, uxICMPSize );
                    }
                    break;
@@ -1028,20 +1080,18 @@
                    {
                        size_t uxICMPSize;
                        BaseType_t xCompare;
-                       NetworkEndPoint_t * pxEndPointFound = FreeRTOS_FindEndPointOnIP_IPv6( &( pxICMPHeader_IPv6->xIPv6Address ) );
-                       char pcName[ 40 ];
-                       ( void ) memset( &( pcName ), 0, sizeof( pcName ) );
-                       FreeRTOS_printf( ( "Lookup %pip : endpoint %s\n",
-                                          ( void * ) pxICMPHeader_IPv6->xIPv6Address.ucBytes,
-                                          pcEndpointName( pxEndPointFound, pcName, sizeof( pcName ) ) ) );
+                       const NetworkEndPoint_t * pxTargetedEndPoint = pxEndPoint;
+                       const NetworkEndPoint_t * pxEndPointInSameSubnet = FreeRTOS_InterfaceEPInSameSubnet_IPv6( pxNetworkBuffer->pxInterface, &( pxICMPHeader_IPv6->xIPv6Address ) );
 
-                       if( pxEndPointFound != NULL )
+                       if( pxEndPointInSameSubnet != NULL )
                        {
-                           pxEndPoint = pxEndPointFound;
+                           pxTargetedEndPoint = pxEndPointInSameSubnet;
                        }
-
-                       pxNetworkBuffer->pxEndPoint = pxEndPoint;
-                       pxNetworkBuffer->pxInterface = pxEndPoint->pxNetworkInterface;
+                       else
+                       {
+                           FreeRTOS_debug_printf( ( "prvProcessICMPMessage_IPv6: No match for %pip\n",
+                                                    pxICMPHeader_IPv6->xIPv6Address.ucBytes ) );
+                       }
 
                        uxICMPSize = sizeof( ICMPHeader_IPv6_t );
                        uxNeededSize = ( size_t ) ( ipSIZE_OF_ETH_HEADER + ipSIZE_OF_IPv6_HEADER + uxICMPSize );
@@ -1052,11 +1102,11 @@
                            break;
                        }
 
-                       xCompare = memcmp( pxICMPHeader_IPv6->xIPv6Address.ucBytes, pxEndPoint->ipv6_settings.xIPAddress.ucBytes, ipSIZE_OF_IPv6_ADDRESS );
+                       xCompare = memcmp( pxICMPHeader_IPv6->xIPv6Address.ucBytes, pxTargetedEndPoint->ipv6_settings.xIPAddress.ucBytes, ipSIZE_OF_IPv6_ADDRESS );
 
                        FreeRTOS_printf( ( "ND NS for %pip endpoint %pip %s\n",
                                           ( void * ) pxICMPHeader_IPv6->xIPv6Address.ucBytes,
-                                          ( void * ) pxEndPoint->ipv6_settings.xIPAddress.ucBytes,
+                                          ( void * ) pxNetworkBuffer->pxEndPoint->ipv6_settings.xIPAddress.ucBytes,
                                           ( xCompare == 0 ) ? "Reply" : "Ignore" ) );
 
                        if( xCompare == 0 )
@@ -1070,9 +1120,9 @@
                            pxICMPHeader_IPv6->ucOptionType = ndICMP_TARGET_LINK_LAYER_ADDRESS;
                            /* Length of option in units of 8 bytes. */
                            pxICMPHeader_IPv6->ucOptionLength = 1U;
-                           ( void ) memcpy( pxICMPHeader_IPv6->ucOptionBytes, pxEndPoint->xMACAddress.ucBytes, sizeof( MACAddress_t ) );
+                           ( void ) memcpy( pxICMPHeader_IPv6->ucOptionBytes, pxTargetedEndPoint->xMACAddress.ucBytes, sizeof( MACAddress_t ) );
                            pxICMPPacket->xIPHeader.ucHopLimit = 255U;
-                           ( void ) memcpy( pxICMPHeader_IPv6->xIPv6Address.ucBytes, pxEndPoint->ipv6_settings.xIPAddress.ucBytes, sizeof( pxICMPHeader_IPv6->xIPv6Address.ucBytes ) );
+                           ( void ) memcpy( pxICMPHeader_IPv6->xIPv6Address.ucBytes, pxTargetedEndPoint->ipv6_settings.xIPAddress.ucBytes, sizeof( pxICMPHeader_IPv6->xIPv6Address.ucBytes ) );
                            prvReturnICMP_IPv6( pxNetworkBuffer, uxICMPSize );
                        }
                    }
@@ -1095,8 +1145,8 @@
                         vReceiveNA( pxNetworkBuffer );
                     #endif
 
-                    if( ( pxARPWaitingNetworkBuffer != NULL ) &&
-                        ( uxIPHeaderSizePacket( pxARPWaitingNetworkBuffer ) == ipSIZE_OF_IPv6_HEADER ) )
+                    if( ( pxNDWaitingNetworkBuffer != NULL ) &&
+                        ( uxIPHeaderSizePacket( pxNDWaitingNetworkBuffer ) == ipSIZE_OF_IPv6_HEADER ) )
                     {
                         prvCheckWaitingBuffer( &( pxICMPHeader_IPv6->xIPv6Address ) );
                     }
@@ -1112,11 +1162,31 @@
                             break;
                     #endif /* ( ipconfigUSE_RA != 0 ) */
 
+                    #if ( ipconfigIS_ENABLED( ipconfigSUPPORT_IP_MULTICAST ) )
+                        case ipICMP_MULTICAST_LISTENER_QUERY:
+                        case ipICMP_MULTICAST_LISTENER_REPORT_V1:
+                        case ipICMP_MULTICAST_LISTENER_REPORT_V2:
+
+                            /* Note: prvProcessIPPacket() stripped the extension headers, so this packet struct is defined without them and they cannot be checked.
+                             * per RFC, MLD packets must use the RouterAlert option in a Hop By Hop extension header. */
+                            /* All MLD packets are at least as large as a v1 query packet. */
+                            uxNeededSize = ( size_t ) ( ipSIZE_OF_ETH_HEADER + ipSIZE_OF_IPv6_HEADER + ipSIZE_OF_ICMPv6_HEADER );
+
+                            if( uxNeededSize > pxNetworkBuffer->xDataLength )
+                            {
+                                FreeRTOS_printf( ( "Too small\n" ) );
+                                break;
+                            }
+
+                            vProcessMLDPacket( pxNetworkBuffer );
+                            break;
+                    #endif /* ipconfigIS_ENABLED( ipconfigSUPPORT_IP_MULTICAST ) */
+
                 default:
                     /* All possible values are included here above. */
                     break;
             } /* switch( pxICMPHeader_IPv6->ucTypeOfMessage ) */
-        }     /* if( pxEndPoint != NULL ) */
+        }     /* if( pxEndPoint->bits.bIPv6 != pdFALSE_UNSIGNED ) */
 
         return eReleaseBuffer;
     }
@@ -1193,16 +1263,16 @@
             pxNetworkBuffer->xDataLength = ( size_t ) ( ipSIZE_OF_ETH_HEADER + ipSIZE_OF_IPv6_HEADER + uxICMPSize );
 
             #if ( ipconfigDRIVER_INCLUDED_TX_IP_CHECKSUM == 0 )
-                {
-                    /* calculate the ICMPv6 checksum for outgoing package */
-                    ( void ) usGenerateProtocolChecksum( pxNetworkBuffer->pucEthernetBuffer, pxNetworkBuffer->xDataLength, pdTRUE );
-                }
+            {
+                /* calculate the ICMPv6 checksum for outgoing package */
+                ( void ) usGenerateProtocolChecksum( pxNetworkBuffer->pucEthernetBuffer, pxNetworkBuffer->xDataLength, pdTRUE );
+            }
             #else
-                {
-                    /* Many EMAC peripherals will only calculate the ICMP checksum
-                     * correctly if the field is nulled beforehand. */
-                    pxICMPHeader_IPv6->usChecksum = 0;
-                }
+            {
+                /* Many EMAC peripherals will only calculate the ICMP checksum
+                 * correctly if the field is nulled beforehand. */
+                pxICMPHeader_IPv6->usChecksum = 0;
+            }
             #endif
 
             /* Set the parameter 'bReleaseAfterSend'. */
@@ -1254,7 +1324,9 @@
 
         if( xResult == pdPASS )
         {
-            configASSERT( ( uxPrefixLength > 0U ) && ( uxPrefixLength < ( 8U * ipSIZE_OF_IPv6_ADDRESS ) ) );
+            size_t uxIndex;
+            /* A loopback IP-address has a prefix of 128. */
+            configASSERT( ( uxPrefixLength > 0U ) && ( uxPrefixLength <= ( 8U * ipSIZE_OF_IPv6_ADDRESS ) ) );
 
             if( uxPrefixLength >= 8U )
             {
@@ -1262,7 +1334,7 @@
             }
 
             pucSource = ( uint8_t * ) pulRandom;
-            size_t uxIndex = uxPrefixLength / 8U;
+            uxIndex = uxPrefixLength / 8U;
 
             if( ( uxPrefixLength % 8U ) != 0U )
             {
@@ -1284,6 +1356,89 @@
         }
 
         return xResult;
+    }
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Check whether a packet needs ND resolution if it is on local subnet. If required send an ND Solicitation.
+ *
+ * @param[in] pxNetworkBuffer The network buffer with the packet to be checked.
+ *
+ * @return pdTRUE if the packet needs ND resolution, pdFALSE otherwise.
+ */
+    BaseType_t xCheckRequiresNDResolution( const NetworkBufferDescriptor_t * pxNetworkBuffer )
+    {
+        BaseType_t xNeedsNDResolution = pdFALSE;
+
+        /* MISRA Ref 11.3.1 [Misaligned access] */
+        /* More details at: https://github.com/FreeRTOS/FreeRTOS-Plus-TCP/blob/main/MISRA.md#rule-113 */
+        /* coverity[misra_c_2012_rule_11_3_violation] */
+        IPPacket_IPv6_t * pxIPPacket = ( ( IPPacket_IPv6_t * ) pxNetworkBuffer->pucEthernetBuffer );
+        IPHeader_IPv6_t * pxIPHeader = &( pxIPPacket->xIPHeader );
+        IPv6_Address_t * pxIPAddress = &( pxIPHeader->xSourceAddress );
+        uint8_t ucNextHeader = pxIPHeader->ucNextHeader;
+
+        configASSERT( pxIPPacket->xEthernetHeader.usFrameType == ipIPv6_FRAME_TYPE );
+
+        if( ( ucNextHeader == ipPROTOCOL_TCP ) ||
+            ( ucNextHeader == ipPROTOCOL_UDP ) )
+        {
+            IPv6_Type_t eType = xIPv6_GetIPType( ( const IPv6_Address_t * ) pxIPAddress );
+            FreeRTOS_debug_printf( ( "xCheckRequiresNDResolution: %pip type %s\n",
+                                     ( void * ) pxIPAddress->ucBytes,
+                                     ( eType == eIPv6_Global ) ? "Global" :
+                                     ( eType == eIPv6_LinkLocal ) ? "LinkLocal" :
+                                     ( eType == eIPv6_Loopback ) ? "Loopback" :
+                                     "other" ) );
+
+            if( eType == eIPv6_LinkLocal )
+            {
+                MACAddress_t xMACAddress;
+                NetworkEndPoint_t * pxEndPoint;
+                eResolutionLookupResult_t eResult;
+                char pcName[ 80 ];
+
+                ( void ) memset( &( pcName ), 0, sizeof( pcName ) );
+                eResult = eNDGetCacheEntry( pxIPAddress, &xMACAddress, &pxEndPoint );
+                FreeRTOS_printf( ( "xCheckRequiresNDResolution: eResult %s with EP %s\n", ( eResult == eResolutionCacheMiss ) ? "Miss" : ( eResult == eResolutionCacheHit ) ? "Hit" : "Error", pcEndpointName( pxEndPoint, pcName, sizeof pcName ) ) );
+
+                if( eResult == eResolutionCacheMiss )
+                {
+                    NetworkBufferDescriptor_t * pxTempBuffer;
+                    size_t uxNeededSize;
+
+                    uxNeededSize = sizeof( ICMPPacket_IPv6_t );
+                    pxTempBuffer = pxGetNetworkBufferWithDescriptor( BUFFER_FROM_WHERE_CALL( 199 ) uxNeededSize, 0U );
+
+                    if( pxTempBuffer != NULL )
+                    {
+                        pxTempBuffer->pxEndPoint = pxNetworkBuffer->pxEndPoint;
+                        pxTempBuffer->pxInterface = pxNetworkBuffer->pxInterface;
+                        vNDSendNeighbourSolicitation( pxTempBuffer, pxIPAddress );
+                    }
+
+                    xNeedsNDResolution = pdTRUE;
+                }
+            }
+        }
+
+        return xNeedsNDResolution;
+    }
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Send an unsolicited ND packet to allow this node to announce the IP-MAC
+ *        mapping to the entire network.
+ */
+    void vNDSendUnsolicited( void )
+    {
+        /* Setting xLastUnsolicitedNDTime to 0 will force an unsolicited ND the next
+         * time vNDAgeCache() is called. */
+        xLastUnsolicitedNDTime = ( TickType_t ) 0;
+
+        /* Let the IP-task call vARPAgeCache(). */
+        ( void ) xSendEventToIPTask( eNDTimerEvent );
     }
 /*-----------------------------------------------------------*/
 #endif /* ipconfigUSE_IPv6 */

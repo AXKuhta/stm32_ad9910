@@ -56,11 +56,8 @@
 
     #include "FreeRTOS_Routing.h"
 
-/* The following define is temporary and serves to make the /single source
- * code more similar to the /multi version. */
-
-    #define EP_DHCPData         pxEndPoint->xDHCPData                 /**< Temporary define to make /single source similar to /multi version. */
-    #define EP_IPv4_SETTINGS    pxEndPoint->ipv4_settings             /**< Temporary define to make /single source similar to /multi version. */
+    #define EP_DHCPData         pxEndPoint->xDHCPData               /**< Temporary define to make /single source similar to /multi version. */
+    #define EP_IPv4_SETTINGS    pxEndPoint->ipv4_settings           /**< Temporary define to make /single source similar to /multi version. */
 
 
 
@@ -84,7 +81,7 @@
 /**
  * @brief The number of end-points that are making use of the UDP-socket.
  */
-    static BaseType_t xDHCPSocketUserCount = 0;
+    _static BaseType_t xDHCPSocketUserCount = 0;
 
 /*
  * Generate a DHCP discover message and send it on the DHCP socket.
@@ -121,12 +118,12 @@
 /*
  * Create the DHCP socket, if it has not been created already.
  */
-    _static void prvCreateDHCPSocket( const NetworkEndPoint_t * pxEndPoint );
+    _static void prvCreateDHCPSocket( NetworkEndPoint_t * pxEndPoint );
 
 /*
  * Close the DHCP socket, only when not in use anymore (i.e. xDHCPSocketUserCount = 0).
  */
-    static void prvCloseDHCPSocket( const NetworkEndPoint_t * pxEndPoint );
+    static void prvCloseDHCPSocket( NetworkEndPoint_t * pxEndPoint );
 
     static void vDHCPProcessEndPoint( BaseType_t xReset,
                                       BaseType_t xDoCheck,
@@ -175,17 +172,6 @@
     }
     /*-----------------------------------------------------------*/
 
-/**
- * @brief Returns the current state of a DHCP process.
- *
- * @param[in] pxEndPoint the end-point which is going through the DHCP process.
- */
-    eDHCPState_t eGetDHCPState( const struct xNetworkEndPoint * pxEndPoint )
-    {
-        /* Note that EP_DHCPData is defined as "pxEndPoint->xDHCPData". */
-        return EP_DHCPData.eDHCPState;
-    }
-/*-----------------------------------------------------------*/
 
 /**
  * @brief Process the DHCP state machine based on current state.
@@ -217,26 +203,33 @@
             FreeRTOS_debug_printf( ( "DHCP wrong state: expect: %d got: %d : ignore\n",
                                      EP_DHCPData.eExpectedState, EP_DHCPData.eDHCPState ) );
         }
-        else if( xDHCPv4Socket != NULL ) /* If there is a socket, check for incoming messages first. */
+        else if( EP_DHCPData.xDHCPSocket != NULL ) /* If there is a socket, check for incoming messages first. */
         {
             /* No need to initialise 'pucUDPPayload', it just looks nicer. */
             uint8_t * pucUDPPayload = NULL;
             const DHCPMessage_IPv4_t * pxDHCPMessage;
             int32_t lBytes;
 
-            while( xDHCPv4Socket != NULL )
+            while( EP_DHCPData.xDHCPSocket != NULL )
             {
                 BaseType_t xRecvFlags = FREERTOS_ZERO_COPY + FREERTOS_MSG_PEEK;
                 NetworkEndPoint_t * pxIterator = NULL;
 
                 /* Peek the next UDP message. */
-                lBytes = FreeRTOS_recvfrom( xDHCPv4Socket, &( pucUDPPayload ), 0, xRecvFlags, NULL, NULL );
+                lBytes = FreeRTOS_recvfrom( EP_DHCPData.xDHCPSocket, &( pucUDPPayload ), 0, xRecvFlags, NULL, NULL );
 
                 if( lBytes < ( ( int32_t ) sizeof( DHCPMessage_IPv4_t ) ) )
                 {
                     if( ( lBytes < 0 ) && ( lBytes != -pdFREERTOS_ERRNO_EAGAIN ) )
                     {
                         FreeRTOS_printf( ( "vDHCPProcess: FreeRTOS_recvfrom returns %d\n", ( int ) lBytes ) );
+                    }
+                    else if( lBytes >= 0 )
+                    {
+                        vReleaseSinglePacketFromUDPSocket( EP_DHCPData.xDHCPSocket );
+                    }
+                    else
+                    {
                     }
 
                     break;
@@ -271,7 +264,7 @@
                     pxIterator = NULL;
                 }
 
-                if( pxIterator != NULL )
+                if( ( pxIterator != NULL ) && ( pxIterator->xDHCPData.eDHCPState == pxIterator->xDHCPData.eExpectedState ) )
                 {
                     /* The second parameter pdTRUE tells to check for a UDP message. */
                     vDHCPProcessEndPoint( pdFALSE, pdTRUE, pxIterator );
@@ -283,15 +276,24 @@
                 }
                 else
                 {
-                    /* Target not found, fetch the message and delete it. */
+                    /* Target not found or there is a state mismatch, fetch the message and delete it. */
                     /* PAss the address of a pointer pucUDPPayload, because zero-copy is used. */
-                    lBytes = FreeRTOS_recvfrom( xDHCPv4Socket, &( pucUDPPayload ), 0, FREERTOS_ZERO_COPY, NULL, NULL );
+                    lBytes = FreeRTOS_recvfrom( EP_DHCPData.xDHCPSocket, &( pucUDPPayload ), 0, FREERTOS_ZERO_COPY, NULL, NULL );
 
                     if( ( lBytes > 0 ) && ( pucUDPPayload != NULL ) )
                     {
                         /* Remove it now, destination not found. */
                         FreeRTOS_ReleaseUDPPayloadBuffer( pucUDPPayload );
-                        FreeRTOS_printf( ( "vDHCPProcess: Removed a %d-byte message: target not found\n", ( int ) lBytes ) );
+
+                        if( pxIterator == NULL )
+                        {
+                            FreeRTOS_printf( ( "vDHCPProcess: Removed a %d-byte message: target not found\n", ( int ) lBytes ) );
+                        }
+                        else
+                        {
+                            FreeRTOS_printf( ( "vDHCPProcess: Wrong state: expected: %d got: %d : ignore\n",
+                                               pxIterator->xDHCPData.eExpectedState, pxIterator->xDHCPData.eDHCPState ) );
+                        }
                     }
                 }
             }
@@ -306,6 +308,20 @@
             /* Process the end-point, but do not expect incoming packets. */
             vDHCPProcessEndPoint( xReset, pdFALSE, pxEndPoint );
         }
+    }
+
+/**
+ * @brief Stop the DHCP process. Close the DHCP socket when it's no longer used by any end-point.
+ *
+ * @param[in] pxEndPoint The end-point for which we want to stop the DHCP process.
+ */
+    void vDHCPStop( struct xNetworkEndPoint * pxEndPoint )
+    {
+        /* Disable the DHCP timer. */
+        vIPSetDHCP_RATimerEnableState( pxEndPoint, pdFALSE );
+
+        /* Close socket to ensure packets don't queue on it. */
+        prvCloseDHCPSocket( pxEndPoint );
     }
 
 /**
@@ -402,7 +418,7 @@
 
                     if( prvSendDHCPDiscover( pxEndPoint ) == pdPASS )
                     {
-                        FreeRTOS_debug_printf( ( "vDHCPProcess: timeout %lu ticks\n", EP_DHCPData.xDHCPTxPeriod ) );
+                        FreeRTOS_debug_printf( ( "vDHCPProcess: timeout %lu ticks\n", ( unsigned long ) EP_DHCPData.xDHCPTxPeriod ) );
                     }
                     else
                     {
@@ -419,24 +435,24 @@
             }
             else
             {
-                FreeRTOS_debug_printf( ( "vDHCPProcess: giving up %lu > %lu ticks\n", EP_DHCPData.xDHCPTxPeriod, ipconfigMAXIMUM_DISCOVER_TX_PERIOD ) );
+                FreeRTOS_debug_printf( ( "vDHCPProcess: giving up %lu > %lu ticks\n", ( unsigned long ) EP_DHCPData.xDHCPTxPeriod, ( unsigned long ) ipconfigMAXIMUM_DISCOVER_TX_PERIOD ) );
 
                 #if ( ipconfigDHCP_FALL_BACK_AUTO_IP != 0 )
-                    {
-                        /* Only use a fake Ack if the default IP address == 0x00
-                         * and the link local addressing is used.  Start searching
-                         * a free LinkLayer IP-address.  Next state will be
-                         * 'eGetLinkLayerAddress'. */
-                        prvPrepareLinkLayerIPLookUp( pxEndPoint );
+                {
+                    /* Only use a fake Ack if the default IP address == 0x00
+                     * and the link local addressing is used.  Start searching
+                     * a free LinkLayer IP-address.  Next state will be
+                     * 'eGetLinkLayerAddress'. */
+                    prvPrepareLinkLayerIPLookUp( pxEndPoint );
 
-                        /* Setting an IP address manually so set to not using
-                         * leased address mode. */
-                        EP_DHCPData.eDHCPState = eGetLinkLayerAddress;
-                    }
+                    /* Setting an IP address manually so set to not using
+                     * leased address mode. */
+                    EP_DHCPData.eDHCPState = eGetLinkLayerAddress;
+                }
                 #else
-                    {
-                        xGivingUp = pdTRUE;
-                    }
+                {
+                    xGivingUp = pdTRUE;
+                }
                 #endif /* ipconfigDHCP_FALL_BACK_AUTO_IP */
             }
         }
@@ -489,6 +505,11 @@
                 {
                     /* Give up, start again. */
                     EP_DHCPData.eDHCPState = eInitialWait;
+
+                    /* Reset expected state so that DHCP packets from
+                     * different DHCP servers if available already in the DHCP socket can
+                     * be processed */
+                    EP_DHCPData.eExpectedState = eInitialWait;
                 }
             }
         }
@@ -505,11 +526,7 @@
             EP_IPv4_SETTINGS.ulBroadcastAddress = EP_DHCPData.ulOfferedIPAddress | ~( EP_IPv4_SETTINGS.ulNetMask );
             EP_DHCPData.eDHCPState = eLeasedAddress;
 
-            /* _HT_ This macro must be removed later.
-             * It is enough to set 'EP_IPv4_SETTINGS.ulIPAddress'. */
-            *ipLOCAL_IP_ADDRESS_POINTER = EP_IPv4_SETTINGS.ulIPAddress;
-
-            iptraceDHCP_SUCCEDEED( EP_DHCPData.ulOfferedIPAddress );
+            iptraceDHCP_SUCCEEDED( EP_DHCPData.ulOfferedIPAddress );
 
             /* DHCP failed, the default configured IP-address will be used
              * Now call vIPNetworkUpCalls() to send the network-up event and
@@ -567,7 +584,7 @@
         #endif /* ipconfigUSE_DHCP_HOOK */
         {
             /* See if prvInitialiseDHCP() has creates a socket. */
-            if( xDHCPv4Socket == NULL )
+            if( EP_DHCPData.xDHCPSocket == NULL )
             {
                 xGivingUp = pdTRUE;
             }
@@ -621,7 +638,7 @@
             /* Resend the request at the appropriate time to renew the lease. */
             prvCreateDHCPSocket( pxEndPoint );
 
-            if( xDHCPv4Socket != NULL )
+            if( EP_DHCPData.xDHCPSocket != NULL )
             {
                 uint32_t ulID = 0U;
 
@@ -751,7 +768,7 @@
                                 if( xARPHadIPClash == pdFALSE )
                                 {
                                     /* ARP OK. proceed. */
-                                    iptraceDHCP_SUCCEDEED( EP_DHCPData.ulOfferedIPAddress );
+                                    iptraceDHCP_SUCCEEDED( EP_DHCPData.ulOfferedIPAddress );
 
                                     /* Auto-IP succeeded, the default configured IP-address will
                                      * be used.  Now call vIPNetworkUpCalls() to send the
@@ -817,7 +834,6 @@
                 /* DHCP failed, the default configured IP-address will be used. Now
                  * call vIPNetworkUpCalls() to send the network-up event and start the ARP
                  * timer. */
-
                 vIPNetworkUpCalls( pxEndPoint );
 
                 /* Close socket to ensure packets don't queue on it. */
@@ -832,11 +848,13 @@
  *        using it.
  * @param[in] pxEndPoint The end-point that stops using the socket.
  */
-    static void prvCloseDHCPSocket( const NetworkEndPoint_t * pxEndPoint )
+    static void prvCloseDHCPSocket( NetworkEndPoint_t * pxEndPoint )
     {
-        ( void ) pxEndPoint;
-
-        if( ( xDHCPv4Socket != NULL ) && ( xDHCPSocketUserCount > 0 ) )
+        if( ( EP_DHCPData.xDHCPSocket == NULL ) || ( EP_DHCPData.xDHCPSocket != xDHCPv4Socket ) )
+        {
+            /* the socket can not be closed. */
+        }
+        else if( xDHCPSocketUserCount > 0 )
         {
             xDHCPSocketUserCount--;
 
@@ -847,6 +865,8 @@
                 ( void ) vSocketClose( xDHCPv4Socket );
                 xDHCPv4Socket = NULL;
             }
+
+            EP_DHCPData.xDHCPSocket = NULL;
         }
         else
         {
@@ -865,19 +885,23 @@
  * @brief Create a DHCP socket with the defined timeouts. The same socket
  *        will be shared among all end-points that need DHCP.
  */
-    _static void prvCreateDHCPSocket( const NetworkEndPoint_t * pxEndPoint )
+    _static void prvCreateDHCPSocket( NetworkEndPoint_t * pxEndPoint )
     {
         struct freertos_sockaddr xAddress;
         BaseType_t xReturn;
         TickType_t xTimeoutTime = ( TickType_t ) 0;
 
-        if( xDHCPv4Socket == NULL ) /* Create the socket, if it has not already been created. */
+        if( ( xDHCPv4Socket != NULL ) && ( EP_DHCPData.xDHCPSocket == xDHCPv4Socket ) )
+        {
+            /* the socket is still valid. */
+        }
+        else if( xDHCPv4Socket == NULL ) /* Create the socket, if it has not already been created. */
         {
             xDHCPv4Socket = FreeRTOS_socket( FREERTOS_AF_INET, FREERTOS_SOCK_DGRAM, FREERTOS_IPPROTO_UDP );
             configASSERT( xSocketValid( xDHCPv4Socket ) == pdTRUE );
 
             /* MISRA Ref 11.4.1 [Socket error and integer to pointer conversion] */
-/* More details at: https://github.com/FreeRTOS/FreeRTOS-Plus-TCP/blob/main/MISRA.md#rule-114 */
+            /* More details at: https://github.com/FreeRTOS/FreeRTOS-Plus-TCP/blob/main/MISRA.md#rule-114 */
             /* coverity[misra_c_2012_rule_11_4_violation] */
             if( xSocketValid( xDHCPv4Socket ) == pdTRUE )
             {
@@ -886,10 +910,14 @@
                 ( void ) FreeRTOS_setsockopt( xDHCPv4Socket, 0, FREERTOS_SO_RCVTIMEO, &( xTimeoutTime ), sizeof( TickType_t ) );
                 ( void ) FreeRTOS_setsockopt( xDHCPv4Socket, 0, FREERTOS_SO_SNDTIMEO, &( xTimeoutTime ), sizeof( TickType_t ) );
 
+                ( void ) memset( &xAddress, 0, sizeof( xAddress ) );
+                xAddress.sin_family = FREERTOS_AF_INET4;
+                xAddress.sin_len = ( uint8_t ) sizeof( xAddress );
                 /* Bind to the standard DHCP client port. */
                 xAddress.sin_port = ( uint16_t ) dhcpCLIENT_PORT_IPv4;
                 xReturn = vSocketBind( xDHCPv4Socket, &xAddress, sizeof( xAddress ), pdFALSE );
                 xDHCPSocketUserCount = 1;
+                EP_DHCPData.xDHCPSocket = xDHCPv4Socket;
                 FreeRTOS_printf( ( "DHCP-socket[%02x-%02x]: DHCP Socket Create\n",
                                    pxEndPoint->xMACAddress.ucBytes[ 4 ],
                                    pxEndPoint->xMACAddress.ucBytes[ 5 ] ) );
@@ -904,11 +932,13 @@
             {
                 /* Change to NULL for easier testing. */
                 xDHCPv4Socket = NULL;
+                EP_DHCPData.xDHCPSocket = NULL;
             }
         }
         else
         {
             xDHCPSocketUserCount++;
+            EP_DHCPData.xDHCPSocket = xDHCPv4Socket;
         }
 
         FreeRTOS_printf( ( "prvCreateDHCPSocket[%02x-%02x]: %s, user count %d\n",
@@ -928,7 +958,7 @@
     static void prvInitialiseDHCP( NetworkEndPoint_t * pxEndPoint )
     {
         /* Initialise the parameters that will be set by the DHCP process. Per
-         * https://www.ietf.org/rfc/rfc2131.txt, Transaction ID should be a random
+         * https://www.ietf.org/rfc/rfc2131.txt Transaction ID should be a random
          * value chosen by the client. */
 
         /* Check for random number generator API failure. */
@@ -941,7 +971,7 @@
 
             /* Create the DHCP socket if it has not already been created. */
             prvCreateDHCPSocket( pxEndPoint );
-            FreeRTOS_debug_printf( ( "prvInitialiseDHCP: start after %lu ticks\n", dhcpINITIAL_TIMER_PERIOD ) );
+            FreeRTOS_debug_printf( ( "prvInitialiseDHCP: start after %lu ticks\n", ( unsigned long ) dhcpINITIAL_TIMER_PERIOD ) );
             vDHCP_RATimerReload( pxEndPoint, dhcpINITIAL_TIMER_PERIOD );
         }
         else
@@ -983,6 +1013,11 @@
                         {
                             /* Start again. */
                             EP_DHCPData.eDHCPState = eInitialWait;
+
+                            /* Reset expected state so that DHCP packets from
+                             * different DHCP servers if available already in the DHCP socket can
+                             * be processed */
+                            EP_DHCPData.eExpectedState = eInitialWait;
                         }
                     }
 
@@ -1038,7 +1073,7 @@
                         const void * pvCopySource = &( pxSet->pucByte[ uxByteIndex ] );
                         ( void ) memcpy( pvCopyDest, pvCopySource, sizeof( pxSet->ulParameter ) );
 
-                        if( ( pxSet->ulParameter != FREERTOS_INADDR_ANY ) && ( pxSet->ulParameter != ipBROADCAST_IP_ADDRESS ) )
+                        if( ( pxSet->ulParameter != FREERTOS_INADDR_ANY ) && ( pxSet->ulParameter != FREERTOS_INADDR_BROADCAST ) )
                         {
                             EP_IPv4_SETTINGS.ulDNSServerAddresses[ uxTargetIndex ] = pxSet->ulParameter;
                             uxTargetIndex++;
@@ -1251,7 +1286,7 @@
         ( void ) memset( &( xSet ), 0, sizeof( xSet ) );
 
         /* Passing the address of a pointer (pucUDPPayload) because FREERTOS_ZERO_COPY is used. */
-        lBytes = FreeRTOS_recvfrom( xDHCPv4Socket, &pucUDPPayload, 0U, FREERTOS_ZERO_COPY, NULL, NULL );
+        lBytes = FreeRTOS_recvfrom( EP_DHCPData.xDHCPSocket, &pucUDPPayload, 0U, FREERTOS_ZERO_COPY, NULL, NULL );
 
         if( lBytes > 0 )
         {
@@ -1364,19 +1399,13 @@
         uint8_t * pucUDPPayloadBuffer = NULL;
 
         #if ( ipconfigDHCP_REGISTER_HOSTNAME == 1 )
-            const char * pucHostName = pcApplicationHostnameHook();
             size_t uxNameLength = 0;
+            const char * pucHostName = pcApplicationHostnameHook();
 
             if( pucHostName != NULL )
             {
                 uxNameLength = strlen( pucHostName );
             }
-
-            uint8_t * pucPtr;
-
-            /* memcpy() helper variables for MISRA Rule 21.15 compliance*/
-            const void * pvCopySource;
-            void * pvCopyDest;
 
             /* Two extra bytes for option code and length. */
             uxRequiredBufferSize += ( 2U + uxNameLength );
@@ -1388,6 +1417,8 @@
 
         if( pxNetworkBuffer != NULL )
         {
+            uint8_t * pucIPType;
+
             /* Leave space for the UDP header. */
             pucUDPPayloadBuffer = &( pxNetworkBuffer->pucEthernetBuffer[ ipUDP_PAYLOAD_OFFSET_IPv4 ] );
 
@@ -1396,16 +1427,16 @@
             /* coverity[misra_c_2012_rule_11_3_violation] */
             pxDHCPMessage = ( ( DHCPMessage_IPv4_t * ) pucUDPPayloadBuffer );
 
-            {
-                uint8_t * pucIPType;
+            /* Store the IP type at a known location.
+             * Later the type must be known to translate
+             * a payload- to a network buffer.
+             */
 
-                /* Store the IP type at a known location.
-                 * Later the type must be known to translate
-                 * a payload- to a network buffer.
-                 */
-                pucIPType = pucUDPPayloadBuffer - ipUDP_PAYLOAD_IP_TYPE_OFFSET;
-                *pucIPType = ipTYPE_IPv4;
-            }
+            /* MISRA Ref 18.4.1 [Usage of +, -, += and -= operators on expression of pointer type]. */
+            /* More details at: https://github.com/FreeRTOS/FreeRTOS-Plus-TCP/blob/main/MISRA.md#rule-184. */
+            /* coverity[misra_c_2012_rule_18_4_violation] */
+            pucIPType = pucUDPPayloadBuffer - ipUDP_PAYLOAD_IP_TYPE_OFFSET;
+            *pucIPType = ipTYPE_IPv4;
 
             /* Most fields need to be zero. */
             ( void ) memset( pxDHCPMessage, 0x00, sizeof( DHCPMessage_IPv4_t ) );
@@ -1432,31 +1463,32 @@
             ( void ) memcpy( &( pucUDPPayloadBuffer[ dhcpFIRST_OPTION_BYTE_OFFSET ] ), pucOptionsArray, *pxOptionsArraySize );
 
             #if ( ipconfigDHCP_REGISTER_HOSTNAME == 1 )
+            {
+                /* With this option, the hostname can be registered as well which makes
+                 * it easier to lookup a device in a router's list of DHCP clients. */
+
+                /* Point to where the OPTION_END was stored to add data. */
+                uint8_t * pucPtr = &( pucUDPPayloadBuffer[ dhcpFIRST_OPTION_BYTE_OFFSET + ( *pxOptionsArraySize - 1U ) ] );
+                pucPtr[ 0U ] = dhcpIPv4_DNS_HOSTNAME_OPTIONS_CODE;
+                pucPtr[ 1U ] = ( uint8_t ) uxNameLength;
+
+                /*
+                 * Use helper variables for memcpy() to remain
+                 * compliant with MISRA Rule 21.15.  These should be
+                 * optimized away.
+                 */
+                if( pucHostName != NULL )
                 {
-                    /* With this option, the hostname can be registered as well which makes
-                     * it easier to lookup a device in a router's list of DHCP clients. */
+                    /* memcpy() helper variables for MISRA Rule 21.15 compliance*/
+                    const void * pvCopySource = pucHostName;
+                    void * pvCopyDest = &pucPtr[ 2U ];
 
-                    /* Point to where the OPTION_END was stored to add data. */
-                    pucPtr = &( pucUDPPayloadBuffer[ dhcpFIRST_OPTION_BYTE_OFFSET + ( *pxOptionsArraySize - 1U ) ] );
-                    pucPtr[ 0U ] = dhcpIPv4_DNS_HOSTNAME_OPTIONS_CODE;
-                    pucPtr[ 1U ] = ( uint8_t ) uxNameLength;
-
-                    /*
-                     * Use helper variables for memcpy() to remain
-                     * compliant with MISRA Rule 21.15.  These should be
-                     * optimized away.
-                     */
-                    if( pucHostName != NULL )
-                    {
-                        pvCopySource = pucHostName;
-                        pvCopyDest = &pucPtr[ 2U ];
-
-                        ( void ) memcpy( pvCopyDest, pvCopySource, uxNameLength );
-                    }
-
-                    pucPtr[ 2U + uxNameLength ] = ( uint8_t ) dhcpOPTION_END_BYTE;
-                    *pxOptionsArraySize += ( size_t ) ( 2U + uxNameLength );
+                    ( void ) memcpy( pvCopyDest, pvCopySource, uxNameLength );
                 }
+
+                pucPtr[ 2U + uxNameLength ] = ( uint8_t ) dhcpOPTION_END_BYTE;
+                *pxOptionsArraySize += ( size_t ) ( 2U + uxNameLength );
+            }
             #endif /* if ( ipconfigDHCP_REGISTER_HOSTNAME == 1 ) */
 
             /* Map in the client identifier. */
@@ -1464,7 +1496,7 @@
                              pxEndPoint->xMACAddress.ucBytes, sizeof( MACAddress_t ) );
 
             /* Set the addressing. */
-            pxAddress->sin_address.ulIP_IPv4 = ipBROADCAST_IP_ADDRESS;
+            pxAddress->sin_address.ulIP_IPv4 = FREERTOS_INADDR_BROADCAST;
             pxAddress->sin_port = ( uint16_t ) dhcpSERVER_PORT_IPv4;
             pxAddress->sin_family = FREERTOS_AF_INET4;
         }
@@ -1507,10 +1539,7 @@
                                                         &( uxOptionsLength ),
                                                         pxEndPoint );
 
-        /* MISRA Ref 11.4.1 [Socket error and integer to pointer conversion] */
-        /* More details at: https://github.com/FreeRTOS/FreeRTOS-Plus-TCP/blob/main/MISRA.md#rule-114 */
-        /* coverity[misra_c_2012_rule_11_4_violation] */
-        if( ( xSocketValid( xDHCPv4Socket ) == pdTRUE ) && ( pucUDPPayloadBuffer != NULL ) )
+        if( ( xSocketValid( EP_DHCPData.xDHCPSocket ) == pdTRUE ) && ( pucUDPPayloadBuffer != NULL ) )
         {
             /* Copy in the IP address being requested. */
 
@@ -1531,9 +1560,9 @@
             FreeRTOS_debug_printf( ( "vDHCPProcess: reply %xip\n", ( unsigned ) FreeRTOS_ntohl( EP_DHCPData.ulOfferedIPAddress ) ) );
             iptraceSENDING_DHCP_REQUEST();
 
-            xDHCPv4Socket->pxEndPoint = pxEndPoint;
+            EP_DHCPData.xDHCPSocket->pxEndPoint = pxEndPoint;
 
-            if( FreeRTOS_sendto( xDHCPv4Socket, pucUDPPayloadBuffer, sizeof( DHCPMessage_IPv4_t ) + uxOptionsLength, FREERTOS_ZERO_COPY, &xAddress, ( socklen_t ) sizeof( xAddress ) ) == 0 )
+            if( FreeRTOS_sendto( EP_DHCPData.xDHCPSocket, pucUDPPayloadBuffer, sizeof( DHCPMessage_IPv4_t ) + uxOptionsLength, FREERTOS_ZERO_COPY, &xAddress, ( socklen_t ) sizeof( xAddress ) ) == 0 )
             {
                 /* The packet was not successfully queued for sending and must be
                  * returned to the stack. */
@@ -1582,7 +1611,7 @@
         /* MISRA Ref 11.4.1 [Socket error and integer to pointer conversion] */
         /* More details at: https://github.com/FreeRTOS/FreeRTOS-Plus-TCP/blob/main/MISRA.md#rule-114 */
         /* coverity[misra_c_2012_rule_11_4_violation] */
-        if( ( xSocketValid( xDHCPv4Socket ) == pdTRUE ) && ( pucUDPPayloadBuffer != NULL ) )
+        if( ( xSocketValid( EP_DHCPData.xDHCPSocket ) == pdTRUE ) && ( pucUDPPayloadBuffer != NULL ) )
         {
             const void * pvCopySource;
             void * pvCopyDest;
@@ -1611,9 +1640,9 @@
                 uxOptionsLength -= dhcpOPTION_50_SIZE;
             }
 
-            xDHCPv4Socket->pxEndPoint = pxEndPoint;
+            EP_DHCPData.xDHCPSocket->pxEndPoint = pxEndPoint;
 
-            if( FreeRTOS_sendto( xDHCPv4Socket,
+            if( FreeRTOS_sendto( EP_DHCPData.xDHCPSocket,
                                  pucUDPPayloadBuffer,
                                  sizeof( DHCPMessage_IPv4_t ) + uxOptionsLength,
                                  FREERTOS_ZERO_COPY,
@@ -1673,7 +1702,7 @@
             EP_IPv4_SETTINGS.ulIPAddress = EP_DHCPData.ulOfferedIPAddress;
 
             /* Setting the 'local' broadcast address, something like 192.168.1.255' */
-            EP_IPv4_SETTINGS.ulBroadcastAddress = ( EP_DHCPData.ulOfferedIPAddress & EP_IPv4_SETTINGS.ulNetMask ) | ~EP_IPv4_SETTINGS.ulNetMask;
+            EP_IPv4_SETTINGS.ulBroadcastAddress = ( EP_DHCPData.ulOfferedIPAddress | ( ~EP_IPv4_SETTINGS.ulNetMask ) );
 
             /* Close socket to ensure packets don't queue on it. not needed anymore as DHCP failed. but still need timer for ARP testing. */
             prvCloseDHCPSocket( pxEndPoint );

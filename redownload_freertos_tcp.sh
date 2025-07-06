@@ -1,10 +1,10 @@
 #!/bin/bash
 
-git clone https://github.com/FreeRTOS/FreeRTOS-Plus-TCP --branch=V4.0.0 --depth=1 --no-checkout
+git clone https://github.com/evpopov/FreeRTOS-Plus-TCP --branch=MCast_PR --depth=1 --no-checkout
 cd FreeRTOS-Plus-TCP
 
 # :(glob)source/*.c означает восстановление файлов в source/, но не глубже, т.е. не уходит в поддиректории
-git checkout origin/V4.0.0 ":(glob)source/*.c" source/include source/portable/NetworkInterface/Common/ source/portable/NetworkInterface/STM32Fxx/ source/portable/NetworkInterface/include/ source/portable/BufferManagement/BufferAllocation_1.c source/portable/Compiler/GCC/
+git checkout origin/MCast_PR ":(glob)source/*.c" source/include source/portable/NetworkInterface/Common/ source/portable/NetworkInterface/STM32/NetworkInterface.c source/portable/NetworkInterface/STM32/Drivers/F7 source/portable/NetworkInterface/include/ source/portable/BufferManagement/BufferAllocation_1.c source/portable/Compiler/GCC/
 
 cd ..
 

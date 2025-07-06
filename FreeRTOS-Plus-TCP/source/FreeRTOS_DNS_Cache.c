@@ -220,7 +220,7 @@
             pxIP->xIPAddress.ulIP_IPv4 = 0U;
         }
 
-        ulCurrentTimeSeconds = ( uint32_t ) ( ( xCurrentTickCount / portTICK_PERIOD_MS ) / 1000U );
+        ulCurrentTimeSeconds = ( uint32_t ) ( ( xCurrentTickCount / configTICK_RATE_HZ ) );
         xResult = prvFindEntryIndex( pcName, pxIP, &uxIndex );
 
         if( xResult == pdTRUE )
@@ -448,9 +448,8 @@
         /* Add or update the item. */
         if( strlen( pcName ) < ( size_t ) ipconfigDNS_CACHE_NAME_LENGTH )
         {
-            ( void ) strcpy( xDNSCache[ uxFreeEntry ].pcName, pcName );
+            ( void ) strncpy( xDNSCache[ uxFreeEntry ].pcName, pcName, ipconfigDNS_CACHE_NAME_LENGTH );
             ( void ) memcpy( &( xDNSCache[ uxFreeEntry ].xAddresses[ 0 ] ), pxIP, sizeof( *pxIP ) );
-
 
             xDNSCache[ uxFreeEntry ].ulTTL = ulTTL;
             xDNSCache[ uxFreeEntry ].ulTimeWhenAddedInSeconds = ulCurrentTimeSeconds;

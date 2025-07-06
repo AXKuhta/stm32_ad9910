@@ -125,10 +125,19 @@ struct xTCP_PACKET
 #include "pack_struct_end.h"
 typedef struct xTCP_PACKET TCPPacket_t;
 
+
+/* The function 'prvAllowIPPacket()' checks if a packets should be processed. */
+enum eFrameProcessingResult prvAllowIPPacketIPv4( const struct xIP_PACKET * const pxIPPacket,
+                                                  const struct xNETWORK_BUFFER * const pxNetworkBuffer,
+                                                  UBaseType_t uxHeaderLength );
+
+/* Check if the IP-header is carrying options. */
+enum eFrameProcessingResult prvCheckIP4HeaderOptions( struct xNETWORK_BUFFER * const pxNetworkBuffer );
+
 /* *INDENT-OFF* */
 #ifdef __cplusplus
     } /* extern "C" */
 #endif
 /* *INDENT-ON* */
 
-#endif /* FREERTOS_IP_PRIVATE_H */
+#endif /* FREERTOS_IPV4_PRIVATE_H */

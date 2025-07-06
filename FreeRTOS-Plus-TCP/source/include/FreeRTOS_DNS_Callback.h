@@ -53,12 +53,12 @@
     BaseType_t xDNSDoCallback( ParseSet_t * pxSet,
                                struct freertos_addrinfo * pxAddress );
 
-    void vDNSSetCallBack( const char * pcHostName,
-                          void * pvSearchID,
-                          FOnDNSEvent pCallbackFunction,
-                          TickType_t uxTimeout,
-                          TickType_t uxIdentifier,
-                          BaseType_t xIsIPv6 );
+    BaseType_t xDNSSetCallBack( const char * pcHostName,
+                                void * pvSearchID,
+                                FOnDNSEvent pCallbackFunction,
+                                TickType_t uxTimeout,
+                                TickType_t uxIdentifier,
+                                BaseType_t xIsIPv6 );
 
     void vDNSCheckCallBack( void * pvSearchID );
 
@@ -72,4 +72,4 @@
 #endif
 /* *INDENT-ON* */
 
-#endif /* ifndef FREERTOS_DNS_CALLBACK_H */
+#endif /* FREERTOS_DNS_CALLBACK_H */

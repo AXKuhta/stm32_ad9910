@@ -73,7 +73,7 @@ typedef enum eTCP_STATE
     eLAST_ACK,     /*10 (server + client) waiting for an acknowledgement of the connection termination request
                     * previously sent to the remote TCP
                     * (which includes an acknowledgement of its connection termination request). */
-    eTIME_WAIT,    /*11 (either server or client) waiting for enough time to pass to be sure the remote TCP received the
+    eTIME_WAIT     /*11 (either server or client) waiting for enough time to pass to be sure the remote TCP received the
                     * acknowledgement of its connection termination request. [According to RFC 793 a connection can
                     * stay in TIME-WAIT for a maximum of four minutes known as a MSL (maximum segment lifetime).] */
 } eIPTCPState_t;
@@ -96,25 +96,26 @@ typedef enum eTCP_STATE
 /*
  * A few values of the TCP options:
  */
-#define tcpTCP_OPT_END               0U                  /**< End of TCP options list. */
-#define tcpTCP_OPT_NOOP              1U                  /**< "No-operation" TCP option. */
-#define tcpTCP_OPT_MSS               2U                  /**< Maximum segment size TCP option. */
-#define tcpTCP_OPT_WSOPT             3U                  /**< TCP Window Scale Option (3-byte long). */
-#define tcpTCP_OPT_SACK_P            4U                  /**< Advertise that SACK is permitted. */
-#define tcpTCP_OPT_SACK_A            5U                  /**< SACK option with first/last. */
-#define tcpTCP_OPT_TIMESTAMP         8U                  /**< Time-stamp option. */
+#define tcpTCP_OPT_END                    0U             /**< End of TCP options list. */
+#define tcpTCP_OPT_NOOP                   1U             /**< "No-operation" TCP option. */
+#define tcpTCP_OPT_MSS                    2U             /**< Maximum segment size TCP option. */
+#define tcpTCP_OPT_WSOPT                  3U             /**< TCP Window Scale Option (3-byte long). */
+#define tcpTCP_OPT_SACK_P                 4U             /**< Advertise that SACK is permitted. */
+#define tcpTCP_OPT_SACK_A                 5U             /**< SACK option with first/last. */
+#define tcpTCP_OPT_TIMESTAMP              8U             /**< Time-stamp option. */
 
 
-#define tcpTCP_OPT_MSS_LEN           4U                  /**< Length of TCP MSS option. */
-#define tcpTCP_OPT_WSOPT_LEN         3U                  /**< Length of TCP WSOPT option. */
+#define tcpTCP_OPT_MSS_LEN                4U             /**< Length of TCP MSS option. */
+#define tcpTCP_OPT_WSOPT_LEN              3U             /**< Length of TCP WSOPT option. */
+#define tcpTCP_OPT_WSOPT_MAXIMUM_VALUE    ( 14U )        /**< Maximum value of TCP WSOPT option. */
 
-#define tcpTCP_OPT_TIMESTAMP_LEN     10                  /**< fixed length of the time-stamp option. */
+#define tcpTCP_OPT_TIMESTAMP_LEN          10             /**< fixed length of the time-stamp option. */
 
 /** @brief
  * Minimum segment length as outlined by RFC 791 section 3.1.
  * Minimum segment length ( 536 ) = Minimum MTU ( 576 ) - IP Header ( 20 ) - TCP Header ( 20 ).
  */
-#define tcpMINIMUM_SEGMENT_LENGTH    536U
+#define tcpMINIMUM_SEGMENT_LENGTH         536U
 
 /** @brief
  * The macro tcpNOW_CONNECTED() is use to determine if the connection makes a

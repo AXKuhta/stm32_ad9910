@@ -36,7 +36,7 @@
     #include "FreeRTOS_IP_Common.h"
 
     #ifdef __cplusplus
-        extern "C" {
+    extern "C" {
     #endif
 
 /** @brief When ucASCIIToHex() can not convert a character,
@@ -90,13 +90,6 @@
  */
     void prv_ntop6_search_zeros( struct sNTOP6_Set * pxSet );
 
-/*
- * Convert a string like 'fe80::8d11:cd9b:8b66:4a80'
- * to a 16-byte IPv6 address
- */
-    const char * FreeRTOS_inet_ntop6( const void * pvSource,
-                                      char * pcDestination,
-                                      socklen_t uxSize );
 
 /** @brief Called by pxTCPSocketLookup(), this function will check if a socket
  *         is connected to a remote IP-address. It will be called from a loop
@@ -119,7 +112,7 @@
                               struct freertos_sockaddr * pxSourceAddress );
 
     #ifdef __cplusplus
-}         /* extern "C" */
+}     /* extern "C" */
     #endif
 
 #endif /* FREERTOS_IPV6_SOCKETS_H */

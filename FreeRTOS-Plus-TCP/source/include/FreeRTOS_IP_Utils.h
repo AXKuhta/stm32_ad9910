@@ -47,9 +47,7 @@
 /* FreeRTOS+TCP includes. */
 #include "FreeRTOS_IP.h"
 #include "FreeRTOS_Sockets.h"
-#include "FreeRTOS_Routing.h"
 #include "FreeRTOS_IP_Private.h"
-#include "FreeRTOS_ARP.h"
 #include "FreeRTOS_UDP_IP.h"
 #include "FreeRTOS_DHCP.h"
 #include "NetworkInterface.h"
@@ -65,10 +63,38 @@
 #endif
 /* *INDENT-ON* */
 
+#if ipconfigIS_ENABLED( ipconfigSUPPORT_IP_MULTICAST )
+    /** @brief A structure holding information about a multicast group address. Used during generation of IGMP/ICMPv6 reports. */
+    typedef struct MCastReportDescription
+    {
+        IPv46_Address_t xMCastGroupAddress; /**< Holds the IPv4/IPv6 multicast group address. xMCastGroupAddress.xIs_IPv6 denotes whether this represents and IGMP or MLD report. */
+        ListItem_t xListItem;               /**< List item for adding to the global list of reports. */
+        NetworkInterface_t * pxInterface;   /**< The network interface used for sending this report. NULL to send on all interfaces. */
+        BaseType_t xNumSockets;             /**< The number of sockets that are subscribed to this multicast group. */
+        BaseType_t xCountDown;
+    } MCastReportData_t;
+
+/** @brief A structure to hold all data related to an multicast socket option "action". When someone calls FreeRTOS_setsockopt()
+ * with one of the multicast socket options, the code allocates a structure like this and stores all the relevant information.
+ * The structure is then passed to the IP task for handling. This approach allows us to return an error if we don't have enough
+ * memory for a multicast report and allows all actual manipulations to happen within the IP task therefore avoiding the need
+ * for critical sections. An exception to this is setting the TTL/HopLimit as it can be done straight from the user task. as
+ * an atomic write operation. */
+    typedef struct xMCastGroupDesc
+    {
+        IP_Address_t xMulticastGroup;          /**< Holds the IPv4/IPv6 multicast group address */
+        NetworkInterface_t * pxInterface;      /**< Not implemented yet, but should point to a specific interface or NULL for all/default interface */
+        FreeRTOS_Socket_t * pxSocket;          /**< The socket this action is applied to */
+        MCastReportData_t * pxMCastReportData; /**< Holds the allocated IGMP report descriptor while passing from user code to the IP Task. */
+    } MulticastAction_t;
+#endif /* ipconfigIS_ENABLED( ipconfigSUPPORT_IP_MULTICAST ) */
+
+
 /* Forward declaration. */
 struct xNetworkInterface;
+struct xNetworkEndPoint;
 
-#if ( ipconfigUSE_DHCP != 0 )
+#if ( ( ipconfigUSE_DHCPv6 == 1 ) || ( ipconfigUSE_DHCP == 1 ) || ( ipconfigUSE_RA == 1 ) )
 
 /**
  * @brief Create a DHCP event.
@@ -77,6 +103,13 @@ struct xNetworkInterface;
  *         succeeded.
  */
     BaseType_t xSendDHCPEvent( struct xNetworkEndPoint * pxEndPoint );
+#endif
+
+#if ( ( ipconfigUSE_DHCPv6 == 1 ) || ( ipconfigUSE_DHCP == 1 ) )
+
+/* Returns the current state of a DHCP process. */
+    eDHCPState_t eGetDHCPState( const struct xNetworkEndPoint * pxEndPoint );
+
 #endif
 
 #if ( ipconfigZERO_COPY_TX_DRIVER != 0 ) || ( ipconfigZERO_COPY_RX_DRIVER != 0 )
@@ -102,6 +135,11 @@ void vPreCheckConfigs( void );
  *        started, or when the network connection is lost.
  */
 void prvProcessNetworkDownEvent( struct xNetworkInterface * pxInterface );
+
+/**
+ * @brief Release single UDP packet from a given socket
+ */
+void vReleaseSinglePacketFromUDPSocket( const ConstSocket_t xSocket );
 
 /* *INDENT-OFF* */
 #ifdef __cplusplus

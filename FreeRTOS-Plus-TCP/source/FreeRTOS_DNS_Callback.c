@@ -58,7 +58,7 @@
     {
         BaseType_t xResult = pdFALSE;
         const ListItem_t * pxIterator;
-        const ListItem_t * xEnd = listGET_END_MARKER( &xCallbackList );
+        const ListItem_t * pxEnd = listGET_END_MARKER( &xCallbackList );
         TickType_t uxIdentifier = ( TickType_t ) pxSet->pxDNSMessageHeader->usIdentifier;
 
         /* While iterating through the list, the scheduler is suspended.
@@ -69,15 +69,15 @@
 
         vTaskSuspendAll();
         {
-            for( pxIterator = ( const ListItem_t * ) listGET_NEXT( xEnd );
-                 pxIterator != ( const ListItem_t * ) xEnd;
+            for( pxIterator = ( const ListItem_t * ) listGET_HEAD_ENTRY( &xCallbackList );
+                 pxIterator != ( const ListItem_t * ) pxEnd;
                  pxIterator = ( const ListItem_t * ) listGET_NEXT( pxIterator ) )
             {
                 BaseType_t xMatching;
                 DNSCallback_t * pxCallback = ( ( DNSCallback_t * ) listGET_LIST_ITEM_OWNER( pxIterator ) );
                 #if ( ipconfigUSE_MDNS == 1 )
-                    /* mDNS port 5353. */
-                    if( pxSet->usPortNumber == FreeRTOS_htons( ipMDNS_PORT ) )
+                    /* mDNS port 5353. Host byte order comparison. */
+                    if( pxSet->usPortNumber == ipMDNS_PORT )
                     {
                         /* In mDNS, the query ID field is ignored and the
                          * hostname will be compared with outstanding requests. */
@@ -125,17 +125,18 @@
  * @param[in] pcHostName The hostname whose IP address is being searched for.
  * @param[in] pvSearchID The search ID of the DNS callback function to set.
  * @param[in] pCallbackFunction The callback function pointer.
- * @param[in] uxTimeout Timeout of the callback function.
+ * @param[in] uxTimeout Timeout of the callback function in ms.
  * @param[in] uxIdentifier Random number used as ID in the DNS message.
  * @param[in] xIsIPv6 pdTRUE if the address type should be IPv6.
  */
-    void vDNSSetCallBack( const char * pcHostName,
-                          void * pvSearchID,
-                          FOnDNSEvent pCallbackFunction,
-                          TickType_t uxTimeout,
-                          TickType_t uxIdentifier,
-                          BaseType_t xIsIPv6 )
+    BaseType_t xDNSSetCallBack( const char * pcHostName,
+                                void * pvSearchID,
+                                FOnDNSEvent pCallbackFunction,
+                                TickType_t uxTimeout,
+                                TickType_t uxIdentifier,
+                                BaseType_t xIsIPv6 )
     {
+        BaseType_t xReturn = pdPASS;
         size_t lLength = strlen( pcHostName );
 
         /* MISRA Ref 4.12.1 [Use of dynamic memory]. */
@@ -144,7 +145,7 @@
         DNSCallback_t * pxCallback = ( ( DNSCallback_t * ) pvPortMalloc( sizeof( *pxCallback ) + lLength ) );
 
         /* Translate from ms to number of clock ticks. */
-        uxTimeout /= portTICK_PERIOD_MS;
+        uxTimeout = pdMS_TO_TICKS( uxTimeout );
 
         if( pxCallback != NULL )
         {
@@ -154,7 +155,7 @@
                 vDNSTimerReload( FreeRTOS_min_uint32( 1000U, ( uint32_t ) uxTimeout ) );
             }
 
-            ( void ) strcpy( pxCallback->pcName, pcHostName );
+            ( void ) strncpy( pxCallback->pcName, pcHostName, lLength + 1U );
             pxCallback->pCallbackFunction = pCallbackFunction;
             pxCallback->pvSearchID = pvSearchID;
             pxCallback->uxRemainingTime = uxTimeout;
@@ -171,9 +172,12 @@
         }
         else
         {
-            FreeRTOS_debug_printf( ( " vDNSSetCallBack : Could not allocate memory: %u bytes",
+            xReturn = pdFAIL;
+            FreeRTOS_debug_printf( ( " xDNSSetCallBack : Could not allocate memory: %u bytes",
                                      ( unsigned ) ( sizeof( *pxCallback ) + lLength ) ) );
         }
+
+        return xReturn;
     }
 /*-----------------------------------------------------------*/
 
@@ -190,7 +194,7 @@
     void vDNSCheckCallBack( void * pvSearchID )
     {
         const ListItem_t * pxIterator;
-        const ListItem_t * xEnd = listGET_END_MARKER( &xCallbackList );
+        const ListItem_t * pxEnd = listGET_END_MARKER( &xCallbackList );
 
         /* When a DNS-search times out, the call-back function shall
          * be called. Store theses item in a temporary list.
@@ -202,8 +206,8 @@
 
         vTaskSuspendAll();
         {
-            for( pxIterator = ( const ListItem_t * ) listGET_NEXT( xEnd );
-                 pxIterator != xEnd; )
+            for( pxIterator = ( const ListItem_t * ) listGET_HEAD_ENTRY( &xCallbackList );
+                 pxIterator != pxEnd; )
             {
                 DNSCallback_t * pxCallback = ( ( DNSCallback_t * ) listGET_LIST_ITEM_OWNER( pxIterator ) );
                 /* Move to the next item because we might remove this item */
@@ -235,10 +239,10 @@
         if( listLIST_IS_EMPTY( &xTempList ) == pdFALSE )
         {
             /* There is at least one item in xTempList which must be removed and deleted. */
-            xEnd = listGET_END_MARKER( &xTempList );
+            pxEnd = listGET_END_MARKER( &xTempList );
 
-            for( pxIterator = ( const ListItem_t * ) listGET_NEXT( xEnd );
-                 pxIterator != xEnd;
+            for( pxIterator = ( const ListItem_t * ) listGET_HEAD_ENTRY( &xTempList );
+                 pxIterator != pxEnd;
                  )
             {
                 DNSCallback_t * pxCallback = ( ( DNSCallback_t * ) listGET_LIST_ITEM_OWNER( pxIterator ) );

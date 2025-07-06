@@ -32,7 +32,6 @@
 #include "FreeRTOSIPConfig.h"
 #include "FreeRTOSIPConfigDefaults.h"
 #include "FreeRTOS_Sockets.h"
-#include "IPTraceMacroDefaults.h"
 #include "FreeRTOS_Stream_Buffer.h"
 #include "FreeRTOS_Routing.h"
 
@@ -66,26 +65,30 @@ typedef enum eFrameProcessingResult
     eProcessBuffer,       /* An Ethernet frame has a valid address - continue process its contents. */
     eReturnEthernetFrame, /* The Ethernet frame contains an ARP or ICMP packet that can be returned to its source. */
     eFrameConsumed,       /* Processing the Ethernet packet contents resulted in the payload being sent to the stack. */
-    eWaitingARPResolution /* Frame is awaiting ARP resolution. */
+    eWaitingResolution    /* Frame is awaiting resolution. */
 } eFrameProcessingResult_t;
 
 typedef enum
 {
     eNoEvent = -1,
-    eNetworkDownEvent,     /* 0: The network interface has been lost and/or needs [re]connecting. */
-    eNetworkRxEvent,       /* 1: The network interface has queued a received Ethernet frame. */
-    eNetworkTxEvent,       /* 2: Let the IP-task send a network packet. */
-    eARPTimerEvent,        /* 3: The ARP timer expired. */
-    eStackTxEvent,         /* 4: The software stack has queued a packet to transmit. */
-    eDHCPEvent,            /* 5: Process the DHCP state machine. */
-    eTCPTimerEvent,        /* 6: See if any TCP socket needs attention. */
-    eTCPAcceptEvent,       /* 7: Client API FreeRTOS_accept() waiting for client connections. */
-    eTCPNetStat,           /* 8: IP-task is asked to produce a netstat listing. */
-    eSocketBindEvent,      /* 9: Send a message to the IP-task to bind a socket to a port. */
-    eSocketCloseEvent,     /*10: Send a message to the IP-task to close a socket. */
-    eSocketSelectEvent,    /*11: Send a message to the IP-task for select(). */
-    eSocketSignalEvent,    /*12: A socket must be signalled. */
-    eSocketSetDeleteEvent, /*13: A socket set must be deleted. */
+    eNetworkDownEvent,        /* 0: The network interface has been lost and/or needs [re]connecting. */
+    eNetworkRxEvent,          /* 1: The network interface has queued a received Ethernet frame. */
+    eNetworkTxEvent,          /* 2: Let the IP-task send a network packet. */
+    eARPTimerEvent,           /* 3: The ARP timer expired. */
+    eNDTimerEvent,            /* 4: The ND timer expired. */
+    eStackTxEvent,            /* 5: The software stack has queued a packet to transmit. */
+    eDHCPEvent,               /* 6: Process the DHCP state machine. */
+    eTCPTimerEvent,           /* 7: See if any TCP socket needs attention. */
+    eTCPAcceptEvent,          /* 8: Client API FreeRTOS_accept() waiting for client connections. */
+    eTCPNetStat,              /* 9: IP-task is asked to produce a netstat listing. */
+    eSocketBindEvent,         /*10: Send a message to the IP-task to bind a socket to a port. */
+    eSocketCloseEvent,        /*11: Send a message to the IP-task to close a socket. */
+    eSocketSelectEvent,       /*12: Send a message to the IP-task for select(). */
+    eSocketSignalEvent,       /*13: A socket must be signalled. */
+    eSocketSetDeleteEvent,    /*14: A socket set must be deleted. */
+    eSocketOptAddMembership,  /*15: Register a UDP socket to a multicast group. */
+    eSocketOptDropMembership, /*16: Unregister a UDP socket from a multicast group. */
+    eMulticastTimerEvent,     /*17: Handles the sending of scheduled IGMP/MLD multicast reports. */
 } eIPEvent_t;
 
 /**
@@ -258,8 +261,6 @@ struct xPacketSummary
     uint16_t usProtocolBytes;              /**< The total length of the protocol data. */
 };
 
-#define ipBROADCAST_IP_ADDRESS               0xffffffffU
-
 /* Offset into the Ethernet frame that is used to temporarily store information
  * on the fragmentation status of the packet being sent.  The value is important,
  * as it is past the location into which the destination address will get placed. */
@@ -328,26 +329,6 @@ extern uint16_t usPacketIdentifier;
  */
 extern List_t xBoundUDPSocketsList;
 
-/**
- * Define a default UDP packet header (declared in FreeRTOS_UDP_IP.c)
- */
-typedef union xUDPPacketHeader
-{
-    uint8_t ucBytes[ 24 ]; /**< Member: 8-bit array */
-    uint32_t ulWords[ 6 ]; /**< Member: 32-bit array */
-} UDPPacketHeader_t;
-extern UDPPacketHeader_t xDefaultPartUDPPacketHeader;
-
-
-/* Structure that stores the netmask, gateway address and DNS server addresses. */
-extern NetworkAddressingParameters_t xNetworkAddressing;
-
-/* Structure that stores the defaults for netmask, gateway address and DNS.
- * These values will be copied to 'xNetworkAddressing' in case DHCP is not used,
- * and also in case DHCP does not lead to a confirmed request. */
-/*lint -e9003*/
-extern NetworkAddressingParameters_t xDefaultAddressing; /*lint !e9003 could define variable 'xDefaultAddressing' at block scope [MISRA 2012 Rule 8.9, advisory]. */
-
 /* True when BufferAllocation_1.c was included, false for BufferAllocation_2.c */
 extern const BaseType_t xBufferAllocFixedSize;
 
@@ -366,14 +347,6 @@ extern struct xNetworkInterface * pxNetworkInterfaces;
 #if ( ipconfigUSE_TCP == 1 )
     extern List_t xBoundTCPSocketsList;
 #endif
-
-/* The local IP address is accessed from within xDefaultPartUDPPacketHeader,
- * rather than duplicated in its own variable. */
-#define ipLOCAL_IP_ADDRESS_POINTER     ( ( uint32_t * ) &( xDefaultPartUDPPacketHeader.ulWords[ 20U / sizeof( uint32_t ) ] ) )
-
-/* The local MAC address is accessed from within xDefaultPartUDPPacketHeader,
- * rather than duplicated in its own variable. */
-#define ipLOCAL_MAC_ADDRESS            ( xDefaultPartUDPPacketHeader.ucBytes )
 
 /* ICMP packets are sent using the same function as UDP packets.  The port
  * number is used to distinguish between the two, as 0 is an invalid UDP port. */
@@ -465,23 +438,6 @@ uint16_t usGenerateChecksum( uint16_t usSum,
                              size_t uxByteCount );
 
 /* Socket related private functions. */
-
-/*
- * The caller must ensure that pxNetworkBuffer->xDataLength is the UDP packet
- * payload size (excluding packet headers) and that the packet in pucEthernetBuffer
- * is at least the size of UDPPacket_t.
- */
-BaseType_t xProcessReceivedUDPPacket( NetworkBufferDescriptor_t * pxNetworkBuffer,
-                                      uint16_t usPort,
-                                      BaseType_t * pxIsWaitingForARPResolution );
-
-BaseType_t xProcessReceivedUDPPacket_IPv4( NetworkBufferDescriptor_t * pxNetworkBuffer,
-                                           uint16_t usPort,
-                                           BaseType_t * pxIsWaitingForARPResolution );
-
-BaseType_t xProcessReceivedUDPPacket_IPv6( NetworkBufferDescriptor_t * pxNetworkBuffer,
-                                           uint16_t usPort,
-                                           BaseType_t * pxIsWaitingForARPResolution );
 
 /*
  * Initialize the socket list data structures for TCP and UDP.
@@ -653,6 +609,17 @@ typedef struct UDPSOCKET
                                           */
         FOnUDPSent_t pxHandleSent;       /**< Function pointer to handle the events after a successful send. */
     #endif /* ipconfigUSE_CALLBACKS */
+    #if ( ipconfigIS_ENABLED( ipconfigSUPPORT_IP_MULTICAST ) )
+        IP_Address_t xMulticastAddress;        /**< Holds the multicast group address that the socket may have subscribed to receive. */
+        NetworkInterface_t * pxMulticastNetIf; /**< The interface on which multicasts are to be received. NULL for all interfaces. */
+        uint8_t ucMulticastMaxHops;            /**< Allows for multicast sockets to use a TTL/Hops value that is different than for unicast packets
+                                                * in order to limit the reach of multicast packets.
+                                                * Defaults to ipconfigMULTICAST_DEFAULT_TTL. For local network use, it is recommended to use a TTL of 1.
+                                                * Example:
+                                                * uint8_t ttl = 1;
+                                                * FreeRTOS_setsockopt( MCastSendSock, 0, FREERTOS_SO_IP_MULTICAST_TTL, ( void * ) &ttl, sizeof( ttl ) );
+                                                */
+    #endif /* ipconfigIS_ENABLED( ipconfigSUPPORT_IP_MULTICAST ) */
 } IPUDPSocket_t;
 
 /* Formally typedef'd as eSocketEvent_t. */
@@ -665,7 +632,7 @@ enum eSOCKET_EVENT
     eSOCKET_BOUND = 0x0010,
     eSOCKET_CLOSED = 0x0020,
     eSOCKET_INTR = 0x0040,
-    eSOCKET_ALL = 0x007F,
+    eSOCKET_ALL = 0x007F
 };
 
 
@@ -888,8 +855,29 @@ BaseType_t xIsCallingFromIPTask( void );
 
 #endif /* ipconfigSUPPORT_SELECT_FUNCTION */
 
-/* Send the network-up event and start the ARP timer. */
+#if ( ipconfigIS_ENABLED( ipconfigSUPPORT_IP_MULTICAST ) )
+    struct xMCastGroupDesc;
+    struct MCastReportDescription;
+    void vModifyMulticastMembership( struct xMCastGroupDesc * pxMulticastAction,
+                                     uint8_t bAction );
+    BaseType_t xEnlistMulticastReport( struct MCastReportDescription * pNewEntry );
+    void vDelistMulticastReport( NetworkInterface_t * pxInterface,
+                                 IP_Address_t * pxMulticastAddress,
+                                 UBaseType_t xIsIPv6 );
+    BaseType_t xSendMulticastTimerEvent( void );
+    void vIPMulticast_HandleTimerEvent( void );
+    void vIPMulticast_Init( void );
+    eFrameProcessingResult_t eProcessIGMPPacket( NetworkBufferDescriptor_t * const pxNetworkBuffer );
+    void vProcessMLDPacket( NetworkBufferDescriptor_t * const pxNetworkBuffer );
+    void vRescheduleAllMulticastReports( NetworkInterface_t * pxInterface,
+                                         BaseType_t xMaxCountdown );
+#endif /* ipconfigIS_ENABLED( ipconfigSUPPORT_IP_MULTICAST ) */
+
+/* Send the network-up event and start the ARP/ND timers. */
 void vIPNetworkUpCalls( struct xNetworkEndPoint * pxEndPoint );
+
+/* Mark whether all interfaces are up or at least one interface is down. */
+void vSetAllNetworksUp( BaseType_t xIsAllNetworksUp );
 
 /* *INDENT-OFF* */
 #ifdef __cplusplus

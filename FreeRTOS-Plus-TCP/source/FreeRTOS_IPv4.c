@@ -211,6 +211,111 @@ BaseType_t xIsIPv4Multicast( uint32_t ulIPAddress )
 /*-----------------------------------------------------------*/
 
 /**
+ * @brief Checks if the IP address matches the global 255.255.255.255 broadcast address or
+ * the broadcast address for any of our IPv4 endpoints.
+ *
+ * @param[in] ulIPAddress The IP address being checked.
+ *
+ * @param[out] ppxEndPoint Pointer to an end-point where we store the endpoint whose broadcast address we matched. Or NULL if no IPv4 endpoints were found.
+ *
+ * @return pdTRUE if the IP address is a broadcast address or else, pdFALSE.
+ */
+BaseType_t xIsIPv4Broadcast( uint32_t ulIPAddress,
+                             struct xNetworkEndPoint ** ppxEndPoint )
+{
+    BaseType_t xIsBroadcast;
+    NetworkEndPoint_t * pxEndPoint;
+
+    /* Assign a default answer based on the "global" broadcast.	 This way
+     * we can still return the correct result even if there are no endpoints. */
+    xIsBroadcast = ( ulIPAddress == FREERTOS_INADDR_BROADCAST ) ? pdTRUE : pdFALSE;
+
+    for( pxEndPoint = FreeRTOS_FirstEndPoint( NULL );
+         pxEndPoint != NULL;
+         pxEndPoint = FreeRTOS_NextEndPoint( NULL, pxEndPoint ) )
+    {
+        #if ( ipconfigUSE_IPv6 == ipconfigENABLE )
+            /* Skip over any IPv6 endpoints. */
+            if( pxEndPoint->bits.bIPv6 == pdTRUE )
+            {
+                continue;
+            }
+        #endif /* ( ipconfigUSE_IPv6 == ipconfigENABLE ) */
+
+        /* If we already know if ulIPAddress is a broadcast,
+         * simply return this first matching IPv4 endpoint. */
+        if( xIsBroadcast == pdTRUE )
+        {
+            break;
+        }
+        else if( ulIPAddress == pxEndPoint->ipv4_settings.ulBroadcastAddress )
+        {
+            xIsBroadcast = pdTRUE;
+            break;
+        }
+    }
+
+    /* If the caller wants to know the corresponding endpoint, copy the result.
+     * Note that this may be null if ulIPAddress is 255.255.255.255 AND there are
+     * no IPv4 endpoints.
+     * Also, when ulIPAddress is 255.255.255.255, we will
+     * return the first IPv4 endpoint that we run across. */
+    if( xIsBroadcast && ( ppxEndPoint != NULL ) )
+    {
+        *ppxEndPoint = pxEndPoint;
+    }
+
+    return xIsBroadcast;
+}
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Check if the packet is an illegal loopback packet.
+ *
+ * @param[in] pxIPHeader The IP-header being checked.
+ *
+ * @return Returns pdTRUE if the packet should be stopped, because either the source
+ *         or the target address is a loopback address.
+ */
+BaseType_t xBadIPv4Loopback( const IPHeader_t * const pxIPHeader )
+{
+    BaseType_t xReturn = pdFALSE;
+    BaseType_t x1 = ( xIsIPv4Loopback( pxIPHeader->ulDestinationIPAddress ) != 0 ) ? pdTRUE : pdFALSE;
+    BaseType_t x2 = ( xIsIPv4Loopback( pxIPHeader->ulSourceIPAddress ) != 0 ) ? pdTRUE : pdFALSE;
+
+    if( x1 != x2 )
+    {
+        /* Either the source or the destination address is an IPv4 loopback address. */
+        xReturn = pdTRUE;
+    }
+
+    return xReturn;
+}
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Is the IP address an IPv4 loopback address.
+ *
+ * @param[in] ulAddress The IP address being checked.
+ *
+ * @return pdTRUE if the IP address is a loopback address or else, pdFALSE.
+ */
+BaseType_t xIsIPv4Loopback( uint32_t ulAddress )
+{
+    BaseType_t xReturn = pdFALSE;
+    uint32_t ulIP = FreeRTOS_ntohl( ulAddress );
+
+    if( ( ulIP >= ipFIRST_LOOPBACK_IPv4 ) &&
+        ( ulIP < ipLAST_LOOPBACK_IPv4 ) )
+    {
+        xReturn = pdTRUE;
+    }
+
+    return xReturn;
+}
+/*-----------------------------------------------------------*/
+
+/**
  * @brief Check whether this IPv4 packet is to be allowed or to be dropped.
  *
  * @param[in] pxIPPacket The IP packet under consideration.
@@ -235,45 +340,77 @@ enum eFrameProcessingResult prvAllowIPPacketIPv4( const struct xIP_PACKET * cons
     #endif
 
     #if ( ipconfigETHERNET_DRIVER_FILTERS_PACKETS == 0 )
+    {
+        /* In systems with a very small amount of RAM, it might be advantageous
+         * to have incoming messages checked earlier, by the network card driver.
+         * This method may decrease the usage of scarce network buffers. */
+        uint32_t ulDestinationIPAddress = pxIPHeader->ulDestinationIPAddress;
+        uint32_t ulSourceIPAddress = pxIPHeader->ulSourceIPAddress;
+        /* Get a reference to the endpoint that the packet was assigned to during pxEasyFit() */
+        NetworkEndPoint_t * pxEndPoint = pxNetworkBuffer->pxEndPoint;
+
+        /* Ensure that the incoming packet is not fragmented because the stack
+         * doesn't not support IP fragmentation. All but the last fragment coming in will have their
+         * "more fragments" flag set and the last fragment will have a non-zero offset.
+         * We need to drop the packet in either of those cases. */
+        if( ( ( pxIPHeader->usFragmentOffset & ipFRAGMENT_OFFSET_BIT_MASK ) != 0U ) || ( ( pxIPHeader->usFragmentOffset & ipFRAGMENT_FLAGS_MORE_FRAGMENTS ) != 0U ) )
         {
-            /* In systems with a very small amount of RAM, it might be advantageous
-             * to have incoming messages checked earlier, by the network card driver.
-             * This method may decrease the usage of sparse network buffers. */
-            uint32_t ulDestinationIPAddress = pxIPHeader->ulDestinationIPAddress;
-            uint32_t ulSourceIPAddress = pxIPHeader->ulSourceIPAddress;
+            /* Can not handle, fragmented packet. */
+            eReturn = eReleaseBuffer;
+        }
 
-            /* Ensure that the incoming packet is not fragmented because the stack
-             * doesn't not support IP fragmentation. All but the last fragment coming in will have their
-             * "more fragments" flag set and the last fragment will have a non-zero offset.
-             * We need to drop the packet in either of those cases. */
-            if( ( ( pxIPHeader->usFragmentOffset & ipFRAGMENT_OFFSET_BIT_MASK ) != 0U ) || ( ( pxIPHeader->usFragmentOffset & ipFRAGMENT_FLAGS_MORE_FRAGMENTS ) != 0U ) )
+        /* Test if the length of the IP-header is between 20 and 60 bytes,
+         * and if the IP-version is 4. */
+        else if( ( pxIPHeader->ucVersionHeaderLength < ipIPV4_VERSION_HEADER_LENGTH_MIN ) ||
+                 ( pxIPHeader->ucVersionHeaderLength > ipIPV4_VERSION_HEADER_LENGTH_MAX ) )
+        {
+            /* Can not handle, unknown or invalid header version. */
+            eReturn = eReleaseBuffer;
+        }
+        else if( ( xIsIPv4Loopback( ulDestinationIPAddress ) == pdTRUE ) ||
+                 ( xIsIPv4Loopback( ulSourceIPAddress ) == pdTRUE ) )
+        {
+            /* source OR destination is a loopback address. Make sure they BOTH are. */
+            if( xBadIPv4Loopback( &( pxIPPacket->xIPHeader ) ) == pdTRUE )
             {
-                /* Can not handle, fragmented packet. */
+                /* The local loopback addresses must never appear outside a host. See RFC 1122
+                 * section 3.2.1.3. */
                 eReturn = eReleaseBuffer;
             }
+        }
+        else if( memcmp( xBroadcastMACAddress.ucBytes,
+                         pxIPPacket->xEthernetHeader.xSourceAddress.ucBytes,
+                         sizeof( MACAddress_t ) ) == 0 )
+        {
+            /* Ethernet source is a broadcast address. Drop the packet. */
+            eReturn = eReleaseBuffer;
+        }
+        else if( xIsIPv4Multicast( ulSourceIPAddress ) == pdTRUE )
+        {
+            /* Source is a multicast IP address. Drop the packet in conformity with RFC 1112 section 7.2. */
+            eReturn = eReleaseBuffer;
+        }
 
-            /* Test if the length of the IP-header is between 20 and 60 bytes,
-             * and if the IP-version is 4. */
-            else if( ( pxIPHeader->ucVersionHeaderLength < ipIPV4_VERSION_HEADER_LENGTH_MIN ) ||
-                     ( pxIPHeader->ucVersionHeaderLength > ipIPV4_VERSION_HEADER_LENGTH_MAX ) )
-            {
-                /* Can not handle, unknown or invalid header version. */
-                eReturn = eReleaseBuffer;
-            }
-            else if(
-                ( FreeRTOS_FindEndPointOnIP_IPv4( ulDestinationIPAddress, 4 ) == NULL ) &&
-                ( pxNetworkBuffer->pxEndPoint == NULL ) &&
-                /* Is it an IPv4 broadcast address x.x.x.255 ? */
-                ( ( FreeRTOS_ntohl( ulDestinationIPAddress ) & 0xffU ) != 0xffU ) &&
-                ( xIsIPv4Multicast( ulDestinationIPAddress ) == pdFALSE ) &&
-                /* Or (during DHCP negotiation) we have no IP-address yet? */
-                ( FreeRTOS_IsNetworkUp() != pdFALSE ) )
+        /* Use ipv4_settings for filtering only after the endpoint is up,
+         * so that DHCP packets that are exchanged for DHCP (example, DHCP unicast offers)
+         * are not dropped/filtered. */
+        else if( FreeRTOS_IsEndPointUp( pxEndPoint ) != pdFALSE )
+        {
+            if(
+                /* Not destined for the assigned endpoint IPv4 address? */
+                ( ulDestinationIPAddress != pxEndPoint->ipv4_settings.ulIPAddress ) &&
+                /* Also not an IPv4 broadcast address ? */
+                ( ulDestinationIPAddress != pxEndPoint->ipv4_settings.ulBroadcastAddress ) &&
+                ( ulDestinationIPAddress != FREERTOS_INADDR_BROADCAST ) &&
+                /* And not an IPv4 multicast address ? */
+                ( xIsIPv4Multicast( ulDestinationIPAddress ) == pdFALSE ) )
             {
                 /* Packet is not for this node, release it */
                 eReturn = eReleaseBuffer;
             }
             /* Is the source address correct? */
-            else if( ( FreeRTOS_ntohl( ulSourceIPAddress ) & 0xffU ) == 0xffU )
+            else if( ( ulSourceIPAddress == pxEndPoint->ipv4_settings.ulBroadcastAddress ) ||
+                     ( ulSourceIPAddress == FREERTOS_INADDR_BROADCAST ) )
             {
                 /* The source address cannot be broadcast address. Replying to this
                  * packet may cause network storms. Drop the packet. */
@@ -282,22 +419,10 @@ enum eFrameProcessingResult prvAllowIPPacketIPv4( const struct xIP_PACKET * cons
             else if( ( memcmp( xBroadcastMACAddress.ucBytes,
                                pxIPPacket->xEthernetHeader.xDestinationAddress.ucBytes,
                                sizeof( MACAddress_t ) ) == 0 ) &&
-                     ( ( FreeRTOS_ntohl( ulDestinationIPAddress ) & 0xffU ) != 0xffU ) )
+                     ( ulDestinationIPAddress != pxEndPoint->ipv4_settings.ulBroadcastAddress ) && ( ulDestinationIPAddress != FREERTOS_INADDR_BROADCAST ) )
             {
                 /* Ethernet address is a broadcast address, but the IP address is not a
                  * broadcast address. */
-                eReturn = eReleaseBuffer;
-            }
-            else if( memcmp( xBroadcastMACAddress.ucBytes,
-                             pxIPPacket->xEthernetHeader.xSourceAddress.ucBytes,
-                             sizeof( MACAddress_t ) ) == 0 )
-            {
-                /* Ethernet source is a broadcast address. Drop the packet. */
-                eReturn = eReleaseBuffer;
-            }
-            else if( xIsIPv4Multicast( ulSourceIPAddress ) == pdTRUE )
-            {
-                /* Source is a multicast IP address. Drop the packet in conformity with RFC 1112 section 7.2. */
                 eReturn = eReleaseBuffer;
             }
             else
@@ -306,104 +431,148 @@ enum eFrameProcessingResult prvAllowIPPacketIPv4( const struct xIP_PACKET * cons
                  * addresses are correct. */
             }
         }
+        else
+        {
+            /* Endpoint is down */
+
+            /* Check if the destination MAC address is a broadcast MAC address. */
+            if( memcmp( xBroadcastMACAddress.ucBytes,
+                        pxIPPacket->xEthernetHeader.xDestinationAddress.ucBytes,
+                        sizeof( MACAddress_t ) ) == 0 )
+            {
+                if( ulDestinationIPAddress != FREERTOS_INADDR_BROADCAST )
+                {
+                    /* Ethernet address is a broadcast address, but the IP address is not a
+                     * broadcast address. */
+                    eReturn = eReleaseBuffer;
+                }
+                else
+                {
+                    /* Accept valid broadcast packet. */
+                }
+            }
+
+            /* RFC 2131: https://datatracker.ietf.org/doc/html/rfc2131#autoid-8
+             * The TCP/IP software SHOULD accept and
+             * forward to the IP layer any IP packets delivered to the client's
+             * hardware address before the IP address is configured; DHCP servers
+             * and BOOTP relay agents may not be able to deliver DHCP messages to
+             * clients that cannot accept hardware unicast datagrams before the
+             * TCP/IP software is configured. */
+            else if( ( memcmp( pxEndPoint->xMACAddress.ucBytes,
+                               pxIPPacket->xEthernetHeader.xDestinationAddress.ucBytes,
+                               sizeof( MACAddress_t ) ) != 0 ) )
+            {
+                /* The endpoint is not up, and the destination MAC address of the
+                 * packet is not matching the endpoint's MAC address nor broadcast
+                 * MAC address. Drop the packet. */
+                eReturn = eReleaseBuffer;
+            }
+            else
+            {
+                /* Endpoint is down, but the hardware address matches. Accept the
+                 * packet as per RFC 2131 */
+            }
+        }
+    }
     #endif /* ipconfigETHERNET_DRIVER_FILTERS_PACKETS */
 
     #if ( ipconfigDRIVER_INCLUDED_RX_IP_CHECKSUM == 0 )
+    {
+        /* Some drivers of NIC's with checksum-offloading will enable the above
+         * define, so that the checksum won't be checked again here */
+        if( eReturn == eProcessBuffer )
         {
-            /* Some drivers of NIC's with checksum-offloading will enable the above
-             * define, so that the checksum won't be checked again here */
+            const NetworkEndPoint_t * pxEndPoint = FreeRTOS_FindEndPointOnMAC( &( pxIPPacket->xEthernetHeader.xSourceAddress ), NULL );
+
+            /* Do not check the checksum of loop-back messages. */
+            if( pxEndPoint == NULL )
+            {
+                /* Is the IP header checksum correct?
+                 *
+                 * NOTE: When the checksum of IP header is calculated while not omitting
+                 * the checksum field, the resulting value of the checksum always is 0xffff
+                 * which is denoted by ipCORRECT_CRC. See this wiki for more information:
+                 * https://en.wikipedia.org/wiki/IPv4_header_checksum#Verifying_the_IPv4_header_checksum
+                 * and this RFC: https://tools.ietf.org/html/rfc1624#page-4
+                 */
+                if( usGenerateChecksum( 0U, ( const uint8_t * ) &( pxIPHeader->ucVersionHeaderLength ), ( size_t ) uxHeaderLength ) != ipCORRECT_CRC )
+                {
+                    /* Check sum in IP-header not correct. */
+                    eReturn = eReleaseBuffer;
+                }
+                /* Is the upper-layer checksum (TCP/UDP/ICMP) correct? */
+                else if( usGenerateProtocolChecksum( ( uint8_t * ) ( pxNetworkBuffer->pucEthernetBuffer ), pxNetworkBuffer->xDataLength, pdFALSE ) != ipCORRECT_CRC )
+                {
+                    /* Protocol checksum not accepted. */
+                    eReturn = eReleaseBuffer;
+                }
+                else
+                {
+                    /* The checksum of the received packet is OK. */
+                }
+            }
+        }
+    }
+    #else /* if ( ipconfigDRIVER_INCLUDED_RX_IP_CHECKSUM == 0 ) */
+    {
+        if( eReturn == eProcessBuffer )
+        {
+            if( xCheckIPv4SizeFields( pxNetworkBuffer->pucEthernetBuffer, pxNetworkBuffer->xDataLength ) != pdPASS )
+            {
+                /* Some of the length checks were not successful. */
+                eReturn = eReleaseBuffer;
+            }
+        }
+
+        #if ( ipconfigUDP_PASS_ZERO_CHECKSUM_PACKETS == 0 )
+        {
+            /* Check if this is a UDP packet without a checksum. */
             if( eReturn == eProcessBuffer )
             {
-                const NetworkEndPoint_t * pxEndPoint = FreeRTOS_FindEndPointOnMAC( &( pxIPPacket->xEthernetHeader.xSourceAddress ), NULL );
+                uint8_t ucProtocol;
+                const ProtocolHeaders_t * pxProtocolHeaders;
 
-                /* Do not check the checksum of loop-back messages. */
-                if( pxEndPoint == NULL )
+                /* ipconfigUDP_PASS_ZERO_CHECKSUM_PACKETS is defined as 0,
+                 * and so UDP packets carrying a protocol checksum of 0, will
+                 * be dropped. */
+                ucProtocol = pxIPPacket->xIPHeader.ucProtocol;
+                /* MISRA Ref 11.3.1 [Misaligned access] */
+                /* More details at: https://github.com/FreeRTOS/FreeRTOS-Plus-TCP/blob/main/MISRA.md#rule-113 */
+                /* coverity[misra_c_2012_rule_11_3_violation] */
+                pxProtocolHeaders = ( ( ProtocolHeaders_t * ) &( pxNetworkBuffer->pucEthernetBuffer[ ipSIZE_OF_ETH_HEADER + ( size_t ) ipSIZE_OF_IPv4_HEADER ] ) );
+
+                /* Identify the next protocol. */
+                if( ucProtocol == ( uint8_t ) ipPROTOCOL_UDP )
                 {
-                    /* Is the IP header checksum correct?
-                     *
-                     * NOTE: When the checksum of IP header is calculated while not omitting
-                     * the checksum field, the resulting value of the checksum always is 0xffff
-                     * which is denoted by ipCORRECT_CRC. See this wiki for more information:
-                     * https://en.wikipedia.org/wiki/IPv4_header_checksum#Verifying_the_IPv4_header_checksum
-                     * and this RFC: https://tools.ietf.org/html/rfc1624#page-4
-                     */
-                    if( usGenerateChecksum( 0U, ( const uint8_t * ) &( pxIPHeader->ucVersionHeaderLength ), ( size_t ) uxHeaderLength ) != ipCORRECT_CRC )
+                    if( pxProtocolHeaders->xUDPHeader.usChecksum == ( uint16_t ) 0U )
                     {
-                        /* Check sum in IP-header not correct. */
-                        eReturn = eReleaseBuffer;
-                    }
-                    /* Is the upper-layer checksum (TCP/UDP/ICMP) correct? */
-                    else if( usGenerateProtocolChecksum( ( uint8_t * ) ( pxNetworkBuffer->pucEthernetBuffer ), pxNetworkBuffer->xDataLength, pdFALSE ) != ipCORRECT_CRC )
-                    {
+                        #if ( ipconfigHAS_PRINTF != 0 )
+                        {
+                            static BaseType_t xCount = 0;
+
+                            /* Exclude this from branch coverage as this is only used for debugging. */
+                            if( xCount < 5 ) /* LCOV_EXCL_BR_LINE */
+                            {
+                                FreeRTOS_printf( ( "prvAllowIPPacket: UDP packet from %lxip without CRC dropped\n",
+                                                   ( unsigned long ) FreeRTOS_ntohl( pxIPPacket->xIPHeader.ulSourceIPAddress ) ) );
+                                xCount++;
+                            }
+                        }
+                        #endif /* ( ipconfigHAS_PRINTF != 0 ) */
+
                         /* Protocol checksum not accepted. */
                         eReturn = eReleaseBuffer;
                     }
-                    else
-                    {
-                        /* The checksum of the received packet is OK. */
-                    }
                 }
             }
         }
-    #else /* if ( ipconfigDRIVER_INCLUDED_RX_IP_CHECKSUM == 0 ) */
-        {
-            if( eReturn == eProcessBuffer )
-            {
-                if( xCheckIPv4SizeFields( pxNetworkBuffer->pucEthernetBuffer, pxNetworkBuffer->xDataLength ) != pdPASS )
-                {
-                    /* Some of the length checks were not successful. */
-                    eReturn = eReleaseBuffer;
-                }
-            }
+        #endif /* ( ipconfigUDP_PASS_ZERO_CHECKSUM_PACKETS == 0 ) */
 
-            #if ( ipconfigUDP_PASS_ZERO_CHECKSUM_PACKETS == 0 )
-                {
-                    /* Check if this is a UDP packet without a checksum. */
-                    if( eReturn == eProcessBuffer )
-                    {
-                        uint8_t ucProtocol;
-                        const ProtocolHeaders_t * pxProtocolHeaders;
-
-                        /* ipconfigUDP_PASS_ZERO_CHECKSUM_PACKETS is defined as 0,
-                         * and so UDP packets carrying a protocol checksum of 0, will
-                         * be dropped. */
-                        ucProtocol = pxIPPacket->xIPHeader.ucProtocol;
-                        /* MISRA Ref 11.3.1 [Misaligned access] */
-                        /* More details at: https://github.com/FreeRTOS/FreeRTOS-Plus-TCP/blob/main/MISRA.md#rule-113 */
-                        /* coverity[misra_c_2012_rule_11_3_violation] */
-                        pxProtocolHeaders = ( ( ProtocolHeaders_t * ) &( pxNetworkBuffer->pucEthernetBuffer[ ipSIZE_OF_ETH_HEADER + ( size_t ) ipSIZE_OF_IPv4_HEADER ] ) );
-
-                        /* Identify the next protocol. */
-                        if( ucProtocol == ( uint8_t ) ipPROTOCOL_UDP )
-                        {
-                            if( pxProtocolHeaders->xUDPHeader.usChecksum == ( uint16_t ) 0U )
-                            {
-                                #if ( ipconfigHAS_PRINTF != 0 )
-                                    {
-                                        static BaseType_t xCount = 0;
-
-                                        /* Exclude this from branch coverage as this is only used for debugging. */
-                                        if( xCount < 5 ) /* LCOV_EXCL_BR_LINE */
-                                        {
-                                            FreeRTOS_printf( ( "prvAllowIPPacket: UDP packet from %xip without CRC dropped\n",
-                                                               FreeRTOS_ntohl( pxIPPacket->xIPHeader.ulSourceIPAddress ) ) );
-                                            xCount++;
-                                        }
-                                    }
-                                #endif /* ( ipconfigHAS_PRINTF != 0 ) */
-
-                                /* Protocol checksum not accepted. */
-                                eReturn = eReleaseBuffer;
-                            }
-                        }
-                    }
-                }
-            #endif /* ( ipconfigUDP_PASS_ZERO_CHECKSUM_PACKETS == 0 ) */
-
-            /* to avoid warning unused parameters */
-            ( void ) pxNetworkBuffer;
-            ( void ) uxHeaderLength;
-        }
+        /* to avoid warning unused parameters */
+        ( void ) pxNetworkBuffer;
+        ( void ) uxHeaderLength;
+    }
     #endif /* ipconfigDRIVER_INCLUDED_RX_IP_CHECKSUM == 0 */
 
     return eReturn;
@@ -427,45 +596,45 @@ enum eFrameProcessingResult prvCheckIP4HeaderOptions( struct xNETWORK_BUFFER * c
      * depending on a user define. */
 
     #if ( ipconfigIP_PASS_PACKETS_WITH_IP_OPTIONS != 0 )
-        {
-            /* MISRA Ref 11.3.1 [Misaligned access] */
-            /* More details at: https://github.com/FreeRTOS/FreeRTOS-Plus-TCP/blob/main/MISRA.md#rule-113 */
-            /* coverity[misra_c_2012_rule_11_3_violation] */
-            IPHeader_t * pxIPHeader = ( ( IPHeader_t * ) &( pxNetworkBuffer->pucEthernetBuffer[ ipSIZE_OF_ETH_HEADER ] ) );
+    {
+        /* MISRA Ref 11.3.1 [Misaligned access] */
+        /* More details at: https://github.com/FreeRTOS/FreeRTOS-Plus-TCP/blob/main/MISRA.md#rule-113 */
+        /* coverity[misra_c_2012_rule_11_3_violation] */
+        IPHeader_t * pxIPHeader = ( ( IPHeader_t * ) &( pxNetworkBuffer->pucEthernetBuffer[ ipSIZE_OF_ETH_HEADER ] ) );
 
-            /* All structs of headers expect a IP header size of 20 bytes
-             * IP header options were included, we'll ignore them and cut them out. */
-            size_t uxLength = ( size_t ) pxIPHeader->ucVersionHeaderLength;
+        /* All structs of headers expect a IP header size of 20 bytes
+         * IP header options were included, we'll ignore them and cut them out. */
+        size_t uxLength = ( size_t ) pxIPHeader->ucVersionHeaderLength;
 
-            /* Check if the IP headers are acceptable and if it has our destination.
-             * The lowest four bits of 'ucVersionHeaderLength' indicate the IP-header
-             * length in multiples of 4. */
-            size_t uxHeaderLength = ( size_t ) ( ( uxLength & 0x0FU ) << 2 );
+        /* Check if the IP headers are acceptable and if it has our destination.
+         * The lowest four bits of 'ucVersionHeaderLength' indicate the IP-header
+         * length in multiples of 4. */
+        size_t uxHeaderLength = ( size_t ) ( ( uxLength & 0x0FU ) << 2 );
 
-            /* Number of bytes contained in IPv4 header options. */
-            const size_t optlen = ( ( size_t ) uxHeaderLength ) - ipSIZE_OF_IPv4_HEADER;
-            /* From: the previous start of UDP/ICMP/TCP data. */
-            const uint8_t * pucSource = ( const uint8_t * ) &( pxNetworkBuffer->pucEthernetBuffer[ sizeof( EthernetHeader_t ) + uxHeaderLength ] );
-            /* To: the usual start of UDP/ICMP/TCP data at offset 20 (decimal ) from IP header. */
-            uint8_t * pucTarget = ( uint8_t * ) &( pxNetworkBuffer->pucEthernetBuffer[ sizeof( EthernetHeader_t ) + ipSIZE_OF_IPv4_HEADER ] );
-            /* How many: total length minus the options and the lower headers. */
-            const size_t xMoveLen = pxNetworkBuffer->xDataLength - ( optlen + ipSIZE_OF_IPv4_HEADER + ipSIZE_OF_ETH_HEADER );
+        /* Number of bytes contained in IPv4 header options. */
+        const size_t optlen = ( ( size_t ) uxHeaderLength ) - ipSIZE_OF_IPv4_HEADER;
+        /* From: the previous start of UDP/ICMP/TCP data. */
+        const uint8_t * pucSource = ( const uint8_t * ) &( pxNetworkBuffer->pucEthernetBuffer[ sizeof( EthernetHeader_t ) + uxHeaderLength ] );
+        /* To: the usual start of UDP/ICMP/TCP data at offset 20 (decimal ) from IP header. */
+        uint8_t * pucTarget = ( uint8_t * ) &( pxNetworkBuffer->pucEthernetBuffer[ sizeof( EthernetHeader_t ) + ipSIZE_OF_IPv4_HEADER ] );
+        /* How many: total length minus the options and the lower headers. */
+        const size_t xMoveLen = pxNetworkBuffer->xDataLength - ( optlen + ipSIZE_OF_IPv4_HEADER + ipSIZE_OF_ETH_HEADER );
 
-            ( void ) memmove( pucTarget, pucSource, xMoveLen );
-            pxNetworkBuffer->xDataLength -= optlen;
-            /* Update the total length of the IP packet after removing options. */
-            pxIPHeader->usLength = FreeRTOS_htons( FreeRTOS_ntohs( pxIPHeader->usLength ) - optlen );
+        ( void ) memmove( pucTarget, pucSource, xMoveLen );
+        pxNetworkBuffer->xDataLength -= optlen;
+        /* Update the total length of the IP packet after removing options. */
+        pxIPHeader->usLength = FreeRTOS_htons( FreeRTOS_ntohs( pxIPHeader->usLength ) - optlen );
 
-            /* Rewrite the Version/IHL byte to indicate that this packet has no IP options. */
-            pxIPHeader->ucVersionHeaderLength = ( uint8_t ) ( ( pxIPHeader->ucVersionHeaderLength & 0xF0U ) | /* High nibble is the version. */
-                                                              ( ( ipSIZE_OF_IPv4_HEADER >> 2 ) & 0x0FU ) );
-        }
+        /* Rewrite the Version/IHL byte to indicate that this packet has no IP options. */
+        pxIPHeader->ucVersionHeaderLength = ( uint8_t ) ( ( pxIPHeader->ucVersionHeaderLength & 0xF0U ) | /* High nibble is the version. */
+                                                          ( ( ipSIZE_OF_IPv4_HEADER >> 2 ) & 0x0FU ) );
+    }
     #else /* if ( ipconfigIP_PASS_PACKETS_WITH_IP_OPTIONS != 0 ) */
-        {
-            /* 'ipconfigIP_PASS_PACKETS_WITH_IP_OPTIONS' is not set, so packets carrying
-             * IP-options will be dropped. */
-            eReturn = eReleaseBuffer;
-        }
+    {
+        /* 'ipconfigIP_PASS_PACKETS_WITH_IP_OPTIONS' is not set, so packets carrying
+         * IP-options will be dropped. */
+        eReturn = eReleaseBuffer;
+    }
     #endif /* if ( ipconfigIP_PASS_PACKETS_WITH_IP_OPTIONS != 0 ) */
 
     return eReturn;

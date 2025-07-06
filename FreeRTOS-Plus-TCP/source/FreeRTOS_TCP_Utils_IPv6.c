@@ -79,22 +79,16 @@ void prvSocketSetMSS_IPV6( FreeRTOS_Socket_t * pxSocket )
 
         if( pxEndPoint != NULL )
         {
+            IPv6_Type_t eType;
+
             /* Compared to IPv4, an IPv6 header is 20 bytes longer.
              * It must be subtracted from the MSS. */
             size_t uxDifference = ipSIZE_OF_IPv6_HEADER - ipSIZE_OF_IPv4_HEADER;
-            /* Do not allow MSS smaller than tcpMINIMUM_SEGMENT_LENGTH. */
-            #if ( ipconfigTCP_MSS >= tcpMINIMUM_SEGMENT_LENGTH )
-                {
-                    ulMSS = ipconfigTCP_MSS;
-                }
-            #else
-                {
-                    ulMSS = tcpMINIMUM_SEGMENT_LENGTH;
-                }
-            #endif
 
-            ulMSS = ( uint32_t ) ( ulMSS - uxDifference );
-            IPv6_Type_t eType = xIPv6_GetIPType( &( pxSocket->u.xTCP.xRemoteIP.xIP_IPv6 ) );
+            /* Because ipconfigTCP_MSS is guaranteed not less than tcpMINIMUM_SEGMENT_LENGTH by FreeRTOSIPConfigDefaults.h,
+             * it's unnecessary to check if xSocket->u.xTCP.usMSS is greater than difference. */
+            ulMSS = ( uint32_t ) ( ipconfigTCP_MSS - uxDifference );
+            eType = xIPv6_GetIPType( &( pxSocket->u.xTCP.xRemoteIP.xIP_IPv6 ) );
 
             if( eType == eIPv6_Global )
             {
@@ -105,10 +99,10 @@ void prvSocketSetMSS_IPV6( FreeRTOS_Socket_t * pxSocket )
         }
 
         #if ( ipconfigHAS_DEBUG_PRINTF == 1 )
-            {
-                ( void ) FreeRTOS_inet_ntop( FREERTOS_AF_INET6, ( const void * ) pxSocket->u.xTCP.xRemoteIP.xIP_IPv6.ucBytes, cIPv6Address, sizeof( cIPv6Address ) );
-                FreeRTOS_debug_printf( ( "prvSocketSetMSS: %u bytes for %s ip port %u\n", ( unsigned ) ulMSS, cIPv6Address, pxSocket->u.xTCP.usRemotePort ) );
-            }
+        {
+            ( void ) FreeRTOS_inet_ntop( FREERTOS_AF_INET6, ( const void * ) pxSocket->u.xTCP.xRemoteIP.xIP_IPv6.ucBytes, cIPv6Address, sizeof( cIPv6Address ) );
+            FreeRTOS_debug_printf( ( "prvSocketSetMSS: %u bytes for %s ip port %u\n", ( unsigned ) ulMSS, cIPv6Address, pxSocket->u.xTCP.usRemotePort ) );
+        }
         #endif
 
         pxSocket->u.xTCP.usMSS = ( uint16_t ) ulMSS;

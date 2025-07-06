@@ -34,7 +34,6 @@
 /* Application level configuration options. */
 #include "FreeRTOSIPConfig.h"
 #include "FreeRTOSIPConfigDefaults.h"
-#include "IPTraceMacroDefaults.h"
 
 /* *INDENT-OFF* */
 #ifdef __cplusplus
@@ -44,7 +43,6 @@
 
 /* Forward declarations. */
 struct xNETWORK_BUFFER;
-enum eFrameProcessingResult;
 struct xIP_PACKET;
 
 #define ipSIZE_OF_IPv4_HEADER               20U
@@ -60,9 +58,13 @@ struct xIP_PACKET;
 #define ipIPV4_VERSION_HEADER_LENGTH_MIN    0x45U /**< Minimum IPv4 header length. */
 #define ipIPV4_VERSION_HEADER_LENGTH_MAX    0x4FU /**< Maximum IPv4 header length. */
 
+/* IPv4 multicast MAC address starts with 01-00-5E. */
+#define ipMULTICAST_MAC_ADDRESS_IPv4_0      0x01U
+#define ipMULTICAST_MAC_ADDRESS_IPv4_1      0x00U
+#define ipMULTICAST_MAC_ADDRESS_IPv4_2      0x5EU
+
 /*
  *  These functions come from the IPv4-only library.
- *  TODO : They should get an extra parameter, the end-point
  *  void FreeRTOS_SetIPAddress( uint32_t ulIPAddress );
  *  void FreeRTOS_SetNetmask( uint32_t ulNetmask );
  *  void FreeRTOS_SetGatewayAddress( uint32_t ulGatewayAddress );
@@ -79,23 +81,22 @@ uint32_t FreeRTOS_GetDNSServerAddress( void );
 uint32_t FreeRTOS_GetNetmask( void );
 uint32_t FreeRTOS_GetIPAddress( void );
 
-/* Show all valid ARP entries
- */
-#if ( ipconfigHAS_PRINTF != 0 ) || ( ipconfigHAS_DEBUG_PRINTF != 0 )
-    void FreeRTOS_PrintARPCache( void );
-#endif
-
 /* Return pdTRUE if the IPv4 address is a multicast address. */
 BaseType_t xIsIPv4Multicast( uint32_t ulIPAddress );
 
-/* The function 'prvAllowIPPacket()' checks if a packets should be processed. */
-enum eFrameProcessingResult prvAllowIPPacketIPv4( const struct xIP_PACKET * const pxIPPacket,
-                                                  const struct xNETWORK_BUFFER * const pxNetworkBuffer,
-                                                  UBaseType_t uxHeaderLength );
+/* Return pdTRUE if the IPv4 address is a broadcast address. */
+BaseType_t xIsIPv4Broadcast( uint32_t ulIPAddress,
+                             struct xNetworkEndPoint ** ppxEndPoint );
 
-/* Check if the IP-header is carrying options. */
-enum eFrameProcessingResult prvCheckIP4HeaderOptions( struct xNETWORK_BUFFER * const pxNetworkBuffer );
+/* Return pdTRUE if the IPv4 address is a loopback address. */
+BaseType_t xIsIPv4Loopback( uint32_t ulAddress );
 
+/*
+ * Return pdTRUE if either source or destination is a loopback address.
+ * A loopback IP-address may only communicate internally with another
+ * loopback IP-address.
+ */
+BaseType_t xBadIPv4Loopback( const IPHeader_t * const pxIPHeader );
 
 /* *INDENT-OFF* */
 #ifdef __cplusplus
@@ -103,4 +104,4 @@ enum eFrameProcessingResult prvCheckIP4HeaderOptions( struct xNETWORK_BUFFER * c
 #endif
 /* *INDENT-ON* */
 
-#endif /* FREERTOS_IP_H */
+#endif /* FREERTOS_IPV4_H */

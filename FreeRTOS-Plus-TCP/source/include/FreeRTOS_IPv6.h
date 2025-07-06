@@ -1,5 +1,5 @@
 /*
- * FreeRTOS+TCP V2.3.1
+ * FreeRTOS+TCP <DEVELOPMENT BRANCH>
  * Copyright (C) 2020 Amazon.com, Inc. or its affiliates.  All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
@@ -50,14 +50,17 @@
 /* Some IPv6 ICMP requests. */
 #define ipICMP_DEST_UNREACHABLE_IPv6             ( ( uint8_t ) 1U )
 #define ipICMP_PACKET_TOO_BIG_IPv6               ( ( uint8_t ) 2U )
-#define ipICMP_TIME_EXEEDED_IPv6                 ( ( uint8_t ) 3U )
+#define ipICMP_TIME_EXCEEDED_IPv6                ( ( uint8_t ) 3U )
 #define ipICMP_PARAMETER_PROBLEM_IPv6            ( ( uint8_t ) 4U )
 #define ipICMP_PING_REQUEST_IPv6                 ( ( uint8_t ) 128U )
 #define ipICMP_PING_REPLY_IPv6                   ( ( uint8_t ) 129U )
+#define ipICMP_MULTICAST_LISTENER_QUERY          ( ( uint8_t ) 130U )
+#define ipICMP_MULTICAST_LISTENER_REPORT_V1      ( ( uint8_t ) 131U )
 #define ipICMP_ROUTER_SOLICITATION_IPv6          ( ( uint8_t ) 133U )
 #define ipICMP_ROUTER_ADVERTISEMENT_IPv6         ( ( uint8_t ) 134U )
 #define ipICMP_NEIGHBOR_SOLICITATION_IPv6        ( ( uint8_t ) 135U )
 #define ipICMP_NEIGHBOR_ADVERTISEMENT_IPv6       ( ( uint8_t ) 136U )
+#define ipICMP_MULTICAST_LISTENER_REPORT_V2      ( ( uint8_t ) 143U )
 
 
 #define ipIPv6_EXT_HEADER_HOP_BY_HOP             0U
@@ -88,17 +91,30 @@ eFrameProcessingResult_t prvAllowIPPacketIPv6( const IPHeader_IPv6_t * const pxI
                                                const NetworkBufferDescriptor_t * const pxNetworkBuffer,
                                                UBaseType_t uxHeaderLength );
 
+#if ( ipconfigETHERNET_DRIVER_FILTERS_PACKETS == 0 )
+
+/*
+ * Return pdTRUE if either source or destination is a loopback address.
+ * A loopback IP-address may only communicate internally with another
+ * loopback IP-address.
+ */
+    BaseType_t xBadIPv6Loopback( const IPHeader_IPv6_t * const pxIPv6Header );
+#endif /* ipconfigETHERNET_DRIVER_FILTERS_PACKETS == 0 */
+
+/*
+ * Check if the address is a loopback IP-address.
+ */
+BaseType_t xIsIPv6Loopback( const IPv6_Address_t * pxAddress );
+
 /** @brief Handle the IPv6 extension headers. */
 eFrameProcessingResult_t eHandleIPv6ExtensionHeaders( NetworkBufferDescriptor_t * const pxNetworkBuffer,
                                                       BaseType_t xDoRemove );
-
-extern void FreeRTOS_ClearND( void );
 
 /* Check whether this IPv6 address is an allowed multicast address or not. */
 BaseType_t xIsIPv6AllowedMulticast( const IPv6_Address_t * pxIPAddress );
 
 /* Note that 'xCompareIPv6_Address' will also check if 'pxRight' is
- * the special unicast address: ff02::1:ffnn:nnnn, where nn:nnnn are
+ * the special multicast address: ff02::1:ffnn:nnnn, where nn:nnnn are
  * the last 3 bytes of the IPv6 address. */
 BaseType_t xCompareIPv6_Address( const IPv6_Address_t * pxLeft,
                                  const IPv6_Address_t * pxRight,
@@ -114,8 +130,8 @@ BaseType_t xGetExtensionOrder( uint8_t ucProtocol,
 
 /* *INDENT-OFF* */
 #ifdef __cplusplus
-    }         /* extern "C" */
+    } /* extern "C" */
 #endif
 /* *INDENT-ON* */
 
-#endif /* FREERTOS_IP_H */
+#endif /* FREERTOS_IPV6_H */

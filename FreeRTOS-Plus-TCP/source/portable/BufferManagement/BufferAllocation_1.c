@@ -29,7 +29,7 @@
 *
 * See the following web page for essential buffer allocation scheme usage and
 * configuration details:
-* http://www.FreeRTOS.org/FreeRTOS-Plus/FreeRTOS_Plus_TCP/Embedded_Ethernet_Buffer_Management.html
+* https://freertos.org/Documentation/03-Libraries/02-FreeRTOS-plus/02-FreeRTOS-plus-TCP/05-Buffer-management
 *
 ******************************************************************************/
 
@@ -69,6 +69,8 @@ static NetworkBufferDescriptor_t xNetworkBuffers[ ipconfigNUM_NETWORK_BUFFER_DES
  * network buffers have constant size, large enough to hold the biggest Ethernet
  * packet. No resizing will be done. */
 const BaseType_t xBufferAllocFixedSize = pdTRUE;
+
+static size_t uxMaxNetworkInterfaceAllocatedSizeBytes;
 
 /* The semaphore used to obtain network buffers. */
 static SemaphoreHandle_t xNetworkBufferSemaphore = NULL;
@@ -179,17 +181,17 @@ BaseType_t xNetworkBuffersInitialise( void )
         ipconfigBUFFER_ALLOC_INIT();
 
         #if ( configSUPPORT_STATIC_ALLOCATION == 1 )
-            {
-                static StaticSemaphore_t xNetworkBufferSemaphoreBuffer;
-                xNetworkBufferSemaphore = xSemaphoreCreateCountingStatic(
-                    ( UBaseType_t ) ipconfigNUM_NETWORK_BUFFER_DESCRIPTORS,
-                    ( UBaseType_t ) ipconfigNUM_NETWORK_BUFFER_DESCRIPTORS,
-                    &xNetworkBufferSemaphoreBuffer );
-            }
+        {
+            static StaticSemaphore_t xNetworkBufferSemaphoreBuffer;
+            xNetworkBufferSemaphore = xSemaphoreCreateCountingStatic(
+                ( UBaseType_t ) ipconfigNUM_NETWORK_BUFFER_DESCRIPTORS,
+                ( UBaseType_t ) ipconfigNUM_NETWORK_BUFFER_DESCRIPTORS,
+                &xNetworkBufferSemaphoreBuffer );
+        }
         #else
-            {
-                xNetworkBufferSemaphore = xSemaphoreCreateCounting( ( UBaseType_t ) ipconfigNUM_NETWORK_BUFFER_DESCRIPTORS, ( UBaseType_t ) ipconfigNUM_NETWORK_BUFFER_DESCRIPTORS );
-            }
+        {
+            xNetworkBufferSemaphore = xSemaphoreCreateCounting( ( UBaseType_t ) ipconfigNUM_NETWORK_BUFFER_DESCRIPTORS, ( UBaseType_t ) ipconfigNUM_NETWORK_BUFFER_DESCRIPTORS );
+        }
         #endif /* configSUPPORT_STATIC_ALLOCATION */
 
         configASSERT( xNetworkBufferSemaphore != NULL );
@@ -201,7 +203,10 @@ BaseType_t xNetworkBuffersInitialise( void )
             /* Initialise all the network buffers.  The buffer storage comes
              * from the network interface, and different hardware has different
              * requirements. */
-            vNetworkInterfaceAllocateRAMToBuffers( xNetworkBuffers );
+            uxMaxNetworkInterfaceAllocatedSizeBytes = uxNetworkInterfaceAllocateRAMToBuffers( xNetworkBuffers );
+
+            /* The allocated buffer should hold atleast ipconfigNETWORK_MTU + ipSIZE_OF_ETH_HEADER bytes */
+            configASSERT( ( uxMaxNetworkInterfaceAllocatedSizeBytes >= ( ipconfigNETWORK_MTU + ipSIZE_OF_ETH_HEADER ) ) );
 
             for( x = 0U; x < ipconfigNUM_NETWORK_BUFFER_DESCRIPTORS; x++ )
             {
@@ -237,11 +242,8 @@ NetworkBufferDescriptor_t * pxGetNetworkBufferWithDescriptor( size_t xRequestedS
     BaseType_t xInvalid = pdFALSE;
     UBaseType_t uxCount;
 
-    /* The current implementation only has a single size memory block, so
-     * the requested size parameter is not used (yet). */
-    ( void ) xRequestedSizeBytes;
-
-    if( xNetworkBufferSemaphore != NULL )
+    if( ( xNetworkBufferSemaphore != NULL ) &&
+        ( xRequestedSizeBytes <= uxMaxNetworkInterfaceAllocatedSizeBytes ) )
     {
         /* If there is a semaphore available, there is a network buffer
          * available. */
@@ -294,16 +296,16 @@ NetworkBufferDescriptor_t * pxGetNetworkBufferWithDescriptor( size_t xRequestedS
                 pxReturn->pxEndPoint = NULL;
 
                 #if ( ipconfigTCP_IP_SANITY != 0 )
-                    {
-                        prvShowWarnings();
-                    }
+                {
+                    prvShowWarnings();
+                }
                 #endif /* ipconfigTCP_IP_SANITY */
 
                 #if ( ipconfigUSE_LINKED_RX_MESSAGES != 0 )
-                    {
-                        /* make sure the buffer is not linked */
-                        pxReturn->pxNextBuffer = NULL;
-                    }
+                {
+                    /* make sure the buffer is not linked */
+                    pxReturn->pxNextBuffer = NULL;
+                }
                 #endif /* ipconfigUSE_LINKED_RX_MESSAGES */
             }
 
@@ -432,10 +434,18 @@ UBaseType_t uxGetNumberOfFreeNetworkBuffers( void )
 NetworkBufferDescriptor_t * pxResizeNetworkBufferWithDescriptor( NetworkBufferDescriptor_t * pxNetworkBuffer,
                                                                  size_t xNewSizeBytes )
 {
-    /* In BufferAllocation_1.c all network buffer are allocated with a
-     * maximum size of 'ipTOTAL_ETHERNET_FRAME_SIZE'.No need to resize the
-     * network buffer. */
-    pxNetworkBuffer->xDataLength = xNewSizeBytes;
+    if( xNewSizeBytes <= uxMaxNetworkInterfaceAllocatedSizeBytes )
+    {
+        /* In BufferAllocation_1.c all network buffer are allocated with a
+         * maximum size of 'ipTOTAL_ETHERNET_FRAME_SIZE'.No need to resize the
+         * network buffer. */
+        pxNetworkBuffer->xDataLength = xNewSizeBytes;
+    }
+    else
+    {
+        pxNetworkBuffer = NULL;
+    }
+
     return pxNetworkBuffer;
 }
 

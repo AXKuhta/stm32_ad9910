@@ -32,7 +32,6 @@
 
 /* Application level configuration options. */
 #include "FreeRTOSIPConfig.h"
-#include "IPTraceMacroDefaults.h"
 
 #include "FreeRTOS_Sockets.h"
 
@@ -103,11 +102,6 @@
 #define dhcpADDRESS_TYPE_ETHERNET       ( 1U )                /**< Address type: ethernet opcode. */
 #define dhcpETHERNET_ADDRESS_LENGTH     ( 6U )                /**< Ethernet address length opcode. */
 
-/* The following define is temporary and serves to make the /single source
- * code more similar to the /multi version. TODO */
-//#define EP_DHCPData                     xDHCPData              /**< Temporary define to make /single source similar to /multi version. */
-//#define EP_IPv4_SETTINGS                xNetworkAddressing     /**< Temporary define to make /single source similar to /multi version. */
-
 /** @brief If a lease time is not received, use the default of two days (48 hours in ticks).
  * Can not use pdMS_TO_TICKS() as integer overflow can occur. */
 #define dhcpDEFAULT_LEASE_TIME          ( ( 48UL * 60UL * 60UL ) * configTICK_RATE_HZ )
@@ -177,7 +171,7 @@ typedef struct xDHCPMessage_IPv4 DHCPMessage_IPv4_t;
     {
         eDHCPContinue,      /**< Continue the DHCP process */
         eDHCPUseDefaults,   /**< Stop DHCP and use the static defaults. */
-        eDHCPStopNoChanges, /**< Stop DHCP and continue with current settings. */
+        eDHCPStopNoChanges  /**< Stop DHCP and continue with current settings. */
     } eDHCPCallbackAnswer_t;
 #endif /* #if( ipconfigUSE_DHCP_HOOK != 0 ) */
 
@@ -231,8 +225,6 @@ typedef struct xProcessSet
     const uint8_t * pucByte;    /**< A pointer to the data to be analysed. */
 } ProcessSet_t;
 
-/* Returns the current state of a DHCP process. */
-eDHCPState_t eGetDHCPState( const struct xNetworkEndPoint * pxEndPoint );
 
 /*
  * NOT A PUBLIC API FUNCTION.
@@ -241,6 +233,12 @@ eDHCPState_t eGetDHCPState( const struct xNetworkEndPoint * pxEndPoint );
  */
 void vDHCPProcess( BaseType_t xReset,
                     struct xNetworkEndPoint * pxEndPoint );
+
+/*
+ * NOT A PUBLIC API FUNCTION.
+ * It will be called when the network interface, that the endpoint is associated with, goes down.
+ */
+void vDHCPStop( struct xNetworkEndPoint * pxEndPoint );
 
 /* Internal call: returns true if socket is the current DHCP socket */
 BaseType_t xIsDHCPSocket( const ConstSocket_t xSocket );

@@ -1,5 +1,5 @@
 /*
- * FreeRTOS+TCP V2.3.1
+ * FreeRTOS+TCP <DEVELOPMENT BRANCH>
  * Copyright (C) 2020 Amazon.com, Inc. or its affiliates.  All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
@@ -36,7 +36,7 @@
     #define FREERTOS_BITCONFIG_H
 
     #ifdef __cplusplus
-        extern "C" {
+    extern "C" {
     #endif
 
 /**< @brief The struct BitConfig_t holds a character array, its length and an index. */
@@ -76,7 +76,7 @@
 
 
     #ifdef __cplusplus
-}         /* extern "C" */
+}     /* extern "C" */
     #endif
 
-#endif /* !defined( FREERTOS_STREAM_BUFFER_H ) */
+#endif /* FREERTOS_STREAM_BUFFER_H */

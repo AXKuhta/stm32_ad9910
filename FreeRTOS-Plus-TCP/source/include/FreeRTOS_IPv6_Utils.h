@@ -66,10 +66,13 @@ size_t usGetExtensionHeaderLength( const uint8_t * pucEthernetBuffer,
                                    size_t uxBufferLength,
                                    uint8_t * pucProtocol );
 
+void vManageSolicitedNodeAddress( const struct xNetworkEndPoint * pxEndPoint,
+                                  BaseType_t xNetworkGoingUp );
+
 /* *INDENT-OFF* */
 #ifdef __cplusplus
     } /* extern "C" */
 #endif
 /* *INDENT-ON* */
 
-#endif /* FREERTOS_IP_UTILS_H */
+#endif /* FREERTOS_IPV6_UTILS_H */

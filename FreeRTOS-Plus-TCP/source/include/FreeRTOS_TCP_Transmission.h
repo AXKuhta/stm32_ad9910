@@ -97,7 +97,7 @@ void prvTCPReturn_SetEndPoint( const FreeRTOS_Socket_t * pxSocket,
 BaseType_t prvTCPPrepareConnect_IPV4( FreeRTOS_Socket_t * pxSocket );
 
 /*
- * Let ARP look-up the MAC-address of the peer and initialise the first SYN
+ * Let ND look-up the MAC-address of the peer and initialise the first SYN
  * packet.
  */
 BaseType_t prvTCPPrepareConnect_IPV6( FreeRTOS_Socket_t * pxSocket );
@@ -105,7 +105,7 @@ BaseType_t prvTCPPrepareConnect_IPV6( FreeRTOS_Socket_t * pxSocket );
 /*
  * Initialise the data structures which keep track of the TCP windowing system.
  */
-void prvTCPCreateWindow( FreeRTOS_Socket_t * pxSocket );
+BaseType_t prvTCPCreateWindow( FreeRTOS_Socket_t * pxSocket );
 
 /*
  * Set the initial properties in the options fields, like the preferred
@@ -149,7 +149,9 @@ BaseType_t prvSendData( FreeRTOS_Socket_t * pxSocket,
  * case #3. In summary, an RST was received with a sequence number that is
  * unexpected but still within the window.
  */
-BaseType_t prvTCPSendChallengeAck( NetworkBufferDescriptor_t * pxNetworkBuffer );
+BaseType_t prvTCPSendChallengeAck( NetworkBufferDescriptor_t * pxNetworkBuffer,
+                                   uint32_t ulCurrentSequenceNumber,
+                                   uint32_t ulOurSequenceNumber );
 
 /*
  * Reply to a peer with the RST flag on, in case a packet can not be handled.

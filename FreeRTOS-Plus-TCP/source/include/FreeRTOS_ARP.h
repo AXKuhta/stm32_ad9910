@@ -31,9 +31,9 @@
 /* Application level configuration options. */
 #include "FreeRTOSIPConfig.h"
 #include "FreeRTOSIPConfigDefaults.h"
-#include "IPTraceMacroDefaults.h"
 
 #include "FreeRTOS_IP.h"
+#include "FreeRTOS_Routing.h"
 
 /* *INDENT-OFF* */
 #ifdef __cplusplus
@@ -63,13 +63,6 @@ typedef struct xARP_CACHE_TABLE_ROW
     * pxEndPoint;             /**< The end-point on which the MAC address was last seen. */
 } ARPCacheRow_t;
 
-typedef enum
-{
-    eARPCacheMiss = 0, /* 0 An ARP table lookup did not find a valid entry. */
-    eARPCacheHit,      /* 1 An ARP table lookup found a valid entry. */
-    eCantSendPacket    /* 2 There is no IP address, or an ARP is still in progress, so the packet cannot be sent. */
-} eARPLookupResult_t;
-
 /** @brief A structure used internally in FreeRTOS_ARP.c.
  * It is used as a parameter for the function prvFindCacheEntry().*/
 typedef struct xCacheLocation
@@ -92,9 +85,6 @@ void vARPRefreshCacheEntryAge( const MACAddress_t * pxMACAddress,
  * cache table then add it - replacing the oldest current entry if there is not
  * a free space available.
  */
-/*void vARPRefreshCacheEntry( const MACAddress_t * pxMACAddress, */
-/*                            const uint32_t ulIPAddress ); */
-
 void vARPRefreshCacheEntry( const MACAddress_t * pxMACAddress,
                             const uint32_t ulIPAddress,
                             struct xNetworkEndPoint * pxEndPoint );
@@ -124,21 +114,21 @@ BaseType_t xCheckRequiresARPResolution( const NetworkBufferDescriptor_t * pxNetw
 /*
  * Look for ulIPAddress in the ARP cache.  If the IP address exists, copy the
  * associated MAC address into pxMACAddress, refresh the ARP cache entry's
- * age, and return eARPCacheHit.  If the IP address does not exist in the ARP
- * cache return eARPCacheMiss.  If the packet cannot be sent for any reason
+ * age, and return eResolutionCacheHit.  If the IP address does not exist in the ARP
+ * cache return eResolutionCacheMiss.  If the packet cannot be sent for any reason
  * (maybe DHCP is still in process, or the addressing needs a gateway but there
- * isn't a gateway defined) then return eCantSendPacket.
+ * isn't a gateway defined) then return eResolutionFailed.
  */
-eARPLookupResult_t eARPGetCacheEntry( uint32_t * pulIPAddress,
-                                      MACAddress_t * const pxMACAddress,
-                                      struct xNetworkEndPoint ** ppxEndPoint );
+eResolutionLookupResult_t eARPGetCacheEntry( uint32_t * pulIPAddress,
+                                             MACAddress_t * const pxMACAddress,
+                                             struct xNetworkEndPoint ** ppxEndPoint );
 
 #if ( ipconfigUSE_ARP_REVERSED_LOOKUP != 0 )
 
 /* Lookup an IP-address if only the MAC-address is known */
-    eARPLookupResult_t eARPGetCacheEntryByMac( const MACAddress_t * const pxMACAddress,
-                                               uint32_t * pulIPAddress,
-                                               struct xNetworkInterface ** ppxInterface );
+    eResolutionLookupResult_t eARPGetCacheEntryByMac( const MACAddress_t * const pxMACAddress,
+                                                      uint32_t * pulIPAddress,
+                                                      struct xNetworkInterface ** ppxInterface );
 
 #endif
 
@@ -149,40 +139,39 @@ eARPLookupResult_t eARPGetCacheEntry( uint32_t * pulIPAddress,
 void vARPAgeCache( void );
 
 /*
+ * After DHCP is ready and when changing IP address, force a quick send of our new IP
+ * address
+ */
+void vARPSendGratuitous( void );
+
+/*
  * Send out an ARP request for the IP address contained in pxNetworkBuffer, and
  * add an entry into the ARP table that indicates that an ARP reply is
  * outstanding so re-transmissions can be generated.
  */
 void vARPGenerateRequestPacket( NetworkBufferDescriptor_t * const pxNetworkBuffer );
 
-/*
- * After DHCP is ready and when changing IP address, force a quick send of our new IP
- * address
- */
-void vARPSendGratuitous( void );
-
-/* This function will check if the target IP-address belongs to this device.
- * If so, the packet will be passed to the IP-stack, who will answer it.
- * The function is to be called within the function xNetworkInterfaceOutput()
- * in NetworkInterface.c as follows:
- *
- *   if( xCheckLoopback( pxDescriptor, bReleaseAfterSend ) != 0 )
- *   {
- *      / * The packet has been sent back to the IP-task.
- *        * The IP-task will further handle it.
- *        * Do not release the descriptor.
- *        * /
- *       return pdTRUE;
- *   }
- *   / * Send the packet as usual. * /
- */
-BaseType_t xCheckLoopback( NetworkBufferDescriptor_t * const pxDescriptor,
-                           BaseType_t bReleaseAfterSend );
-
 void FreeRTOS_OutputARPRequest( uint32_t ulIPAddress );
+
+/*
+ * Create and send an ARP request packet to IPv4 endpoints of an interface.
+ */
+void FreeRTOS_OutputARPRequest_Multi( NetworkEndPoint_t * pxEndPoint,
+                                      uint32_t ulIPAddress );
+
+/* xARPWaitResolution checks if an IPv4 address is already known. If not
+ * it may send an ARP request and wait for a reply.  This function will
+ * only be called from an application. */
+BaseType_t xARPWaitResolution( uint32_t ulIPAddress,
+                               TickType_t uxTicksToWait );
 
 /* Clear all entries in the ARp cache. */
 void FreeRTOS_ClearARP( const struct xNetworkEndPoint * pxEndPoint );
+
+/* Show all valid ARP entries */
+#if ( ipconfigHAS_PRINTF != 0 ) || ( ipconfigHAS_DEBUG_PRINTF != 0 )
+    void FreeRTOS_PrintARPCache( void );
+#endif
 
 /* *INDENT-OFF* */
 #ifdef __cplusplus
