@@ -446,3 +446,6 @@
 #endif /* __STM32F7xx_HAL_CONF_H */
  
 
+// STM32F7's NetworkInterface.c defines its own ETH_IRQHandler() but we want to wrap it for the interrupt counter
+#define ETH_IRQHandler ETH_IRQHandler_real
+

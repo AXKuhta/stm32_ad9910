@@ -125,14 +125,6 @@ extern void vLoggingPrintf( const char * pcFormatString,
  * http://www.freertos.org/Stacks-and-stack-overflow-checking.html */
 #define ipconfigIP_TASK_STACK_SIZE_WORDS           ( configMINIMAL_STACK_SIZE * 5 )
 
-/* ipconfigRAND32() is called by the IP stack to generate random numbers for
- * things such as a DHCP transaction number or initial sequence number. Random
- * number generation is performed via this macro to allow applications to use their
- * own random number generation method. For example, it might be possible to
- * generate a random number by sampling noise on an analogue input. */
-extern UBaseType_t uxRand();
-#define ipconfigRAND32()    uxRand()
-
 /* If ipconfigUSE_NETWORK_EVENT_HOOK is set to 1 then FreeRTOS+TCP will call the
  * network event hook at the appropriate times. If ipconfigUSE_NETWORK_EVENT_HOOK
  * is not set to 1 then the network event hook will never be called. See
@@ -340,8 +332,5 @@ extern uint32_t perf_eth_bytes_tx;
 
 #define iptraceNETWORK_INTERFACE_INPUT( uxDataLength, pucEthernetBuffer ) perf_eth_bytes_rx += uxDataLength, perf_eth_frames_rx++
 #define iptraceNETWORK_INTERFACE_OUTPUT( uxDataLength, pucEthernetBuffer ) perf_eth_bytes_tx += uxDataLength, perf_eth_frames_tx++
-
-// STM32F7's NetworkInterface.c defines its own ETH_IRQHandler() but we want to wrap it for the interrupt counter
-#define ETH_IRQHandler ETH_IRQHandler_real
 
 #endif /* FREERTOS_IP_CONFIG_H */
