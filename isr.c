@@ -183,6 +183,8 @@ void TIM2_IRQHandler() {
 
 void ETH_IRQHandler_real(void);
 
+#undef ETH_IRQHandler
+
 void ETH_IRQHandler() {
 	ETH_IRQHandler_real();
 	RECORD_INTERRUPT();

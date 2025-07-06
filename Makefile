@@ -8,7 +8,7 @@ FREERTOS_SOURCE = $(wildcard $(FREERTOS_SUBDIR)/*.c) $(wildcard $(FREERTOS_SUBDI
 FREERTOS_OBJS = $(FREERTOS_SOURCE:c=o)
 
 FREERTOS_PLUS_TCP_SUBDIR = FreeRTOS-Plus-TCP
-FREERTOS_PLUS_TCP_SOURCE = $(wildcard $(FREERTOS_PLUS_TCP_SUBDIR)/source/*.c) $(wildcard $(FREERTOS_PLUS_TCP_SUBDIR)/source/portable/NetworkInterface/Common/*.c) $(wildcard $(FREERTOS_PLUS_TCP_SUBDIR)/source/portable/NetworkInterface/STM32/Drivers/F7/*.c) $(FREERTOS_PLUS_TCP_SUBDIR)/source/portable/BufferManagement/BufferAllocation_1.c
+FREERTOS_PLUS_TCP_SOURCE = $(wildcard $(FREERTOS_PLUS_TCP_SUBDIR)/source/*.c) $(wildcard $(FREERTOS_PLUS_TCP_SUBDIR)/source/portable/NetworkInterface/Common/*.c) $(wildcard $(FREERTOS_PLUS_TCP_SUBDIR)/source/portable/NetworkInterface/STM32/*.c)  $(wildcard $(FREERTOS_PLUS_TCP_SUBDIR)/source/portable/NetworkInterface/STM32/Drivers/F7/*.c) $(FREERTOS_PLUS_TCP_SUBDIR)/source/portable/BufferManagement/BufferAllocation_1.c
 FREERTOS_PLUS_TCP_OBJS = $(FREERTOS_PLUS_TCP_SOURCE:c=o)
 
 CMSIS_SUBDIR = STM32CubeF7/Drivers/CMSIS
@@ -31,7 +31,7 @@ LDSCRIPT = STM32F746ZGTx_FLASH.ld
 ################################################################################
 # COMPILER FLAGS
 ################################################################################
-DEFINES = -D"USE_HAL_DRIVER" -D"STM32F746xx" -D"USE_STM32F7XX_NUCLEO_144" -D"STM32F7xx=1"
+DEFINES = -D"USE_HAL_DRIVER" -D"STM32F7" -D"STM32F746xx" -D"USE_STM32F7XX_NUCLEO_144" -D"STM32F7xx=1"
 INCLUDE = -I"include/" -I"$(CMSIS_SUBDIR)/Core/Include" -I"$(CMSIS_DEVICE_SUBDIR)/Include" -I"$(HAL_SUBDIR)/Inc" -I"$(FREERTOS_SUBDIR)/include" -I"$(FREERTOS_SUBDIR)/portable/GCC/ARM_CM7/r0p1" -I"$(FREERTOS_PLUS_TCP_SUBDIR)/source/include" -I"$(FREERTOS_PLUS_TCP_SUBDIR)/source/portable/Compiler/GCC/" -I"$(FREERTOS_PLUS_TCP_SUBDIR)/source/portable/NetworkInterface/include/" -I"$(FREERTOS_PLUS_TCP_SUBDIR)/source/portable/NetworkInterface/STM32/Drivers/F7"
 
 # https://github.com/MayaPosch/Nodate/blob/master/arch/stm32/Makefile
