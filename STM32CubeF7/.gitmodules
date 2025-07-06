@@ -1,0 +1,144 @@
+[submodule "Drivers/STM32F7xx_HAL_Driver"]
+	path = Drivers/STM32F7xx_HAL_Driver
+	url = https://github.com/STMicroelectronics/stm32f7xx_hal_driver.git
+	branch = master
+[submodule "Drivers/CMSIS/Device/ST/STM32F7xx"]
+	path = Drivers/CMSIS/Device/ST/STM32F7xx
+	url = https://github.com/STMicroelectronics/cmsis_device_f7.git
+	branch = master
+[submodule "Drivers/BSP/STM32F7xx_Nucleo_144"]
+	path = Drivers/BSP/STM32F7xx_Nucleo_144
+	url = https://github.com/STMicroelectronics/stm32f7xx-nucleo-144-bsp.git
+	branch = main
+[submodule "Drivers/BSP/STM32F723E-Discovery"]
+	path = Drivers/BSP/STM32F723E-Discovery
+	url = https://github.com/STMicroelectronics/32f723ediscovery-bsp.git
+	branch = main
+[submodule "Drivers/BSP/STM32F769I-Discovery"]
+	path = Drivers/BSP/STM32F769I-Discovery
+	url = https://github.com/STMicroelectronics/32f769idiscovery-bsp.git
+	branch = main
+[submodule "Drivers/BSP/STM32F7308-Discovery"]
+	path = Drivers/BSP/STM32F7308-Discovery
+	url = https://github.com/STMicroelectronics/stm32f7308-dk-bsp.git
+	branch = main
+[submodule "Drivers/BSP/STM32F7508-Discovery"]
+	path = Drivers/BSP/STM32F7508-Discovery
+	url = https://github.com/STMicroelectronics/stm32f7508-dk-bsp.git
+	branch = main
+[submodule "Drivers/BSP/STM32746G-Discovery"]
+	path = Drivers/BSP/STM32746G-Discovery
+	url = https://github.com/STMicroelectronics/32f746gdiscovery-bsp.git
+	branch = main
+[submodule "Drivers/BSP/STM32756G_EVAL"]
+	path = Drivers/BSP/STM32756G_EVAL
+	url = https://github.com/STMicroelectronics/stm32756g-eval-bsp.git
+	branch = main
+[submodule "Drivers/BSP/STM32F769I_EVAL"]
+	path = Drivers/BSP/STM32F769I_EVAL
+	url = https://github.com/STMicroelectronics/stm32f769i-eval-bsp.git
+	branch = main
+[submodule "Drivers/BSP/Components/Common"]
+	path = Drivers/BSP/Components/Common
+	url = https://github.com/STMicroelectronics/stm32-bsp-common.git
+	branch = main
+[submodule "Drivers/BSP/Components/adv7533"]
+	path = Drivers/BSP/Components/adv7533
+	url = https://github.com/STMicroelectronics/stm32-adv7533.git
+	branch = main
+[submodule "Drivers/BSP/Components/ampire480272"]
+	path = Drivers/BSP/Components/ampire480272
+	url = https://github.com/STMicroelectronics/stm32-ampire480272.git
+	branch = main
+[submodule "Drivers/BSP/Components/ampire640480"]
+	path = Drivers/BSP/Components/ampire640480
+	url = https://github.com/STMicroelectronics/stm32-ampire640480.git
+	branch = main
+[submodule "Drivers/BSP/Components/dp83848"]
+	path = Drivers/BSP/Components/dp83848
+	url = https://github.com/STMicroelectronics/stm32-dp83848.git
+	branch = main
+[submodule "Drivers/BSP/Components/exc7200"]
+	path = Drivers/BSP/Components/exc7200
+	url = https://github.com/STMicroelectronics/stm32-exc7200.git
+	branch = main
+[submodule "Drivers/BSP/Components/ft3x67"]
+	path = Drivers/BSP/Components/ft3x67
+	url = https://github.com/STMicroelectronics/stm32-ft3x67.git
+	branch = main
+[submodule "Drivers/BSP/Components/ft5336"]
+	path = Drivers/BSP/Components/ft5336
+	url = https://github.com/STMicroelectronics/stm32-ft5336.git
+	branch = main
+[submodule "Drivers/BSP/Components/ft6x06"]
+	path = Drivers/BSP/Components/ft6x06
+	url = https://github.com/STMicroelectronics/stm32-ft6x06.git
+	branch = main
+[submodule "Drivers/BSP/Components/lan8742"]
+	path = Drivers/BSP/Components/lan8742
+	url = https://github.com/STMicroelectronics/stm32-lan8742.git
+	branch = main
+[submodule "Drivers/BSP/Components/mfxstm32l152"]
+	path = Drivers/BSP/Components/mfxstm32l152
+	url = https://github.com/STMicroelectronics/stm32-mfxstm32l152.git
+	branch = main
+[submodule "Drivers/BSP/Components/mx25l512"]
+	path = Drivers/BSP/Components/mx25l512
+	url = https://github.com/STMicroelectronics/stm32-mx25l512.git
+	branch = main
+[submodule "Drivers/BSP/Components/n25q128a"]
+	path = Drivers/BSP/Components/n25q128a
+	url = https://github.com/STMicroelectronics/stm32-n25q128a.git
+	branch = main
+[submodule "Drivers/BSP/Components/n25q512a"]
+	path = Drivers/BSP/Components/n25q512a
+	url = https://github.com/STMicroelectronics/stm32-n25q512a.git
+	branch = main
+[submodule "Drivers/BSP/Components/nt35510"]
+	path = Drivers/BSP/Components/nt35510
+	url = https://github.com/STMicroelectronics/stm32-nt35510.git
+	branch = main
+[submodule "Drivers/BSP/Components/otm8009a"]
+	path = Drivers/BSP/Components/otm8009a
+	url = https://github.com/STMicroelectronics/stm32-otm8009a.git
+	branch = main
+[submodule "Drivers/BSP/Components/ov5640"]
+	path = Drivers/BSP/Components/ov5640
+	url = https://github.com/STMicroelectronics/stm32-ov5640.git
+	branch = main
+[submodule "Drivers/BSP/Components/ov9655"]
+	path = Drivers/BSP/Components/ov9655
+	url = https://github.com/STMicroelectronics/stm32-ov9655.git
+	branch = main
+[submodule "Drivers/BSP/Components/rk043fn48h"]
+	path = Drivers/BSP/Components/rk043fn48h
+	url = https://github.com/STMicroelectronics/stm32-rk043fn48h.git
+	branch = main
+[submodule "Drivers/BSP/Components/s5k5cag"]
+	path = Drivers/BSP/Components/s5k5cag
+	url = https://github.com/STMicroelectronics/stm32-s5k5cag.git
+	branch = main
+[submodule "Drivers/BSP/Components/st7735"]
+	path = Drivers/BSP/Components/st7735
+	url = https://github.com/STMicroelectronics/stm32-st7735.git
+	branch = main
+[submodule "Drivers/BSP/Components/st7789h2"]
+	path = Drivers/BSP/Components/st7789h2
+	url = https://github.com/STMicroelectronics/stm32-st7789h2.git
+	branch = main
+[submodule "Drivers/BSP/Components/stmpe811"]
+	path = Drivers/BSP/Components/stmpe811
+	url = https://github.com/STMicroelectronics/stm32-stmpe811.git
+	branch = main
+[submodule "Drivers/BSP/Components/ts3510"]
+	path = Drivers/BSP/Components/ts3510
+	url = https://github.com/STMicroelectronics/stm32-ts3510.git
+	branch = main
+[submodule "Drivers/BSP/Components/wm8994"]
+	path = Drivers/BSP/Components/wm8994
+	url = https://github.com/STMicroelectronics/stm32-wm8994.git
+	branch = main
+[submodule "Drivers/BSP/Components/w25q128j"]
+	path = Drivers/BSP/Components/w25q128j
+	url = https://github.com/STMicroelectronics/stm32-w25q128j.git
+	branch = main

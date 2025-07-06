@@ -60,7 +60,7 @@ typedef struct
                                              This parameter can be a value of @ref RTCEx_Tamper_EraseBackUp_Definitions */
 
   uint32_t MaskFlag;                     /*!< Specifies the Tamper Flag masking.
-                                             This parameter can be a value of @ref RTCEx_Tamper_MaskFlag_Definitions   */
+                                             This parameter can be a value of @ref RTCEx_Tamper_MaskFlag_Definitions */
 
   uint32_t Filter;                      /*!< Specifies the RTC Filter Tamper.
                                              This parameter can be a value of @ref RTCEx_Tamper_Filter_Definitions */
@@ -178,7 +178,7 @@ typedef struct
   * @{
   */
 #define RTC_TAMPERTRIGGER_RISINGEDGE       0x00000000U
-#define RTC_TAMPERTRIGGER_FALLINGEDGE      RTC_TAMPCR_TAMP1TRG
+#define RTC_TAMPERTRIGGER_FALLINGEDGE      0x00000002U
 #define RTC_TAMPERTRIGGER_LOWLEVEL         RTC_TAMPERTRIGGER_RISINGEDGE
 #define RTC_TAMPERTRIGGER_HIGHLEVEL        RTC_TAMPERTRIGGER_FALLINGEDGE
 /**
@@ -189,7 +189,7 @@ typedef struct
   * @{
   */
 #define RTC_TAMPER_ERASE_BACKUP_ENABLE             0x00000000U
-#define RTC_TAMPER_ERASE_BACKUP_DISABLE            RTC_TAMPCR_TAMP1NOERASE
+#define RTC_TAMPER_ERASE_BACKUP_DISABLE            0x00020000U
 /**
   * @}
   */
@@ -198,7 +198,7 @@ typedef struct
   * @{
   */
 #define RTC_TAMPERMASK_FLAG_DISABLE                0x00000000U
-#define RTC_TAMPERMASK_FLAG_ENABLE                 RTC_TAMPCR_TAMP1MF
+#define RTC_TAMPERMASK_FLAG_ENABLE                 0x00040000U
 /**
   * @}
   */
@@ -713,18 +713,6 @@ typedef struct
 #define __HAL_RTC_TAMPER_DISABLE_IT(__HANDLE__, __INTERRUPT__)       ((__HANDLE__)->Instance->TAMPCR &= ~(__INTERRUPT__))
 
 /**
-  * @brief  Check whether the specified RTC Tamper interrupt has occurred or not.
-  * @param  __HANDLE__ specifies the RTC handle.
-  * @param  __INTERRUPT__ specifies the RTC Tamper interrupt to check.
-  *         This parameter can be:
-  *            @arg RTC_IT_TAMP1: Tamper 1 interrupt
-  *            @arg RTC_IT_TAMP2: Tamper 2 interrupt
-  *            @arg RTC_IT_TAMP3: Tamper 3 interrupt
-  * @retval None
-  */
-#define __HAL_RTC_TAMPER_GET_IT(__HANDLE__, __INTERRUPT__)       (((((__HANDLE__)->Instance->ISR) & ((__INTERRUPT__) >> 4U)) != 0U) ? 1U : 0U)
-
-/**
   * @brief  Check whether the specified RTC Tamper interrupt has been enabled or not.
   * @param  __HANDLE__ specifies the RTC handle.
   * @param  __INTERRUPT__ specifies the RTC Tamper interrupt source to check.
@@ -785,13 +773,13 @@ typedef struct
   * @brief  Enable event on the RTC Tamper and Timestamp associated EXTI line.
   * @retval None.
   */
-#define __HAL_RTC_TAMPER_TIMESTAMP_EXTI_ENABLE_EVENT()    (EXTI->EMR |= RTC_EXTI_LINE_TAMPER_TIMESTAMP_EVENT)
+#define __HAL_RTC_TAMPER_TIMESTAMP_EXTI_ENABLE_EVENT()     (EXTI->EMR |= RTC_EXTI_LINE_TAMPER_TIMESTAMP_EVENT)
 
 /**
   * @brief  Disable event on the RTC Tamper and Timestamp associated EXTI line.
   * @retval None.
   */
-#define __HAL_RTC_TAMPER_TIMESTAMP_EXTI_DISABLE_EVENT()   (EXTI->EMR &= ~RTC_EXTI_LINE_TAMPER_TIMESTAMP_EVENT)
+#define __HAL_RTC_TAMPER_TIMESTAMP_EXTI_DISABLE_EVENT()    (EXTI->EMR &= ~RTC_EXTI_LINE_TAMPER_TIMESTAMP_EVENT)
 
 /**
   * @brief  Enable falling edge trigger on the RTC Tamper and Timestamp associated EXTI line.
@@ -980,7 +968,7 @@ HAL_StatusTypeDef HAL_RTCEx_DisableBypassShadow(RTC_HandleTypeDef *hrtc);
   * @{
   */
 /* Extended RTC features functions *******************************************/
-void HAL_RTCEx_AlarmBEventCallback(RTC_HandleTypeDef *hrtc);
+void              HAL_RTCEx_AlarmBEventCallback(RTC_HandleTypeDef *hrtc);
 HAL_StatusTypeDef HAL_RTCEx_PollForAlarmBEvent(RTC_HandleTypeDef *hrtc, uint32_t Timeout);
 /**
   * @}
