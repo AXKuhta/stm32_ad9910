@@ -25,6 +25,16 @@ void ack_damenon_task(void* params) {
 	// static const TickType_t receive_timeout = 1000;
 	// FreeRTOS_setsockopt(socket, 0, FREERTOS_SO_RCVTIMEO, &receive_timeout, sizeof(receive_timeout));
 
+	// Добавление в multicast группу
+	// - Без этого multicast пакеты будут аппаратно отфильтровываться (если поступают)
+	// - Если на коммутаторе включен IGMP Snooping и нет подписки, то пакеты вообще не будут поступать
+	IP_MReq_t req = {
+		.pxMulticastNetIf = NULL,
+		.xMulticastGroup = FreeRTOS_inet_addr("234.5.6.7")
+	};
+
+	assert( FreeRTOS_setsockopt(socket, 0, FREERTOS_SO_IP_ADD_MEMBERSHIP, &req, sizeof(req)) == 0 );
+
 	assert( FreeRTOS_bind(socket, &addr, sizeof(addr)) == 0 );
 
 	while (1) {

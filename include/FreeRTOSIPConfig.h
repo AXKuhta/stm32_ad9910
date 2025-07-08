@@ -333,4 +333,6 @@ extern uint32_t perf_eth_bytes_tx;
 #define iptraceNETWORK_INTERFACE_INPUT( uxDataLength, pucEthernetBuffer ) perf_eth_bytes_rx += uxDataLength, perf_eth_frames_rx++
 #define iptraceNETWORK_INTERFACE_OUTPUT( uxDataLength, pucEthernetBuffer ) perf_eth_bytes_tx += uxDataLength, perf_eth_frames_tx++
 
+#define ipconfigSUPPORT_IP_MULTICAST    1
+
 #endif /* FREERTOS_IP_CONFIG_H */
