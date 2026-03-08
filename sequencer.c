@@ -186,6 +186,10 @@ void pulse_complete_callback() {
 	spi_write_entry(entry);
 	ad_safety_off(entry.ram_image.size > 0);
 
+	// Настроить динамическую временную базу (prescaler) для генератора логических уровней
+	slave_timer_a.Instance->PSC = entry.logic_level_sequence.prescaler;
+	slave_timer_b.Instance->PSC = entry.logic_level_sequence.prescaler;
+
 	// Конфигурация генератора последовательностей логических уровней
 	assert(HAL_DMA_Start(&dma_slave_timer_a_up, (uint32_t)entry.logic_level_sequence.hold_time, (uint32_t)&slave_timer_a.Instance->ARR, entry.logic_level_sequence.count) == HAL_OK);
 	assert(HAL_DMA_Start(&dma_slave_timer_b_up, (uint32_t)entry.logic_level_sequence.hold_time, (uint32_t)&slave_timer_b.Instance->ARR, entry.logic_level_sequence.count) == HAL_OK);

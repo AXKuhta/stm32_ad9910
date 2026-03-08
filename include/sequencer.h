@@ -36,8 +36,9 @@ typedef struct logic_level_sequence_t {
 		uint32_t ab; 		// Пины 5 и 6
 		uint32_t cd; 		// Пины 7 и 8
 	}* slave_b_stream;
-	uint16_t* hold_time; 	// Длительность нот в машинных единицах
+	uint16_t* hold_time; 	// Длительности нот в тиках таймера (с учётом prescaler)
 	size_t count; 			// Количество нот
+	uint16_t prescaler; 	// Значение PSC для TIM3/TIM4
 } logic_level_sequence_t;
 
 // Универсальная структура данных для описания импульса

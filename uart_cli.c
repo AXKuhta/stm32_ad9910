@@ -45,7 +45,7 @@ extern uint32_t ad_system_clock;
 #define PROFILE7  (P_2 | P_1 | P_0)
 
 typedef struct logic_t {
-	uint32_t hold_ns;
+	uint64_t hold_ns;
 	uint8_t state;
 } logic_t;
 
@@ -53,8 +53,8 @@ typedef struct logic_t {
 // Первый элемент - парковочный профиль
 // Второй элемент - оттянуть момент NDTR == 0 до конца излучения
 // Третий элемент - терминатор
-#define TERMINATOR 	{ .hold_ns = 1*1000, .state = 0 }, \
-					{ .hold_ns = 1*1000, .state = 0 }, \
+#define TERMINATOR 	{ .hold_ns = 10*1000, .state = 0 }, \
+					{ .hold_ns = 10*1000, .state = 0 }, \
 					{ 0, 0 }
 
 // Спуск последовательности состояний в машинные коды
@@ -70,42 +70,89 @@ typedef struct logic_t {
 //     })
 // };
 // ```
+//
+// Мелкое замечание: истинная длительность излучения будет прыгать в пределах
+// 4 нс, т.к. спад сигналов профилей прыгает между соседними тактами AD9910
+//
 static logic_level_sequence_t lower_logic_sequence(logic_t states[]) {
-	uint32_t timer_mhz = HAL_RCC_GetSysClockFreq() / 1000 / 1000;
-	int slots_used = 0;
+	const uint32_t timer_mhz = HAL_RCC_GetSysClockFreq() / 1000 / 1000;
+	uint64_t min_timer_mu = 0;
+	size_t state_count = 0;
 
-	// Проход 1: определить необходимый запас слотов времени
-	// Триалим количество разбивок
+	// Проход 1: примерить каждый чип на минимальный квант таймера
+	// Также определяем истинный квант времени последовательности
 	for (size_t i = 0; states[i].hold_ns; i++) {
-		uint32_t timer_mu = states[i].hold_ns * timer_mhz / 1000;
+		uint64_t timer_mu = states[i].hold_ns * timer_mhz / 1000;
 
 		// Не можем точно представить время?
 		// TODO: сообщение об ошибке
 		assert(states[i].hold_ns * timer_mhz % 1000 == 0);
+		assert(timer_mu > 0);
 
-		int slots = 1;
+		if (state_count == 0 || timer_mu < min_timer_mu)
+			min_timer_mu = timer_mu;
 
-		while (timer_mu / slots > 0xFFFF || timer_mu % slots) {
-			slots++;
+		state_count++;
+	}
 
-			// TODO: сообщение об ошибке
-			assert(slots < 100);
+	assert(state_count > 0);
+
+	// Подобрать максимально грубый квант таймера, который точно делит ВСЕ длительности
+	// Начинаем искать с наигрубейшего возможного
+	uint32_t divider_cap = min_timer_mu < 65536 ? min_timer_mu : 65536;
+	uint32_t divider = 1;
+
+	assert(divider_cap >= 1);
+
+	for (uint32_t trial = divider_cap; trial > 0; trial--) {
+		int ok = 1;
+
+		for (size_t i = 0; states[i].hold_ns; i++) {
+			uint64_t timer_mu = states[i].hold_ns * timer_mhz / 1000;
+
+			if (timer_mu % trial) {
+				ok = 0;
+				break;
+			}
 		}
+
+		if (ok) {
+			divider = trial;
+			break;
+		}
+	}
+
+	assert(divider > 0);
+
+	// Проход 2: определить необходимый запас слотов времени
+	size_t slots_used = 0;
+
+	for (size_t i = 0; states[i].hold_ns; i++) {
+		uint64_t timer_mu = (states[i].hold_ns * timer_mhz) / 1000;
+		uint64_t timer_ticks = timer_mu / divider;
+		size_t slots = (timer_ticks + 0xFFFF - 1) / 0xFFFF;
 
 		slots_used += slots;
 	}
+
+	assert(slots_used > 0);
+	assert(slots_used <= 0x7FFF); // Ограничение DataLength у HAL_TIM_DMABurst_MultiWriteStart (2 * count <= 0xFFFF)
 
 	// TODO: использовать uint16_t - верхние биты бесполезны
 	uint32_t* slave_a_stream = malloc(2 * sizeof(uint32_t) * slots_used);
 	uint32_t* slave_b_stream = malloc(2 * sizeof(uint32_t) * slots_used);
 	uint16_t* hold_time = malloc(sizeof(uint16_t) * slots_used);
 
+	assert(slave_a_stream != NULL);
+	assert(slave_b_stream != NULL);
+	assert(hold_time != NULL);
+
 	// см. "Output compare 1 mode"
 	// https://www.st.com/resource/en/reference_manual/rm0385-stm32f75xxx-and-stm32f74xxx-advanced-armbased-32bit-mcus-stmicroelectronics.pdf
 	const uint8_t set_hi = 0b00010000;
 	const uint8_t set_lo = 0b00100000;
 
-	// Проход 2: делаем машинные коды
+	// Проход 3: делаем машинные коды
 	for (size_t i = 0, j = 0; states[i].hold_ns; i++) {
 		uint8_t state = states[i].state;
 
@@ -118,25 +165,21 @@ static logic_level_sequence_t lower_logic_sequence(logic_t states[]) {
 		uint8_t b3 = state & P_2    ? set_hi : set_lo;		// PD14
 		uint8_t b4 = state & IO_UPDATE ? set_hi : set_lo;	// PD15
 
-		// Заново найти количество разбивок
-		uint32_t timer_mu = states[i].hold_ns * timer_mhz / 1000;
+		uint64_t timer_mu = states[i].hold_ns * timer_mhz / 1000;
+		uint64_t remain_ticks = timer_mu / divider;
 
-		int slots = 1;
+		while (remain_ticks > 0) {
+			uint16_t slot_ticks = remain_ticks > 0xFFFF ? 0xFFFF : remain_ticks;
 
-		while (timer_mu / slots > 0xFFFF || timer_mu % slots) {
-			slots++;
-		}
-
-		// Размножить
-		for (int k = 0; k < slots; k++) {
 			slave_a_stream[2*j + 0] = (a2 << 8) + a1;
 			slave_a_stream[2*j + 1] = (a4 << 8) + a3;
 
 			slave_b_stream[2*j + 0] = (b2 << 8) + b1;
 			slave_b_stream[2*j + 1] = (b4 << 8) + b3;
 
-			hold_time[j] = timer_mu / slots;
+			hold_time[j] = slot_ticks;
 
+			remain_ticks -= slot_ticks;
 			j++;
 		}
 	}
@@ -145,7 +188,8 @@ static logic_level_sequence_t lower_logic_sequence(logic_t states[]) {
 		.slave_a_stream = (void*)slave_a_stream,
 		.slave_b_stream = (void*)slave_b_stream,
 		.hold_time = hold_time,
-		.count = slots_used
+		.count = slots_used,
+		.prescaler = divider - 1
 	};
 }
 
@@ -377,7 +421,7 @@ static void sequencer_add_sweep_internal(const char* str, const char* fstr, cons
 
 	uint32_t fc_hz = parse_freq(fc, fc_unit);
 	uint32_t offset_ns = parse_time(offset, o_unit);
-	uint32_t duration_ns = parse_time(duration, d_unit);
+	uint64_t duration_ns = parse_time(duration, d_unit);
 
 	if (b < 1) {
 		printf("Invalid b; must be greater than 0\n");
@@ -386,7 +430,7 @@ static void sequencer_add_sweep_internal(const char* str, const char* fstr, cons
 
 	// FIXME: Assuming 1 GHz ad_system_clock
 	double fstep = ad_system_clock / ((1ull << 32) + 0.0);
-	uint32_t steps = duration_ns / (4 * b);
+	uint32_t steps = duration_ns / (4ULL * b);
 
 	if (duration_ns % (4 * b) != 0) {
 		printf("Invalid combination of duration and b; duration must be a factor of b * 4 ns\n");
@@ -414,48 +458,7 @@ static void sequencer_add_sweep_internal(const char* str, const char* fstr, cons
 	free(verif_offset);
 	free(verif_duration);
 
-	uint16_t rate = fit_time(duration_ns);
-
-	if (rate == 0)
-		return;
-
-	uint16_t element_count = (duration_ns / 4) / rate;
 	uint32_t ftw = ad_calc_ftw(f1_hz);
-
-	// We are using RAM and DRG at the same time and that causes a problem:
-	// Even with matched latency enabled, they have different pipeline delays
-	// DRG Frequency arrives at the DDS core faster than RAM Phase + Amplitude
-	// Thus we get a signal with an unexpected start phase
-	// 
-	// Datasheet says 12 clocks of delay but through measurements it seems it is actually 20
-	// Without compensation:
-	// 200 MHz	0 deg start phase
-	// 100 MHz	0 deg start phase
-	// 50 MHz	0 deg start phase
-	// 25 MHz	180 deg start phase => 20 clocks of delay
-	//
-	// Knowing it's 20 clocks of delay, we can compensate for it
-	//
-	uint32_t start_phase = ftw * 20;
-	uint16_t start_phase_16bit = start_phase >> 16;
-	uint16_t compensation = 0xFFFF - start_phase_16bit;
-
-	if (f1_hz > f2_hz) {
-		compensation = start_phase_16bit + 0x7FFF;
-	}
-
-	printf("Start POW: %d\n", start_phase_16bit);
-
-	uint8_t* ram = malloc(4*element_count + 4);
-
-	for (size_t i = 0; i < element_count; i++) {
-		ram[4*i + 0] = compensation >> 8;
-		ram[4*i + 1] = compensation & 0xFF;
-		ram[4*i + 2] = (state.asf >> 6);
-		ram[4*i + 3] = (state.asf << 2) & 0xFF;
-	}
-
-	memset(ram + element_count*4, 0, 4);
 
 	uint32_t lower_ftw = ftw;
 	uint32_t upper_ftw = ftw + a * (steps - 1);
@@ -475,20 +478,8 @@ static void sequencer_add_sweep_internal(const char* str, const char* fstr, cons
 			.upper_ftw = upper_ftw
 		},
 		.fsc = state.fsc,
-		.ram_profiles[0] = {
-			.start = element_count,
-			.end = element_count,
-			.rate = 0,
-			.mode = AD_RAM_PROFILE_MODE_DIRECTSWITCH
-		},
-		.ram_profiles[1] = {
-			.start = 0,
-			.end = element_count,
-			.rate = rate,
-			.mode = AD_RAM_PROFILE_MODE_RAMPUP
-		},
-		.ram_image = { .buffer = (uint32_t*)ram, .size = element_count + 1 },
-		.ram_destination = AD_RAM_DESTINATION_POLAR,
+		.profiles[0] = { .asf = 0 },
+		.profiles[1] = { .asf = state.asf },
 		.logic_level_sequence = lower_logic_sequence(
 			offset_ns ? (logic_t[]){
 				{ .hold_ns = offset_ns, .state = 0 },
