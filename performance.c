@@ -4,8 +4,8 @@
 uint32_t perf_usart3_bytes_rx = 0;
 uint32_t perf_usart3_bytes_tx = 0;
 
-uint32_t perf_spi4_bytes_rx = 0;
-uint32_t perf_spi4_bytes_tx = 0;
+uint32_t perf_spi1_bytes_rx = 0;
+uint32_t perf_spi1_bytes_tx = 0;
 
 uint32_t perf_wakeups = 0;
 
@@ -20,8 +20,8 @@ void print_perf() {
 	printf("%10ld %s\n", perf_usart3_bytes_rx, "usart3 bytes rx");
 	printf("%10ld %s\n", perf_usart3_bytes_tx, "usart3 bytes tx");
 
-	printf("%10ld %s\n", perf_spi4_bytes_rx, "spi4 bytes rx");
-	printf("%10ld %s\n", perf_spi4_bytes_tx, "spi4 bytes tx");
+	printf("%10ld %s\n", perf_spi1_bytes_rx, "spi4 bytes rx");
+	printf("%10ld %s\n", perf_spi1_bytes_tx, "spi4 bytes tx");
 
 	printf("%10ld %s\n", perf_wakeups, "wakeups");
 

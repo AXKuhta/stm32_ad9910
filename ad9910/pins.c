@@ -13,10 +13,10 @@
 #define P_2 	GPIOD, GPIO_PIN_14
 
 // Управляющие сигналы
-#define IO_UPDATE 	GPIOB, GPIO_PIN_0
-#define IO_RESET 	GPIOG, GPIO_PIN_9
-#define DR_CTL 		GPIOB, GPIO_PIN_11
-#define DR_HOLD 	GPIOB, GPIO_PIN_10
+#define IO_UPDATE 	GPIOD, GPIO_PIN_15
+#define IO_RESET 	GPIOF, GPIO_PIN_2
+#define DR_CTL 		GPIOC, GPIO_PIN_6
+#define DR_HOLD 	GPIOC, GPIO_PIN_7
 
 // Установить профиль
 void set_profile(uint8_t profile_id) {

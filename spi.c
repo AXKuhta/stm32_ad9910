@@ -3,19 +3,19 @@
 #include "stm32f7xx_hal.h"
 #include "pin_init.h"
 
-#define SPI4_NSS 	GPIOE, GPIO_PIN_11
-#define SPI4_SCK 	GPIOE, GPIO_PIN_12
-#define SPI4_MISO 	GPIOE, GPIO_PIN_13
-#define SPI4_MOSI 	GPIOE, GPIO_PIN_14
+#define SPI1_NSS  	GPIOA, GPIO_PIN_4
+#define SPI1_SCK  	GPIOB, GPIO_PIN_3
+#define SPI1_MISO 	GPIOB, GPIO_PIN_4
+#define SPI1_MOSI 	GPIOB, GPIO_PIN_5
 
-static void spi4_gpio_init() {
-	PIN_AF_Init(SPI4_NSS, GPIO_MODE_AF_PP, GPIO_NOPULL, GPIO_AF5_SPI4);
-	PIN_AF_Init(SPI4_SCK, GPIO_MODE_AF_PP, GPIO_NOPULL, GPIO_AF5_SPI4);
-	PIN_AF_Init(SPI4_MISO, GPIO_MODE_AF_PP, GPIO_NOPULL, GPIO_AF5_SPI4);
-	PIN_AF_Init(SPI4_MOSI, GPIO_MODE_AF_PP, GPIO_NOPULL, GPIO_AF5_SPI4);
+static void spi1_gpio_init() {
+	PIN_AF_Init(SPI1_NSS, GPIO_MODE_AF_PP, GPIO_NOPULL, GPIO_AF5_SPI1);
+	PIN_AF_Init(SPI1_SCK, GPIO_MODE_AF_PP, GPIO_NOPULL, GPIO_AF5_SPI1);
+	PIN_AF_Init(SPI1_MISO, GPIO_MODE_AF_PP, GPIO_NOPULL, GPIO_AF5_SPI1);
+	PIN_AF_Init(SPI1_MOSI, GPIO_MODE_AF_PP, GPIO_NOPULL, GPIO_AF5_SPI1);
 }
 
-SPI_HandleTypeDef spi4;
+SPI_HandleTypeDef spi1;
 
 // Вычисление скорости SPI:
 // spi_clock = 108 MHz
@@ -29,12 +29,12 @@ SPI_HandleTypeDef spi4;
 // Для AD9910 максимальная скорость SPI составляет 70 Мбит
 // STM32 не может выдать больше 54 Мбит?
 //
-void spi4_init() {
-	__HAL_RCC_SPI4_CLK_ENABLE();
-	spi4_gpio_init();
+void spi1_init() {
+	__HAL_RCC_SPI1_CLK_ENABLE();
+	spi1_gpio_init();
 
-    SPI_HandleTypeDef spi4_defaults = {
-        .Instance = SPI4,
+    SPI_HandleTypeDef spi_defaults = {
+        .Instance = SPI1,
         .Init = {
             .Mode = SPI_MODE_MASTER,
             .Direction = SPI_DIRECTION_2LINES,
@@ -50,26 +50,26 @@ void spi4_init() {
         }
     };
 
-	spi4 = spi4_defaults;
+	spi1 = spi_defaults;
 	
-	HAL_SPI_Init(&spi4);
+	HAL_SPI_Init(&spi1);
 }
 
-extern uint32_t perf_spi4_bytes_rx;
-extern uint32_t perf_spi4_bytes_tx;
+extern uint32_t perf_spi1_bytes_rx;
+extern uint32_t perf_spi1_bytes_tx;
 
 void spi_send(uint8_t* buffer, uint16_t size) {
-	HAL_StatusTypeDef status = HAL_SPI_Transmit(&spi4, buffer, size, 1000);
+	HAL_StatusTypeDef status = HAL_SPI_Transmit(&spi1, buffer, size, 1000);
 
 	assert(status == HAL_OK);
 
-	perf_spi4_bytes_tx += size;
+	perf_spi1_bytes_tx += size;
 }
 
 void spi_recv(uint8_t* buffer, uint16_t size) {
-	HAL_StatusTypeDef status = HAL_SPI_Receive(&spi4, buffer, size, 1000);
+	HAL_StatusTypeDef status = HAL_SPI_Receive(&spi1, buffer, size, 1000);
 	
 	assert(status == HAL_OK);
 
-	perf_spi4_bytes_rx += size;
+	perf_spi1_bytes_rx += size;
 }

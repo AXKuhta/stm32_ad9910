@@ -223,7 +223,7 @@ void system_init() {
 	print_startup_info();
 
 	radar_emulator_start(25, 12.0 / 1000.0 / 1000.0, 0);
-	spi4_init();
+	spi1_init();
 	ad_init();
 
 	run_from_hse();
