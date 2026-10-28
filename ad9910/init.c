@@ -45,9 +45,6 @@ void ad_init() {
 	ad_init_gpio();
 	set_profile(0);
 
-	// Ramp Generator
-	set_ramp_direction(1);
-
 	// SDIO Input Only
 	r00[3] = 0x02;
 

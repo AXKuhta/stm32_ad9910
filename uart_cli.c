@@ -483,10 +483,10 @@ static void sequencer_add_sweep_internal(const char* str, const char* fstr, cons
 		.logic_level_sequence = lower_logic_sequence(
 			offset_ns ? (logic_t[]){
 				{ .hold_ns = offset_ns, .state = 0 },
-				{ .hold_ns = duration_ns, .state = PROFILE1 },
+				{ .hold_ns = duration_ns, .state = PROFILE1 | DR_CTL },
 				TERMINATOR
 			} : (logic_t[]){
-				{ .hold_ns = duration_ns, .state = PROFILE1 },
+				{ .hold_ns = duration_ns, .state = PROFILE1 | DR_CTL },
 				TERMINATOR
 			}
 		)

@@ -293,11 +293,8 @@ void spi_write_entry(seq_entry_t entry) {
 
 	ad_set_full_scale_current(entry.fsc);
 
-	// FIXME: Почему ему нужен *фронт* а не уровень DR_CTL? Не понимаю...
 	ad_write_all();
-	set_ramp_direction(0);
 	ad_pulse_io_update();
-	set_ramp_direction(1);
 }
 
 void sequencer_stop() {

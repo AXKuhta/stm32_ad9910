@@ -13,10 +13,9 @@
 #define P_2 	GPIOD, GPIO_PIN_14
 
 // Управляющие сигналы
+// Здесь не все - часть управляется таймерами
 #define IO_UPDATE 	GPIOD, GPIO_PIN_15
 #define IO_RESET 	GPIOF, GPIO_PIN_2
-#define DR_CTL 		GPIOC, GPIO_PIN_6
-#define DR_HOLD 	GPIOC, GPIO_PIN_7
 
 // Установить профиль
 void set_profile(uint8_t profile_id) {
@@ -34,9 +33,6 @@ void ad_init_gpio() {
 
 	PIN_Init(IO_UPDATE);
 	PIN_Init(IO_RESET);
-
-	PIN_Init(DR_CTL);
-	PIN_Init(DR_HOLD);
 }
 
 // Передать управление входами AD9910 процессору (или DMA)
@@ -48,14 +44,6 @@ void ad_slave_to_arm() {
 // TODO: пусть AD9910 всегда управляется таймерами
 void ad_slave_to_tim() {
 	logic_blaster_init_gpio();
-}
-
-// Установить направление хода Digital Ramp генератора
-// 1 = отсчитывать вверх
-// 0 = отсчитывать вниз
-// Вероятно, будет использоваться только режим отсчёта вверх
-void set_ramp_direction(uint8_t direction) {
-	HAL_GPIO_WritePin(DR_CTL, direction ? GPIO_PIN_SET : GPIO_PIN_RESET);
 }
 
 void my_delay(uint32_t delay) {
